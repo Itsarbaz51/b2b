@@ -213,6 +213,17 @@ export class CommissionSettingService {
 
     return Helper.serializeCommission(settings);
   }
+
+  static async resolveRule(userId, serviceId) {
+    return Prisma.commissionSetting.findFirst({
+      where: {
+        serviceId,
+        isActive: true,
+        OR: [{ scope: "USER", targetUserId: userId }, { scope: "ROLE" }],
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
 }
 
 export class CommissionEarningService {

@@ -3,7 +3,6 @@ import AuthMiddleware from "../middlewares/auth.middleware.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
 import { WalletController } from "../controllers/wallet.controller.js";
 import WallletValidationSchemas from "../validations/walletValidation.schemas.js";
-import idempotencyMiddleware from "../middlewares/idempotency.middleware.js";
 
 const walletRoutes = Router();
 
@@ -12,7 +11,6 @@ walletRoutes.post(
   "/credit",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["ADMIN"]),
-  idempotencyMiddleware({ required: true }),
   validateRequest(WallletValidationSchemas.walletCreditSchema),
   WalletController.creditWallet
 );
@@ -22,7 +20,6 @@ walletRoutes.post(
   "/debit",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["ADMIN"]),
-  idempotencyMiddleware({ required: true }),
   validateRequest(WallletValidationSchemas.walletDebitSchema),
   WalletController.debitWallet
 );
@@ -32,7 +29,6 @@ walletRoutes.post(
   "/hold",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["business", "employee"]),
-  idempotencyMiddleware({ required: true }),
   validateRequest(WallletValidationSchemas.holdAmountSchema),
   WalletController.holdAmount
 );
@@ -42,7 +38,6 @@ walletRoutes.post(
   "/release-hold",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["business", "employee"]),
-  idempotencyMiddleware({ required: true }),
   validateRequest(WallletValidationSchemas.releaseHoldAmountSchema),
   WalletController.releaseHoldAmount
 );

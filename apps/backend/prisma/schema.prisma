@@ -85,6 +85,7 @@ model User {
   children                      User[]               @relation("UserHierarchy")
   role                          Role                 @relation(fields: [roleId], references: [id])
   wallets                       Wallet[]
+  limits                        UserLimit?
 
   @@index([parentId])
   @@index([hierarchyLevel])
@@ -236,28 +237,43 @@ model Address {
 }
 
 model Wallet {
-  id                  String        @id @default(uuid())
-  userId              String        @map("user_id")
-  balance             BigInt        @default(0)
-  currency            Currency      @default(INR)
-  walletType          WalletType    @default(PRIMARY) @map("wallet_type")
-  holdBalance         BigInt        @default(0) @map("hold_balance")
-  availableBalance    BigInt        @default(0) @map("available_balance")
-  dailyLimit          BigInt?       @map("daily_limit")
-  monthlyLimit        BigInt?       @map("monthly_limit")
-  perTransactionLimit BigInt?       @map("per_transaction_limit")
-  isActive            Boolean       @default(true) @map("is_active")
-  version             Int           @default(1)
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  deletedAt           DateTime?     @map("deleted_at")
-  ledgerEntries       LedgerEntry[]
-  transactions        Transaction[]
-  user                User          @relation(fields: [userId], references: [id])
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+
+  walletType WalletType @map("wallet_type")
+  currency   Currency   @default(INR)
+
+  balance     BigInt @default(0)
+  holdBalance BigInt @default(0)
+
+  isActive Boolean @default(true)
+  version  Int     @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id])
+  ledgerEntries LedgerEntry[]
+  transactions  Transaction[]
 
   @@unique([userId, walletType])
-  @@index([userId, isActive])
+  @@index([userId])
   @@map("wallets")
+}
+
+model UserLimit {
+  userId String @id @map("user_id")
+
+  dailyLimit   BigInt?
+  monthlyLimit BigInt?
+  perTxnLimit  BigInt?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_limits")
 }
 
 model CommissionSetting {
@@ -297,34 +313,38 @@ model CommissionSetting {
 }
 
 model CommissionEarning {
-  id               String           @id @default(uuid())
-  transactionId    String           @map("transaction_id")
-  userId           String           @map("user_id")
-  fromUserId       String?          @map("from_user_id")
-  amount           BigInt
-  commissionAmount BigInt           @map("commission_amount")
-  commissionType   CommissionType   @map("commission_type")
-  tdsAmount        BigInt?          @map("tds_amount")
-  gstAmount        BigInt?          @map("gst_amount")
-  surchargeAmount  BigInt?          @map("surcharge_amount")
-  netAmount        BigInt           @map("net_amount")
-  metadata         Json?
-  createdBy        String           @map("created_by")
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
-  serviceId        String?
-  createdByUser    User             @relation("CommissionEarningCreatedBy", fields: [createdBy], references: [id])
-  fromUser         User?            @relation("CommissionEarningFromUser", fields: [fromUserId], references: [id])
-  service          ServiceProvider? @relation(fields: [serviceId], references: [id])
-  transaction      Transaction      @relation(fields: [transactionId], references: [id])
-  user             User             @relation("CommissionEarningToUser", fields: [userId], references: [id])
+  id            String  @id @default(uuid())
+  transactionId String  @map("transaction_id")
+  userId        String  @map("user_id")
+  fromUserId    String? @map("from_user_id")
+
+  amount BigInt
+  mode   PricingMode
+  type   CommissionType
+
+  commissionAmount BigInt  @map("commission_amount")
+  tdsAmount        BigInt? @map("tds_amount")
+  gstAmount        BigInt? @map("gst_amount")
+  surchargeAmount  BigInt? @map("surcharge_amount")
+  netAmount        BigInt  @map("net_amount")
+
+  metadata Json?
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  serviceId String?
+
+  createdByUser User             @relation("CommissionEarningCreatedBy", fields: [createdBy], references: [id])
+  fromUser      User?            @relation("CommissionEarningFromUser", fields: [fromUserId], references: [id])
+  service       ServiceProvider? @relation(fields: [serviceId], references: [id])
+  transaction   Transaction      @relation(fields: [transactionId], references: [id])
+  user          User             @relation("CommissionEarningToUser", fields: [userId], references: [id])
 
   @@index([transactionId, userId])
   @@index([createdAt])
   @@index([userId, createdAt])
-  @@index([createdBy], map: "commission_earnings_created_by_fkey")
-  @@index([fromUserId], map: "commission_earnings_from_user_id_fkey")
-  @@index([serviceId], map: "commission_earnings_serviceId_fkey")
   @@map("commission_earnings")
 }
 
@@ -430,7 +450,7 @@ model Transaction {
   serviceId          String?             @map("service_id")
   paymentType        PaymentType         @map("payment_type")
   userId             String              @map("user_id")
-  walletId           String              @map("wallet_id")
+  walletId           String?             @map("wallet_id")
   apiEntityId        String?             @map("api_entity_id")
   providerCharge     BigInt?
   commissionAmount   BigInt?
@@ -453,6 +473,7 @@ model Transaction {
   user               User                @relation(fields: [userId], references: [id])
   wallet             Wallet              @relation(fields: [walletId], references: [id])
 
+  @@unique([idempotencyKey])
   @@index([userId, status])
   @@index([idempotencyKey])
   @@index([serviceId, initiatedAt])
@@ -482,22 +503,12 @@ model LedgerEntry {
   transaction    Transaction?     @relation(fields: [transactionId], references: [id])
   wallet         Wallet           @relation(fields: [walletId], references: [id])
 
+  @@unique([idempotencyKey])
   @@index([transactionId])
   @@index([walletId, createdAt])
   @@index([serviceId, referenceType])
   @@index([idempotencyKey])
   @@map("ledger_entries")
-}
-
-model IdempotencyKey {
-  key       String   @id
-  userId    String?  @map("user_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expired_at")
-  used      Boolean  @default(false)
-  meta      Json?
-
-  @@map("idempotency_keys")
 }
 
 model Refund {
@@ -638,9 +649,7 @@ enum WalletType {
   PRIMARY
   COMMISSION
   ESCROW
-  TAX
   BONUS
-  HOLDING
 }
 
 enum ApiProvider {
