@@ -25,7 +25,7 @@ const CommissionTable = ({
 
   const getTypeColor = (type) => {
     switch (type) {
-      case "PERCENT":
+      case "PERCENTAGE":
         return "bg-green-100 text-green-800 border-green-300";
       case "FLAT":
         return "bg-orange-100 text-orange-800 border-orange-300";
@@ -60,6 +60,9 @@ const CommissionTable = ({
               Scope
             </th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
+              Mode
+            </th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Target
             </th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
@@ -75,14 +78,10 @@ const CommissionTable = ({
               Min/Max
             </th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
-              Surcharge
-            </th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               TDS/GST
             </th>
-            {console.log(currentUser.role)}
-            {(currentUser.role.name === "ADMIN" ||
-              currentUser.role.type === "employee") && (
+            {(currentUser?.role?.name === "ADMIN" ||
+              currentUser?.role?.type === "employee") && (
               <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase">
                 Actions
               </th>
@@ -119,10 +118,22 @@ const CommissionTable = ({
                 <td className="px-6 py-5">
                   <span
                     className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${getScopeColor(
-                      commission.scope
+                      commission.scope,
                     )}`}
                   >
                     {commission.scope}
+                  </span>
+                </td>
+
+                <td className="px-6 py-5">
+                  <span
+                    className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${
+                      commission.mode === "COMMISSION"
+                        ? "bg-indigo-100 text-indigo-800 border-indigo-300"
+                        : "bg-pink-100 text-pink-800 border-pink-300"
+                    }`}
+                  >
+                    {commission.mode}
                   </span>
                 </td>
 
@@ -148,71 +159,74 @@ const CommissionTable = ({
 
                 <td className="px-6 py-5 text-sm text-gray-700">
                   <div className="font-semibold">
-                    {commission.service?.name ||
-                      commission.service?.type ||
-                      "Unknown Service"}
+                    {commission.serviceProvider?.name || "Unknown Service"}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {commission.service?.code || "Service"}
+                    {commission.serviceProvider?.code || "-"}
                   </div>
                 </td>
 
                 <td className="px-6 py-5">
                   <span
                     className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${getTypeColor(
-                      commission.commissionType
+                      commission.type,
                     )}`}
                   >
-                    {commission.commissionType}
+                    {commission.type}
                   </span>
                 </td>
 
                 <td className="px-6 py-5">
                   <div className="text-sm font-semibold">
-                    {commission.commissionType === "PERCENTAGE"
-                      ? `${commission.commissionValue}%`
-                      : `₹${commission.commissionValue}`}
+                    {commission.type === "PERCENTAGE"
+                      ? `${commission.value}%`
+                      : `₹${commission.value}`}
                   </div>
                 </td>
 
                 <td className="px-6 py-5 text-sm text-gray-600">
                   <div className="space-y-1">
-                    <div>Min: ₹{commission.minAmount || "0"}</div>
-                    <div>Max: ₹{commission.maxAmount || "∞"}</div>
-                  </div>
-                </td>
-
-                <td className="px-6 py-5">
-                  <div className="text-sm font-semibold">
-                    {commission.surchargeType === "PERCENTAGE"
-                      ? `${commission.surchargeAmount}%`
-                      : `₹${commission.surchargeAmount}`}
+                    <div>
+                      Min:{" "}
+                      {commission.minAmount != null
+                        ? `₹${commission.minAmount}`
+                        : "-"}
+                    </div>
+                    <div>
+                      Max:{" "}
+                      {commission.maxAmount != null
+                        ? `₹${commission.maxAmount}`
+                        : "-"}
+                    </div>
                   </div>
                 </td>
 
                 <td className="px-6 py-5 text-sm text-gray-600">
                   <div className="space-y-1">
-                    {commission.applyTDS && (
-                      <div>TDS: {commission.tdsPercent}%</div>
-                    )}
-                    {commission.applyGST && (
+                    {commission.mode === "COMMISSION" &&
+                      commission.applyTDS && (
+                        <div>TDS: {commission.tdsPercent}%</div>
+                      )}
+
+                    {commission.mode === "SURCHARGE" && commission.applyGST && (
                       <div>GST: {commission.gstPercent}%</div>
                     )}
+
                     {!commission.applyTDS && !commission.applyGST && (
                       <div className="text-gray-400">-</div>
                     )}
                   </div>
                 </td>
 
-                {(currentUser.role.name === "ADMIN" ||
-                  currentUser.role.type === "employee") && (
+                {(currentUser?.role?.name === "ADMIN" ||
+                  currentUser?.role?.type === "employee") && (
                   <td className="px-6 py-5 text-center relative">
                     <div className="inline-block relative">
                       <button
                         className="p-2 rounded-full hover:bg-gray-100"
                         onClick={() =>
                           onMenuToggle(
-                            openMenuId === commission.id ? null : commission.id
+                            openMenuId === commission.id ? null : commission.id,
                           )
                         }
                       >

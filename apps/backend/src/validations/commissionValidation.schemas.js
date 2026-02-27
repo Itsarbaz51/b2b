@@ -3,22 +3,24 @@ import { z } from "zod";
 class CommissionValidationSchemas {
   static get createOrUpdateCommissionSettingSchema() {
     return z.object({
-      scope: z.enum(["ROLE", "USER"]), // Removed "GLOBAL" as it's not in your enum
+      scope: z.enum(["ROLE", "USER"]),
       roleId: z.string().uuid().optional(),
       targetUserId: z.string().uuid().optional(),
       serviceId: z.string().uuid().optional(),
-      commissionType: z.enum(["FLAT", "PERCENTAGE"]), // Fixed enum values
-      commissionValue: z.number().positive(),
+
+      mode: z.enum(["COMMISSION", "SURCHARGE"]),
+      type: z.enum(["FLAT", "PERCENTAGE"]),
+      value: z.number().positive(),
+
       minAmount: z.number().nonnegative().optional(),
       maxAmount: z.number().nonnegative().optional(),
+
       applyTDS: z.boolean().optional(),
       tdsPercent: z.number().min(0).max(100).optional(),
+
       applyGST: z.boolean().optional(),
       gstPercent: z.number().min(0).max(100).optional(),
-      applySurcharge: z.boolean().optional(),
-      surchargeType: z.enum(["FLAT", "PERCENTAGE"]).optional(),
-      surchargeAmount: z.number().min(0).max(100).optional(),
-      effectiveFrom: z.string().datetime().optional(),
+
       effectiveTo: z.string().datetime().nullable().optional(),
     });
   }

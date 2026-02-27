@@ -9,20 +9,29 @@ export class CommissionSettingService {
       roleId,
       targetUserId,
       serviceId,
-      commissionType,
-      commissionValue,
+      mode,
+      type,
+      value,
       minAmount,
       maxAmount,
       applyTDS,
       tdsPercent,
       applyGST,
       gstPercent,
-      applySurcharge,
-      surchargeType,
-      surchargeAmount,
-      effectiveFrom,
       effectiveTo,
     } = data;
+
+    if (!mode || !type || value === undefined || value === null) {
+      throw ApiError.badRequest("mode, type and value are required");
+    }
+
+    if (mode === "COMMISSION" && applyTDS && !tdsPercent) {
+      throw ApiError.badRequest("TDS percent required");
+    }
+
+    if (mode === "SURCHARGE" && applyGST && !gstPercent) {
+      throw ApiError.badRequest("GST percent required");
+    }
 
     // Validation based on scope
     if (scope === "ROLE" && !roleId) {
@@ -54,17 +63,6 @@ export class CommissionSettingService {
       if (!userExists) throw ApiError.notFound("Target user not found");
     }
 
-    if (applySurcharge && !surchargeAmount) {
-      throw ApiError.badRequest(
-        "surchargeAmount is required when applySurcharge is true"
-      );
-    }
-    if (applySurcharge && !surchargeType) {
-      throw ApiError.badRequest(
-        "surchargeType is required when applySurcharge is true"
-      );
-    }
-
     // Check for existing active commission setting
     const existing = await Prisma.commissionSetting.findFirst({
       where: {
@@ -81,20 +79,22 @@ export class CommissionSettingService {
       roleId: roleId || null,
       targetUserId: targetUserId || null,
       serviceId: serviceId || null,
-      commissionType,
-      commissionValue: commissionValue.toString(),
+
+      mode,
+      type,
+      value: value.toString(),
+
       minAmount: minAmount ? BigInt(minAmount) : null,
       maxAmount: maxAmount ? BigInt(maxAmount) : null,
+
       applyTDS: applyTDS || false,
       tdsPercent: tdsPercent ? tdsPercent.toString() : null,
+
       applyGST: applyGST || false,
       gstPercent: gstPercent ? gstPercent.toString() : null,
-      applySurcharge: applySurcharge || false,
-      surchargeType: applySurcharge ? surchargeType : null,
-      surchargeAmount:
-        applySurcharge && surchargeAmount ? surchargeAmount.toString() : null,
-      effectiveFrom: effectiveFrom ? new Date(effectiveFrom) : new Date(),
+
       effectiveTo: effectiveTo ? new Date(effectiveTo) : null,
+
       createdBy,
       isActive: true,
     };
@@ -117,31 +117,29 @@ export class CommissionSettingService {
 
     const user = await Prisma.user.findUnique({
       where: { id: userId },
-      select: { roleId: true, hierarchyPath: true },
+      select: { roleId: true },
     });
 
     if (!user) throw ApiError.notFound("User not found");
 
     const settings = await Prisma.commissionSetting.findMany({
       where: {
-        OR: [{ targetUserId: userId }, { scope: "ROLE", roleId: user.roleId }],
         isActive: true,
+        OR: [{ targetUserId: userId }, { scope: "ROLE", roleId: user.roleId }],
       },
       include: {
-        service: {
-          select: { id: true, code: true, name: true, isActive: true },
-        },
-        role: { select: { id: true, name: true, level: true } },
-        targetUser: {
+        serviceProvider: {
           select: {
             id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
+            code: true,
+            name: true,
+            isActive: true,
           },
         },
-        createdByUser: {
+        role: {
+          select: { id: true, name: true, level: true },
+        },
+        targetUser: {
           select: {
             id: true,
             username: true,
@@ -158,47 +156,38 @@ export class CommissionSettingService {
   }
 
   static async getCommissionSettingsAll(userId) {
-    // Get user with role information
-    const userWithRole = await Prisma.user.findUnique({
+    const user = await Prisma.user.findUnique({
       where: { id: userId },
       include: {
         role: {
-          select: {
-            type: true,
-            name: true,
-          },
+          select: { type: true, name: true },
         },
       },
     });
 
-    if (!userWithRole) {
-      throw ApiError.notFound("User not found");
-    }
+    if (!user) throw ApiError.notFound("User not found");
 
-    const userRoleType = userWithRole.role.type;
-    let targetUserId = userId;
+    let filter = {};
 
-    // If user is employee, use admin's ID
-    if (userRoleType === "employee") {
-      const adminUser = await Prisma.user.findFirst({
+    // If employee → only show ADMIN created commissions
+    if (user.role?.type === "employee") {
+      const admin = await Prisma.user.findFirst({
         where: {
-          role: {
-            name: "ADMIN",
-          },
+          role: { name: "ADMIN" },
         },
       });
 
-      if (!adminUser) {
-        throw new Error("Admin user not found");
+      if (!admin) {
+        throw ApiError.notFound("Admin user not found");
       }
 
-      targetUserId = adminUser.id;
+      filter.createdBy = admin.id;
     }
 
     const settings = await Prisma.commissionSetting.findMany({
-      where: {},
+      where: filter,
       include: {
-        service: {
+        serviceProvider: {
           select: {
             id: true,
             code: true,
@@ -206,17 +195,10 @@ export class CommissionSettingService {
             isActive: true,
           },
         },
-        role: { select: { id: true, name: true, level: true } },
-        targetUser: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
+        role: {
+          select: { id: true, name: true, level: true },
         },
-        createdByUser: {
+        targetUser: {
           select: {
             id: true,
             username: true,

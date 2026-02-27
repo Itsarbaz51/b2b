@@ -72,8 +72,7 @@ model User {
   commissionEarningsCreated     CommissionEarning[]  @relation("CommissionEarningCreatedBy")
   commissionsGiven              CommissionEarning[]  @relation("CommissionEarningFromUser")
   commissionEarnings            CommissionEarning[]  @relation("CommissionEarningToUser")
-  commissionSettingsCreated     CommissionSetting[]  @relation("CommissionSettingCreatedBy")
-  commissionTargets             CommissionSetting[]  @relation("CommissionTargetUser")
+  commissionSetting             CommissionSetting[]
   EmployeePermissionsGiven      EmployeePermission[] @relation("PermissionAssigner")
   EmployeePermissionsOwned      EmployeePermission[] @relation("EmployeePermission_userId")
   piiConsents                   PiiConsent[]
@@ -262,39 +261,38 @@ model Wallet {
 }
 
 model CommissionSetting {
-  id              String           @id @default(uuid())
-  scope           CommissionScope  @default(ROLE)
-  roleId          String?          @map("role_id")
-  targetUserId    String?          @map("target_user_id")
-  serviceId       String?          @map("service_id")
-  commissionType  CommissionType   @map("commission_type")
-  commissionValue Decimal          @map("commission_value") @db.Decimal(12, 4)
-  minAmount       BigInt?          @map("min_amount")
-  maxAmount       BigInt?          @map("max_amount")
-  applyTDS        Boolean          @default(false)
-  tdsPercent      Decimal?         @map("tds_percent") @db.Decimal(5, 2)
-  applyGST        Boolean          @default(false)
-  gstPercent      Decimal?         @map("gst_percent") @db.Decimal(5, 2)
-  applySurcharge  Boolean          @default(false) @map("apply_surcharge")
-  surchargeType   CommissionType?  @map("surcharge_type")
-  surchargeAmount Decimal?         @map("surcharge_amount") @db.Decimal(12, 2)
-  createdBy       String           @map("created_by")
-  isActive        Boolean          @default(true) @map("is_active")
-  effectiveFrom   DateTime         @default(now())
-  effectiveTo     DateTime?
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at")
-  createdByUser   User             @relation("CommissionSettingCreatedBy", fields: [createdBy], references: [id])
-  role            Role?            @relation(fields: [roleId], references: [id])
-  service         ServiceProvider? @relation(fields: [serviceId], references: [id])
-  targetUser      User?            @relation("CommissionTargetUser", fields: [targetUserId], references: [id])
+  id    String          @id @default(uuid())
+  scope CommissionScope @default(ROLE)
 
-  @@index([scope, roleId, targetUserId])
-  @@index([isActive, effectiveFrom, effectiveTo])
-  @@index([createdBy], map: "commission_settings_created_by_fkey")
-  @@index([roleId], map: "commission_settings_role_id_fkey")
-  @@index([serviceId], map: "commission_settings_service_id_fkey")
-  @@index([targetUserId], map: "commission_settings_target_user_id_fkey")
+  roleId       String?
+  targetUserId String?
+  serviceId    String?
+
+  mode  PricingMode
+  type  CommissionType
+  value Decimal        @db.Decimal(12, 4)
+
+  minAmount BigInt?
+  maxAmount BigInt?
+
+  applyTDS   Boolean  @default(false)
+  tdsPercent Decimal? @db.Decimal(5, 2)
+
+  applyGST   Boolean  @default(false)
+  gstPercent Decimal? @db.Decimal(5, 2)
+
+  createdBy String
+  isActive  Boolean @default(true)
+
+  effectiveTo DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  role            Role?            @relation(fields: [roleId], references: [id])
+  targetUser      User?            @relation(fields: [targetUserId], references: [id])
+  serviceProvider ServiceProvider? @relation(fields: [serviceId], references: [id])
+
   @@map("commission_settings")
 }
 
@@ -540,6 +538,11 @@ enum UserStatus {
   ACTIVE
   IN_ACTIVE
   DELETE
+}
+
+enum PricingMode {
+  COMMISSION
+  SURCHARGE
 }
 
 enum AccountType {

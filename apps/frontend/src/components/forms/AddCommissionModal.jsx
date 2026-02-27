@@ -20,10 +20,10 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   const usersLoading = useSelector((state) => state.users?.isLoading || false);
 
   const services = useSelector(
-    (state) => state.services?.serviceProviders?.allActiveServices || []
+    (state) => state.services?.serviceProviders?.allActiveServices || [],
   );
   const servicesLoading = useSelector(
-    (state) => state.service?.isLoading || false
+    (state) => state.service?.isLoading || false,
   );
 
   const [formData, setFormData] = useState({
@@ -31,21 +31,21 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     roleId: "",
     targetUserId: "",
     serviceId: "",
-    commissionType: "FLAT",
-    commissionValue: "",
+
+    mode: "COMMISSION",
+    type: "FLAT",
+    value: "",
+
     minAmount: "",
     maxAmount: "",
+
     applyTDS: false,
     tdsPercent: "",
     applyGST: false,
     gstPercent: "",
-    applySurcharge: false,
-    surchargeAmount: "",
-    surchargeType: "PERCENTAGE", // Added surcharge type
-    effectiveFrom: new Date().toISOString().split("T")[0],
+
     effectiveTo: "",
   });
-
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -60,32 +60,32 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         scope: editData.scope || "ROLE",
         roleId: editData.roleId || "",
         targetUserId: editData.targetUserId || "",
-        serviceId: editData.serviceId || "",
-        commissionType: editData.commissionType || "FLAT",
-        commissionValue: editData.commissionValue || "",
-        minAmount: editData.minAmount || "",
-        maxAmount: editData.maxAmount || "",
+        serviceId: editData.serviceProviderId || editData.serviceId || "",
+
+        mode: editData.mode || "COMMISSION",
+        type: editData.type || "FLAT",
+        value: editData.value || "",
+
+        minAmount: editData.minAmount ?? "",
+        maxAmount: editData.maxAmount ?? "",
+
         applyTDS: editData.applyTDS || false,
-        tdsPercent: editData.tdsPercent || "",
+        tdsPercent: editData.tdsPercent ?? "",
+
         applyGST: editData.applyGST || false,
-        gstPercent: editData.gstPercent || "",
-        applySurcharge: editData.applySurcharge || false,
-        surchargeAmount: editData.surchargeAmount || "",
-        surchargeType: editData.surchargeType || "PERCENTAGE",
-        effectiveFrom: editData.effectiveFrom
-          ? new Date(editData.effectiveFrom).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0],
+        gstPercent: editData.gstPercent ?? "",
+
         effectiveTo: editData.effectiveTo
           ? new Date(editData.effectiveTo).toISOString().split("T")[0]
           : "",
       });
 
-      // Prefill user search if editing USER scope
+      // USER scope prefill search input
       if (editData.scope === "USER" && editData.targetUser) {
         setUserSearch(
           `${editData.targetUser.firstName || ""} ${
             editData.targetUser.lastName || ""
-          }`.trim() + ` (${editData.targetUser.username || ""})`
+          }`.trim() + ` (${editData.targetUser.username || ""})`,
         );
       }
     }
@@ -111,7 +111,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
             user.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
             user.firstName?.toLowerCase().includes(userSearch.toLowerCase()) ||
             user.lastName?.toLowerCase().includes(userSearch.toLowerCase()) ||
-            user.phoneNumber?.includes(userSearch)
+            user.phoneNumber?.includes(userSearch),
         )
         .slice(0, 10);
       setFilteredUsers(filtered);
@@ -120,6 +120,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -161,7 +162,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     });
     setUserSearch(
       `${user.firstName || ""} ${user.lastName || ""}`.trim() +
-        ` (${user.username || ""})`
+        ` (${user.username || ""})`,
     );
     setShowUserDropdown(false);
 
@@ -179,17 +180,19 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.serviceId) newErrors.serviceId = "Service is required";
-
-    if (!formData.commissionValue && formData.commissionValue !== 0) {
-      newErrors.commissionValue = "Commission value is required";
-    } else if (
-      isNaN(formData.commissionValue) ||
-      Number(formData.commissionValue) < 0
-    ) {
-      newErrors.commissionValue = "Commission value must be a valid number";
+    // Service
+    if (!formData.serviceId) {
+      newErrors.serviceId = "Service is required";
     }
 
+    // Value
+    if (formData.value === "" || formData.value === null) {
+      newErrors.value = "Value is required";
+    } else if (isNaN(formData.value) || Number(formData.value) < 0) {
+      newErrors.value = "Value must be a valid positive number";
+    }
+
+    // Scope validation
     if (formData.scope === "ROLE" && !formData.roleId) {
       newErrors.roleId = "Role is required for ROLE scope";
     }
@@ -213,7 +216,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       }
     }
 
-    // Check if effectiveTo is after effectiveFrom
     if (formData.effectiveFrom && formData.effectiveTo) {
       const fromDate = new Date(formData.effectiveFrom);
       const toDate = new Date(formData.effectiveTo);
@@ -223,60 +225,37 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       }
     }
 
-    // TDS validation
-    if (
-      formData.applyTDS &&
-      (!formData.tdsPercent || isNaN(formData.tdsPercent))
-    ) {
-      newErrors.tdsPercent = "TDS percentage is required when TDS is applied";
-    } else if (
-      formData.applyTDS &&
-      (Number(formData.tdsPercent) < 0 || Number(formData.tdsPercent) > 100)
-    ) {
-      newErrors.tdsPercent = "TDS percentage must be between 0 and 100";
+    // 🔥 TDS validation only if mode = COMMISSION
+    if (formData.mode === "COMMISSION" && formData.applyTDS) {
+      if (formData.tdsPercent === "" || isNaN(formData.tdsPercent)) {
+        newErrors.tdsPercent = "TDS percentage is required";
+      } else if (
+        Number(formData.tdsPercent) < 0 ||
+        Number(formData.tdsPercent) > 100
+      ) {
+        newErrors.tdsPercent = "TDS percentage must be between 0 and 100";
+      }
     }
 
-    // GST validation
-    if (
-      formData.applyGST &&
-      (!formData.gstPercent || isNaN(formData.gstPercent))
-    ) {
-      newErrors.gstPercent = "GST percentage is required when GST is applied";
-    } else if (
-      formData.applyGST &&
-      (Number(formData.gstPercent) < 0 || Number(formData.gstPercent) > 100)
-    ) {
-      newErrors.gstPercent = "GST percentage must be between 0 and 100";
-    }
-
-    // Surcharge validation
-    if (
-      formData.applySurcharge &&
-      (!formData.surchargeAmount || isNaN(formData.surchargeAmount))
-    ) {
-      newErrors.surchargeAmount =
-        "Surcharge value is required when surcharge is applied";
-    } else if (
-      formData.applySurcharge &&
-      formData.surchargeType === "PERCENTAGE" &&
-      (Number(formData.surchargeAmount) < 0 ||
-        Number(formData.surchargeAmount) > 100)
-    ) {
-      newErrors.surchargeAmount =
-        "Surcharge percentage must be between 0 and 100";
-    } else if (
-      formData.applySurcharge &&
-      formData.surchargeType === "FLAT" &&
-      Number(formData.surchargeAmount) < 0
-    ) {
-      newErrors.surchargeAmount = "Surcharge amount must be a positive number";
+    // 🔥 GST validation only if mode = SURCHARGE
+    if (formData.mode === "SURCHARGE" && formData.applyGST) {
+      if (formData.gstPercent === "" || isNaN(formData.gstPercent)) {
+        newErrors.gstPercent = "GST percentage is required";
+      } else if (
+        Number(formData.gstPercent) < 0 ||
+        Number(formData.gstPercent) > 100
+      ) {
+        newErrors.gstPercent = "GST percentage must be between 0 and 100";
+      }
     }
 
     // Min/Max validation
-    if (formData.minAmount && formData.maxAmount) {
-      if (Number(formData.minAmount) > Number(formData.maxAmount)) {
-        newErrors.maxAmount = "Max amount must be greater than min amount";
-      }
+    if (
+      formData.minAmount &&
+      formData.maxAmount &&
+      Number(formData.minAmount) > Number(formData.maxAmount)
+    ) {
+      newErrors.maxAmount = "Max amount must be greater than min amount";
     }
 
     setErrors(newErrors);
@@ -290,7 +269,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     const date = new Date(dateString);
     // Set to start of day in local timezone and convert to ISO
     return new Date(
-      date.getTime() - date.getTimezoneOffset() * 60000
+      date.getTime() - date.getTimezoneOffset() * 60000,
     ).toISOString();
   };
 
@@ -309,29 +288,30 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       // Prepare payload according to backend schema
       const payload = {
         scope: formData.scope,
+        roleId: formData.scope === "ROLE" ? formData.roleId : undefined,
+        targetUserId:
+          formData.scope === "USER" ? formData.targetUserId : undefined,
         serviceId: formData.serviceId,
-        commissionType: formData.commissionType,
-        commissionValue: Number(formData.commissionValue),
+
+        mode: formData.mode,
+        type: formData.type,
+        value: Number(formData.value),
+
         minAmount: formData.minAmount ? Number(formData.minAmount) : undefined,
         maxAmount: formData.maxAmount ? Number(formData.maxAmount) : undefined,
+
         applyTDS: formData.applyTDS,
         tdsPercent:
           formData.applyTDS && formData.tdsPercent
             ? Number(formData.tdsPercent)
             : undefined,
+
         applyGST: formData.applyGST,
         gstPercent:
           formData.applyGST && formData.gstPercent
             ? Number(formData.gstPercent)
             : undefined,
-        applySurcharge: formData.applySurcharge,
-        surchargeAmount:
-          formData.applySurcharge && formData.surchargeAmount
-            ? Number(formData.surchargeAmount)
-            : undefined,
-        surchargeType: formData.applySurcharge
-          ? formData.surchargeType
-          : undefined,
+
         effectiveFrom: formatDateToISO(formData.effectiveFrom),
         effectiveTo: formData.effectiveTo
           ? formatDateToISO(formData.effectiveTo)
@@ -341,7 +321,9 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       // Add scope-specific field
       if (formData.scope === "ROLE") {
         payload.roleId = formData.roleId;
-      } else if (formData.scope === "USER") {
+      }
+
+      if (formData.scope === "USER") {
         payload.targetUserId = formData.targetUserId;
       }
 
@@ -488,8 +470,8 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                       errors.roleId
                         ? "border-red-400 focus:ring-red-300 bg-red-50"
                         : rolesLoading
-                        ? "bg-gray-100 cursor-not-allowed border-gray-300"
-                        : "border-gray-300 focus:ring-blue-400"
+                          ? "bg-gray-100 cursor-not-allowed border-gray-300"
+                          : "border-gray-300 focus:ring-blue-400"
                     }`}
                   >
                     <option value="">
@@ -530,8 +512,8 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                         errors.targetUserId
                           ? "border-red-400 focus:ring-red-300 bg-red-50"
                           : usersLoading
-                          ? "bg-gray-100 cursor-not-allowed border-gray-300"
-                          : "border-gray-300 focus:ring-blue-400"
+                            ? "bg-gray-100 cursor-not-allowed border-gray-300"
+                            : "border-gray-300 focus:ring-blue-400"
                       }`}
                       disabled={usersLoading}
                     />
@@ -592,6 +574,21 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                 </div>
               )}
 
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Pricing Mode *
+                </label>
+                <select
+                  name="mode"
+                  value={formData.mode}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                >
+                  <option value="COMMISSION">Commission</option>
+                  <option value="SURCHARGE">Surcharge</option>
+                </select>
+              </div>
+
               {/* Service */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -606,8 +603,8 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                     errors.serviceId
                       ? "border-red-400 focus:ring-red-300 bg-red-50"
                       : servicesLoading
-                      ? "bg-gray-100 cursor-not-allowed border-gray-300"
-                      : "border-gray-300 focus:ring-blue-400"
+                        ? "bg-gray-100 cursor-not-allowed border-gray-300"
+                        : "border-gray-300 focus:ring-blue-400"
                   }`}
                 >
                   <option value="">
@@ -631,295 +628,200 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                 )}
               </div>
 
-              {/* Commission Type */}
+              {/*  Type */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Commission Type *
+                  Type *
                 </label>
                 <select
-                  name="commissionType"
-                  value={formData.commissionType}
+                  name="type"
+                  value={formData.type}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
                 >
-                  {commissionTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
+                  <option value="FLAT">Flat</option>
+                  <option value="PERCENTAGE">Percentage</option>
                 </select>
               </div>
 
-              {/* Commission Value */}
+              {/* Value */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Commission Value *
+                  Value *
                 </label>
                 <input
                   type="number"
-                  name="commissionValue"
-                  value={formData.commissionValue}
+                  name="value"
+                  value={formData.value}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.commissionValue
+                    errors.value
                       ? "border-red-400 focus:ring-red-300 bg-red-50"
                       : "border-gray-300 focus:ring-blue-400"
                   }`}
                   placeholder={
-                    formData.commissionType === "PERCENTAGE"
-                      ? "Percentage value"
-                      : "Amount in ₹"
+                    formData.type === "PERCENTAGE"
+                      ? "Enter percentage"
+                      : "Enter amount (₹)"
                   }
-                  step={formData.commissionType === "PERCENTAGE" ? "0.01" : "1"}
+                  step={formData.type === "PERCENTAGE" ? "0.01" : "1"}
                   min="0"
                 />
-                {errors.commissionValue && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.commissionValue}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-5">
-                {/* Min Amount */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Min Amount (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="minAmount"
-                    value={formData.minAmount}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                      errors.minAmount
-                        ? "border-red-400 focus:ring-red-300 bg-red-50"
-                        : "border-gray-300 focus:ring-blue-400"
-                    }`}
-                    placeholder="Optional"
-                    step="1"
-                    min="0"
-                  />
-                  {errors.minAmount && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.minAmount}
-                    </p>
-                  )}
-                </div>
-
-                {/* Max Amount */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Max Amount (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="maxAmount"
-                    value={formData.maxAmount}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                      errors.maxAmount
-                        ? "border-red-400 focus:ring-red-300 bg-red-50"
-                        : "border-gray-300 focus:ring-blue-400"
-                    }`}
-                    placeholder="Optional"
-                    step="1"
-                    min="0"
-                  />
-                  {errors.maxAmount && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.maxAmount}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-5">
-              {/* TDS Settings */}
-              <div className="md:col-span-2 w-full">
-                <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="applyTDS"
-                      name="applyTDS"
-                      checked={formData.applyTDS}
-                      onChange={handleChange}
-                      className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label
-                      htmlFor="applyTDS"
-                      className="block text-sm font-semibold text-gray-700"
-                    >
-                      Apply TDS
-                    </label>
-                  </div>
-                  {formData.applyTDS && (
-                    <div className="flex-1 max-w-xs">
-                      <input
-                        type="number"
-                        name="tdsPercent"
-                        value={formData.tdsPercent}
-                        onChange={handleChange}
-                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                          errors.tdsPercent
-                            ? "border-red-400 focus:ring-red-300 bg-red-50"
-                            : "border-gray-300 focus:ring-blue-400"
-                        }`}
-                        placeholder="TDS Percentage"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                      />
-                      {errors.tdsPercent && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.tdsPercent}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* GST Settings */}
-              <div className="md:col-span-2 w-full">
-                <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="applyGST"
-                      name="applyGST"
-                      checked={formData.applyGST}
-                      onChange={handleChange}
-                      className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label
-                      htmlFor="applyGST"
-                      className="block text-sm font-semibold text-gray-700"
-                    >
-                      Apply GST
-                    </label>
-                  </div>
-                  {formData.applyGST && (
-                    <div className="flex-1 max-w-xs">
-                      <input
-                        type="number"
-                        name="gstPercent"
-                        value={formData.gstPercent}
-                        onChange={handleChange}
-                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                          errors.gstPercent
-                            ? "border-red-400 focus:ring-red-300 bg-red-50"
-                            : "border-gray-300 focus:ring-blue-400"
-                        }`}
-                        placeholder="GST Percentage"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                      />
-                      {errors.gstPercent && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.gstPercent}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* Surcharge Settings */}
-            <div className="md:col-span-2">
-              <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="applySurcharge"
-                    name="applySurcharge"
-                    checked={formData.applySurcharge}
-                    onChange={handleChange}
-                    className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label
-                    htmlFor="applySurcharge"
-                    className="block text-sm font-semibold text-gray-700"
-                  >
-                    Apply Surcharge
-                  </label>
-                </div>
-                {formData.applySurcharge && (
-                  <div className="flex-1 flex space-x-4">
-                    <div className="flex-1 max-w-xs">
-                      <select
-                        name="surchargeType"
-                        value={formData.surchargeType}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      >
-                        <option value="PERCENTAGE">Percentage</option>
-                        <option value="FLAT">Flat Amount</option>
-                      </select>
-                    </div>
-                    <div className="flex-1 max-w-xs">
-                      <input
-                        type="number"
-                        name="surchargeAmount"
-                        value={formData.surchargeAmount}
-                        onChange={handleChange}
-                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                          errors.surchargeAmount
-                            ? "border-red-400 focus:ring-red-300 bg-red-50"
-                            : "border-gray-300 focus:ring-blue-400"
-                        }`}
-                        placeholder={
-                          formData.surchargeType === "PERCENTAGE"
-                            ? "Surcharge Percentage"
-                            : "Surcharge Amount (₹)"
-                        }
-                        step={
-                          formData.surchargeType === "PERCENTAGE" ? "0.01" : "1"
-                        }
-                        min="0"
-                        max={
-                          formData.surchargeType === "PERCENTAGE"
-                            ? "100"
-                            : undefined
-                        }
-                      />
-                      {errors.surchargeAmount && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.surchargeAmount}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                {errors.value && (
+                  <p className="text-red-500 text-sm mt-1">{errors.value}</p>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Effective From */}
+              {/* Min Amount */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Effective From *
+                  Min Amount (₹)
                 </label>
                 <input
-                  type="date"
-                  name="effectiveFrom"
-                  value={formData.effectiveFrom}
+                  type="number"
+                  name="minAmount"
+                  value={formData.minAmount}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.effectiveFrom
+                    errors.minAmount
                       ? "border-red-400 focus:ring-red-300 bg-red-50"
                       : "border-gray-300 focus:ring-blue-400"
                   }`}
+                  placeholder="Optional"
+                  step="1"
+                  min="0"
                 />
-                {errors.effectiveFrom && (
+                {errors.minAmount && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.effectiveFrom}
+                    {errors.minAmount}
                   </p>
                 )}
               </div>
+
+              {/* Max Amount */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Max Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  name="maxAmount"
+                  value={formData.maxAmount}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
+                    errors.maxAmount
+                      ? "border-red-400 focus:ring-red-300 bg-red-50"
+                      : "border-gray-300 focus:ring-blue-400"
+                  }`}
+                  placeholder="Optional"
+                  step="1"
+                  min="0"
+                />
+                {errors.maxAmount && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.maxAmount}
+                  </p>
+                )}
+              </div>
+              {/* TDS Settings */}
+              {formData.mode === "COMMISSION" && (
+                <div className="w-full mt-6">
+                  <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
+                    <div className="flex items-center space-x-3 ">
+                      <input
+                        type="checkbox"
+                        id="applyTDS"
+                        name="applyTDS"
+                        checked={formData.applyTDS}
+                        onChange={handleChange}
+                        className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="applyTDS"
+                        className="block text-sm font-semibold text-gray-700"
+                      >
+                        Apply TDS
+                      </label>
+                    </div>
+
+                    {formData.applyTDS && (
+                      <div className="flex-1 max-w-xs">
+                        <input
+                          type="number"
+                          name="tdsPercent"
+                          value={formData.tdsPercent}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
+                            errors.tdsPercent
+                              ? "border-red-400 focus:ring-red-300 bg-red-50"
+                              : "border-gray-300 focus:ring-blue-400"
+                          }`}
+                          placeholder="TDS Percentage"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                        />
+                        {errors.tdsPercent && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.tdsPercent}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 🔥 Show GST only for SURCHARGE */}
+              {formData.mode === "SURCHARGE" && (
+                <div className="w-full mt-6">
+                  <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="applyGST"
+                        name="applyGST"
+                        checked={formData.applyGST}
+                        onChange={handleChange}
+                        className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="applyGST"
+                        className="block text-sm font-semibold text-gray-700"
+                      >
+                        Apply GST
+                      </label>
+                    </div>
+
+                    {formData.applyGST && (
+                      <div className="flex-1 max-w-xs">
+                        <input
+                          type="number"
+                          name="gstPercent"
+                          value={formData.gstPercent}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
+                            errors.gstPercent
+                              ? "border-red-400 focus:ring-red-300 bg-red-50"
+                              : "border-gray-300 focus:ring-blue-400"
+                          }`}
+                          placeholder="GST Percentage"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                        />
+                        {errors.gstPercent && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.gstPercent}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Effective To */}
               <div>
@@ -968,8 +870,8 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                     ? "Updating..."
                     : "Creating..."
                   : editData
-                  ? "Update Commission"
-                  : "Add Commission Setting"}
+                    ? "Update Commission"
+                    : "Add Commission Setting"}
               </button>
             </div>
           </form>
