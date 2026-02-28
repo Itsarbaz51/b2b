@@ -1,34 +1,54 @@
-import axios from "axios";
-import Prisma from "../db/db.js";
-
-export default class WebhookService {
-  static async trigger(event, payload) {
-    const webhooks = await Prisma.webhook.findMany({
-      where: { isActive: true, event },
-    });
-
-    for (const hook of webhooks) {
-      try {
-        await axios.post(hook.url, {
-          event,
-          data: payload,
-        });
-
-        await Prisma.webhookLog.create({
-          data: {
-            webhookId: hook.id,
-            status: "SUCCESS",
-          },
-        });
-      } catch (err) {
-        await Prisma.webhookLog.create({
-          data: {
-            webhookId: hook.id,
-            status: "FAILED",
-            error: err.message,
-          },
-        });
-      }
+export default class WebhookEngine {
+  // 1️⃣ Store Raw Webhook
+  static async store(
+    tx,
+    {
+      transactionId,
+      apiEntityId,
+      provider,
+      eventType,
+      payload,
+      headers,
+      signature,
     }
+  ) {
+    return await tx.apiWebhook.create({
+      data: {
+        transactionId,
+        apiEntityId,
+        provider,
+        eventType,
+        payload,
+        headers,
+        signature,
+        status: "PENDING",
+      },
+    });
+  }
+
+  // 2️⃣ Mark Processed
+  static async markProcessed(tx, webhookId, responseData) {
+    return await tx.apiWebhook.update({
+      where: { id: webhookId },
+      data: {
+        status: "PROCESSED",
+        response: responseData,
+        attempts: { increment: 1 },
+        lastAttemptAt: new Date(),
+      },
+    });
+  }
+
+  // 3️⃣ Mark Failed
+  static async markFailed(tx, webhookId, errorData) {
+    return await tx.apiWebhook.update({
+      where: { id: webhookId },
+      data: {
+        status: "FAILED",
+        response: errorData,
+        attempts: { increment: 1 },
+        lastAttemptAt: new Date(),
+      },
+    });
   }
 }

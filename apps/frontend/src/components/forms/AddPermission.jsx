@@ -124,19 +124,44 @@ const AddPermission = ({
     }
   }, [existingPermissions, selectedUser]);
 
-  const filteredServices = useCallback(() => {
+  const processedServices = useMemo(() => {
     if (!services || !Array.isArray(services)) return [];
+
+    const result = [];
+
+    services.forEach((service) => {
+      if (Array.isArray(service.subService) && service.subService.length > 0) {
+        service.subService.forEach((sub) => {
+          result.push({
+            id: sub.id,
+            name: sub.name,
+            code: sub.code,
+            parentName: service.name,
+          });
+        });
+      } else {
+        result.push({
+          id: service.id,
+          name: service.name,
+          code: service.code,
+        });
+      }
+    });
+
+    return result;
+  }, [services]);
+
+  const filteredServices = useCallback(() => {
+    if (!processedServices.length) return [];
 
     const searchTerm = serviceSearchTerm.toLowerCase();
 
-    return services.filter(
+    return processedServices.filter(
       (service) =>
-        service.type?.toLowerCase().includes(searchTerm) ||
-        service.id?.toLowerCase().includes(searchTerm) ||
         service.name?.toLowerCase().includes(searchTerm) ||
-        service.code?.toLowerCase().includes(searchTerm)
+        service.code?.toLowerCase().includes(searchTerm),
     );
-  }, [services, serviceSearchTerm]);
+  }, [processedServices, serviceSearchTerm]);
 
   const handleServiceSelect = useCallback(
     (service) => {
@@ -149,7 +174,7 @@ const AddPermission = ({
       setServiceSearchTerm("");
       setShowServiceSuggestions(false);
     },
-    [formData.serviceIds]
+    [formData.serviceIds],
   );
 
   const handleServiceRemove = useCallback((serviceId) => {
@@ -188,7 +213,7 @@ const AddPermission = ({
       setError(
         error.response?.data?.message ||
           error.message ||
-          "Failed to update permissions"
+          "Failed to update permissions",
       );
     } finally {
       setIsSubmitting(false);
@@ -203,21 +228,21 @@ const AddPermission = ({
       }));
       if (error) setError("");
     },
-    [error]
+    [error],
   );
 
   const getSelectedServiceNames = useCallback(() => {
-    if (!services || !Array.isArray(services)) return [];
+    if (!processedServices.length) return [];
 
     return formData.serviceIds.map((serviceId) => {
-      const service = services.find((s) => s.id === serviceId);
-      return (service && service?.name) || service?.code;
+      const service = processedServices.find((s) => s.id === serviceId);
+      return service?.name || service?.code;
     });
-  }, [formData.serviceIds, services]);
+  }, [formData.serviceIds, processedServices]);
 
   const selectedServiceNames = useMemo(
     () => getSelectedServiceNames(),
-    [getSelectedServiceNames]
+    [getSelectedServiceNames],
   );
 
   useEffect(() => {

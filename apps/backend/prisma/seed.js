@@ -213,7 +213,6 @@ async function main() {
         userId: user.id,
         walletType: "PRIMARY",
         balance: BigInt(100000),
-        availableBalance: BigInt(100000),
         holdBalance: BigInt(0),
         currency: "INR",
         isActive: true,
@@ -224,35 +223,6 @@ async function main() {
 
   console.log("⏭️  Skipping wallet creation for HR employee (employee role)");
 
-  console.log("\n🏢 Creating service providers...");
-
-  const serviceProviders = [
-    {
-      code: "RAZORPAY",
-      name: "Razorpay",
-      description: "connect razorpay",
-      keyValueInputNumber: 2,
-    },
-    {
-      code: "BBPS_PAYTM",
-      name: "PayTM BBPS",
-      description: "connect bbps",
-      keyValueInputNumber: 4,
-    },
-    {
-      code: "BANK_TRANSFER",
-      name: "BANK TRANSFER",
-      description: "connect BANK TRANSFER",
-      keyValueInputNumber: 0,
-      apiIntegrationStatus: true,
-      isActive: true,
-    },
-  ];
-
-  for (const provider of serviceProviders) {
-    await ServiceProviderService.create(provider);
-    console.log(`✅ Service provider created: ${provider.name}`);
-  }
 
   console.log("\n🎉 Seeding completed successfully!");
 }

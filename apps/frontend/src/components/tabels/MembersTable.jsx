@@ -42,7 +42,7 @@ import {
   getPermissionById,
   upsertPermission,
 } from "../../redux/slices/permissionSlice";
-import { allServices } from "../../redux/slices/serviceSlice";
+import { getAllServices } from "../../redux/slices/serviceSlice";
 import { login } from "../../redux/slices/authSlice";
 
 const MembersTable = () => {
@@ -92,9 +92,7 @@ const MembersTable = () => {
   const totalUsers = pagination.total || 0;
   const limit = pagination.limit || 10;
 
-  const services =
-    useSelector((state) => state.services.serviceProviders.allActiveServices) ||
-    [];
+  const services = useSelector((state) => state.service?.services || []);
 
   //  Check if current user is ADMIN
   const isAdminUser =
@@ -125,7 +123,7 @@ const MembersTable = () => {
         toast.error(error.message || "Failed to load users");
       }
     },
-    [dispatch, limit]
+    [dispatch, limit],
   );
 
   //  FIXED: Page change handler
@@ -135,7 +133,7 @@ const MembersTable = () => {
         loadUsers(page, search);
       }
     },
-    [totalPages, loadUsers, search]
+    [totalPages, loadUsers, search],
   );
 
   //  FIXED: Manual refresh
@@ -214,7 +212,7 @@ const MembersTable = () => {
   // Service providers effect
   useEffect(() => {
     if (showPermissionModal) {
-      dispatch(allServices("active"));
+      dispatch(getAllServices({ type: "service", isActive: true }));
     }
   }, [showPermissionModal, dispatch]);
 
@@ -258,7 +256,7 @@ const MembersTable = () => {
         toast.success(
           `Permissions ${
             permissionMode === "add" ? "added" : "updated"
-          } successfully!`
+          } successfully!`,
         );
         handleClosePermissionModal();
         handleManualRefresh();
@@ -356,21 +354,21 @@ const MembersTable = () => {
             deactivateUser({
               userId: selectedUser?.id,
               reason: finalReason,
-            })
+            }),
           );
         } else if (actionType === "Activate") {
           await dispatch(
             reactivateUser({
               userId: selectedUser?.id,
               reason: finalReason,
-            })
+            }),
           );
         } else if (actionType === "Delete") {
           await dispatch(
             deleteUser({
               userId: selectedUser?.id,
               reason: finalReason,
-            })
+            }),
           );
         }
 
@@ -382,7 +380,7 @@ const MembersTable = () => {
       } catch (error) {
         console.error(`Failed to ${actionType.toLowerCase()} user:`, error);
         toast.error(
-          error.message || `Failed to ${actionType.toLowerCase()} user`
+          error.message || `Failed to ${actionType.toLowerCase()} user`,
         );
       }
     }
@@ -408,7 +406,7 @@ const MembersTable = () => {
     setSelectedUser(null);
     handleManualRefresh();
     toast.success(
-      selectedUser ? "User updated successfully!" : "User added successfully!"
+      selectedUser ? "User updated successfully!" : "User added successfully!",
     );
   };
 
@@ -434,7 +432,7 @@ const MembersTable = () => {
           user?.firstName?.toLowerCase().includes(search.toLowerCase()) ||
           user?.lastName?.toLowerCase().includes(search.toLowerCase()) ||
           user?.email?.toLowerCase().includes(search.toLowerCase()) ||
-          user?.phoneNumber?.toLowerCase().includes(search.toLowerCase())
+          user?.phoneNumber?.toLowerCase().includes(search.toLowerCase()),
       )
     : [];
 
@@ -621,7 +619,7 @@ const MembersTable = () => {
                   <td className="px-6 py-5">
                     <span
                       className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${getRoleColor(
-                        user?.role?.name
+                        user?.role?.name,
                       )}`}
                     >
                       {getRoleDisplayName(user?.role?.name)}
@@ -697,19 +695,19 @@ const MembersTable = () => {
                         user?.status === "IN_ACTIVE"
                           ? "bg-red-100 text-red-800 border-red-300"
                           : user?.status === "ACTIVE"
-                          ? "bg-green-100 text-green-800 border-green-300"
-                          : user?.status === "DELETE"
-                          ? "bg-gray-100 text-gray-800 border-gray-300"
-                          : "bg-yellow-100 text-yellow-800 border-yellow-300"
+                            ? "bg-green-100 text-green-800 border-green-300"
+                            : user?.status === "DELETE"
+                              ? "bg-gray-100 text-gray-800 border-gray-300"
+                              : "bg-yellow-100 text-yellow-800 border-yellow-300"
                       }`}
                     >
                       {user?.status === "IN_ACTIVE"
                         ? "Inactive"
                         : user?.status === "ACTIVE"
-                        ? "Active"
-                        : user?.status === "DELETE"
-                        ? "Deleted"
-                        : user?.status || "Unknown"}
+                          ? "Active"
+                          : user?.status === "DELETE"
+                            ? "Deleted"
+                            : user?.status || "Unknown"}
                     </span>
                   </td>
 
@@ -719,7 +717,7 @@ const MembersTable = () => {
                         className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                         onClick={() =>
                           setOpenMenuId(
-                            openMenuId === user?.id ? null : user?.id
+                            openMenuId === user?.id ? null : user?.id,
                           )
                         }
                       >
@@ -763,7 +761,7 @@ const MembersTable = () => {
                             setActionType(
                               user?.status === "IN_ACTIVE"
                                 ? "Activate"
-                                : "Deactivate"
+                                : "Deactivate",
                             );
                             setSelectedUser(user);
                             setShowActionModal(true);

@@ -24,7 +24,7 @@ const store = configureStore({
     wallet: walletReducer,
     roles: roleReducer,
     commission: commissionReducer,
-    services: serviceReducer,
+    service: serviceReducer,
     permission: permissionReducer,
     logs: loginLogsReducer,
     setting: settingReducer,

@@ -12,4 +12,27 @@ const rateLimiterMiddleware = rateLimit({
   },
 });
 
-export { rateLimiterMiddleware };
+const otpLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+
+  max: 5, // max 5 OTP attempts
+
+  standardHeaders: true,
+  legacyHeaders: false,
+
+  keyGenerator: (req) => {
+    return req.user?.id || req.ip;
+  },
+
+  handler: (req, res) => {
+    return res
+      .status(429)
+      .json(
+        ApiResponse.error(
+          "Too many OTP requests. Please try again after 5 minutes.",
+          429
+        )
+      );
+  },
+});
+export { rateLimiterMiddleware, otpLimiter };

@@ -1,40 +1,68 @@
-import Prisma from "../db/db.js";
-import axios from "axios";
+import crypto from "crypto";
+import { ApiError } from "../../utils/ApiError.js";
 
 export default class ApiEntityService {
-  static async callProvider({ providerName, url, method = "POST", payload }) {
-    const start = Date.now();
-
-    try {
-      const response = await axios({
-        method,
-        url,
-        data: payload,
-      });
-
-      await Prisma.apiLog.create({
-        data: {
-          providerName,
-          request: payload,
-          response: response.data,
-          latency: Date.now() - start,
-          status: "SUCCESS",
-        },
-      });
-
-      return response.data;
-    } catch (error) {
-      await Prisma.apiLog.create({
-        data: {
-          providerName,
-          request: payload,
-          response: error.response?.data || error.message,
-          latency: Date.now() - start,
-          status: "FAILED",
-        },
-      });
-
-      throw error;
+  // 1️⃣ Create ApiEntity
+  static async create(
+    tx,
+    {
+      userId,
+      serviceId,
+      entityType,
+      provider = "BULKPE",
+      metadata = {},
+      reference = null,
     }
+  ) {
+    if (!userId || !entityType)
+      throw ApiError.badRequest("userId & entityType required");
+
+    return await tx.apiEntity.create({
+      data: {
+        entityType,
+        entityId: crypto.randomUUID(),
+        reference,
+        userId,
+        serviceId,
+        provider,
+        status: "PENDING",
+        metadata,
+      },
+    });
+  }
+
+  // 2️⃣ Update Status
+  static async updateStatus(
+    tx,
+    { apiEntityId, status, providerData, verificationData }
+  ) {
+    if (!apiEntityId) throw ApiError.badRequest("apiEntityId required");
+
+    return await tx.apiEntity.update({
+      where: { id: apiEntityId },
+      data: {
+        status,
+        providerData,
+        verificationData,
+        verifiedAt: status === "ACTIVE" ? new Date() : null,
+      },
+    });
+  }
+
+  // 3️⃣ Attach Provider Reference
+  static async attachProviderReference(tx, { apiEntityId, providerReference }) {
+    return await tx.apiEntity.update({
+      where: { id: apiEntityId },
+      data: {
+        reference: providerReference,
+      },
+    });
+  }
+
+  // 4️⃣ Get Entity
+  static async getById(apiEntityId) {
+    return await Prisma.apiEntity.findUnique({
+      where: { id: apiEntityId },
+    });
   }
 }

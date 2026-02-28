@@ -1,11 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  allServices,
-  ApiTesting,
-  envConfig,
-  toggleStatusApiIntigration,
-} from "../redux/slices/serviceSlice";
+import { getAllServices, updateService } from "../redux/slices/serviceSlice";
 import { CheckCircle2, Cpu, Shield, Zap } from "lucide-react";
 import IntegrationTable from "../components/tabels/IntegrationTable";
 import IntegrationForm from "../components/forms/IntegrationForm";
@@ -22,12 +17,10 @@ function ApiIntegration() {
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
 
   const dispatch = useDispatch();
-  const { serviceProviders, isLoading } = useSelector(
-    (state) => state.services
-  );
+  const { services, isLoading } = useSelector((state) => state.service);
 
   const fetchHandle = useCallback(() => {
-    dispatch(allServices("all"));
+    dispatch(getAllServices({ type: "provider" }));
   }, [dispatch]);
 
   useEffect(() => {
@@ -35,30 +28,21 @@ function ApiIntegration() {
   }, [fetchHandle]);
 
   useEffect(() => {
-    if (Array.isArray(serviceProviders?.allApiIntigration)) {
-      const sanitized = serviceProviders?.allApiIntigration.map((sp) => {
-        let envConfigData = sp.envConfig || [];
-        if (typeof sp.envConfig === "string") {
-          try {
-            envConfigData = JSON.parse(sp.envConfig);
-          } catch {
-            envConfigData = [];
-          }
-        }
-        return {
-          ...sp,
-          envConfig: envConfigData,
-          connected: sp.apiIntegrationStatus || false,
-          envVars: envConfigData.map((env) => ({
-            key: env.key || "",
-            value: env.value || "",
-            showValue: false,
-          })),
-        };
-      });
+    if (Array.isArray(services)) {
+      const sanitized = services.map((sp) => ({
+        ...sp,
+        envConfig: sp.envConfig || [],
+        connected: sp.isActive || false,
+        envVars: (sp.envConfig || []).map((env) => ({
+          key: env.key || "",
+          value: env.value || "",
+          showValue: false,
+        })),
+      }));
+
       setIntegrations(sanitized);
     }
-  }, [serviceProviders?.allApiIntigration]);
+  }, [services]);
 
   const handleConnect = useCallback((api) => {
     setSelectedApi(api);
@@ -87,7 +71,7 @@ function ApiIntegration() {
           code: sub.code,
           name: sub.name,
           apiIntegrationStatus: sub.apiIntegrationStatus || false,
-        }))
+        })),
       );
     } else {
       setSubServices([]);
@@ -99,25 +83,30 @@ function ApiIntegration() {
   const handleDisconnectBtn = useCallback(
     async (apiId) => {
       try {
-        await dispatch(toggleStatusApiIntigration(apiId));
+        await dispatch(
+          updateService(apiId, {
+            type: "provider",
+            isActive: false,
+          }),
+        );
       } catch (error) {
         console.error("Failed to disconnect:", error);
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const updateEnvVariable = (index, field, value) => {
     setEnvInputs((prev) =>
-      prev.map((env, i) => (i === index ? { ...env, [field]: value } : env))
+      prev.map((env, i) => (i === index ? { ...env, [field]: value } : env)),
     );
   };
 
   const toggleShowValue = (index) => {
     setEnvInputs((prev) =>
       prev.map((env, i) =>
-        i === index ? { ...env, showValue: !env.showValue } : env
-      )
+        i === index ? { ...env, showValue: !env.showValue } : env,
+      ),
     );
   };
 
@@ -128,39 +117,14 @@ function ApiIntegration() {
           return { ...sub, apiIntegrationStatus: isChecked };
         }
         return sub;
-      })
+      }),
     );
   }, []);
-
-  // --- Test Connection ---
-  const handleTestConnection = async () => {
-    if (!selectedApi) return;
-
-    setTestingConnection(true);
-    setTestConnectionSuccess(false);
-    try {
-      const validEnvs = envInputs.filter(
-        (env) => env.key.trim() && env.value.trim()
-      );
-      const payload = { envConfig: validEnvs };
-
-      await dispatch(ApiTesting(selectedApi.id, payload));
-      setTestConnectionSuccess(true);
-      setShowSuccessToast(true);
-
-      setTimeout(() => setShowSuccessToast(false), 3000);
-    } catch (error) {
-      setTestConnectionSuccess(false);
-      throw console.error("Failed call api testing connection", error);
-    } finally {
-      setTestingConnection(false);
-    }
-  };
 
   const handleSave = async () => {
     try {
       const validEnvs = envInputs.filter(
-        (env) => env.key.trim() && env.value.trim()
+        (env) => env.key.trim() && env.value.trim(),
       );
 
       const payload = {
@@ -171,7 +135,12 @@ function ApiIntegration() {
         })),
       };
 
-      await dispatch(envConfig({ id: selectedApi.id, payload }));
+      await dispatch(
+        updateService(selectedApi.id, {
+          type: "provider",
+          envConfig: payload.envConfig,
+        }),
+      );
       setTestConnectionSuccess(false);
       setShowPopup(false);
     } catch (err) {
@@ -180,7 +149,7 @@ function ApiIntegration() {
   };
 
   const activeCount = integrations.filter(
-    (integration) => integration.connected
+    (integration) => integration.connected,
   ).length;
 
   return (
@@ -297,7 +266,7 @@ function ApiIntegration() {
           envInputs={envInputs}
           subServices={subServices}
           testingConnection={testingConnection}
-          onTestConnection={handleTestConnection}
+          // onTestConnection={handleTestConnection}
           testConnectionSuccess={testConnectionSuccess}
           onClose={() => {
             setShowPopup(false);

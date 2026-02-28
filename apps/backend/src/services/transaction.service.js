@@ -1,43 +1,57 @@
-import CommissionEarningService from "./commissionEarning.service.js";
-import WebhookService from "./webhook.service.js";
-import { ApiError } from "../utils/ApiError.js";
-import Prisma from "../db/db.js";
+import crypto from "crypto";
+import { ApiError } from "../../utils/ApiError.js";
 
 export default class TransactionService {
-  static async createTransaction({
-    userId,
-    serviceId,
-    amount,
-    referenceId,
-    createdBy,
-  }) {
-    if (!userId || !amount) {
-      throw ApiError.badRequest("userId & amount required");
-    }
-
-    const txn = await Prisma.transaction.create({
-      data: {
-        userId,
-        serviceId,
-        amount: BigInt(amount),
-        referenceId,
-        status: "SUCCESS",
-        createdBy,
-      },
-    });
-
-    // Process commission
-    await CommissionEarningService.processEarning({
-      transactionId: txn.id,
+  static async create(
+    tx,
+    {
       userId,
       serviceId,
       amount,
-      createdBy,
+      paymentType = "COLLECTION",
+      entityType,
+      idempotencyKey,
+    }
+  ) {
+    if (!userId || !serviceId)
+      throw ApiError.badRequest("User and Service required");
+
+    // 🔒 Idempotency Check
+    if (idempotencyKey) {
+      const existingTxn = await tx.transaction.findUnique({
+        where: { idempotencyKey },
+      });
+
+      if (existingTxn) return existingTxn;
+    }
+
+    // 1️⃣ Create Transaction
+    const transaction = await tx.transaction.create({
+      data: {
+        userId,
+        serviceId,
+        amount,
+        netAmount: amount,
+        paymentType,
+        status: "PENDING",
+        idempotencyKey,
+      },
     });
 
-    // 📡 Send webhook
-    await WebhookService.trigger("TRANSACTION_SUCCESS", txn);
+    // 2️⃣ Create ApiEntity
+    const apiEntity = await tx.apiEntity.create({
+      data: {
+        entityType,
+        entityId: crypto.randomUUID(),
+        userId,
+        serviceId,
+        status: "PENDING",
+      },
+    });
 
-    return txn;
+    return {
+      transaction,
+      apiEntity,
+    };
   }
 }

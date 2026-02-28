@@ -17,7 +17,7 @@ import {
   getPermissionRoleById,
   upsertRolePermission,
 } from "../redux/slices/permissionSlice";
-import { allServices } from "../redux/slices/serviceSlice";
+import { getAllServices } from "../redux/slices/serviceSlice";
 
 export default function RoleManager() {
   const dispatch = useDispatch();
@@ -33,9 +33,8 @@ export default function RoleManager() {
     success,
   } = rolesState;
 
-  const services =
-    useSelector((state) => state.services?.serviceProviders?.allActiveServices) ||
-    [];
+  const services = useSelector((state) => state.service?.services) || [];
+
   const { currentPermission } = useSelector((state) => state.permission);
 
   const [editRole, setEditRole] = useState(null);
@@ -56,7 +55,7 @@ export default function RoleManager() {
 
   useEffect(() => {
     if (showPermissionModal) {
-      dispatch(allServices("active"));
+      dispatch(getAllServices({ type: "service" }));
     }
   }, [showPermissionModal, dispatch]);
 

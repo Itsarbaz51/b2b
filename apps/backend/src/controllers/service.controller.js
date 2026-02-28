@@ -1,169 +1,106 @@
-import { ServiceProviderService } from "../services/service.service.js";
+import {
+  ServiceProviderService,
+  ServiceService,
+} from "../services/service.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/AsyncHandler.js";
 
 class ServiceProviderController {
+  // CREATE
   static create = asyncHandler(async (req, res) => {
-    const user = req.user.id;
+    const { type } = req.body;
 
-    if (!user) {
-      throw ApiError.badRequest("Please login before creating a service");
+    if (!type) throw ApiError.badRequest("Type is required");
+
+    let result;
+
+    if (type === "provider") {
+      result = await ServiceProviderService.create(req.body);
+    } else if (type === "service") {
+      result = await ServiceService.create(req.body);
+    } else {
+      throw ApiError.badRequest("Invalid type. Use provider or service");
     }
-
-    const iconFile = req.file;
-
-    if (iconFile) {
-      if (iconFile.size > 5 * 1024 * 1024) {
-        throw ApiError.badRequest("Icon file size must be less than 5 MB");
-      }
-
-      const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
-
-      if (!allowedMimeTypes.includes(iconFile.mimetype)) {
-        throw ApiError.badRequest("Icon file must be an image (jpeg/png/webp)");
-      }
-    }
-
-    const serviceProvider = await ServiceProviderService.create(
-      req.body,
-      {
-        icon: [iconFile],
-      },
-      req,
-      res
-    );
 
     return res
       .status(201)
-      .json(
-        ApiResponse.success(
-          serviceProvider,
-          `Service Provider ${serviceProvider.code} created successfully`,
-          201
-        )
-      );
+      .json(ApiResponse.success(result, `${type} created successfully`));
   });
 
-  static getAll = asyncHandler(async (req, res) => {
-    const user = req.user;
-    const { type } = req.body; // 'all', 'active', 'inactive'
+  // UPDATE
+  static update = asyncHandler(async (req, res) => {
+    const { type } = req.body;
+    const { id } = req.params;
 
-    let serviceProviders;
+    if (!type) throw ApiError.badRequest("Type is required");
+    if (!id) throw ApiError.badRequest("ID is required");
 
-    if (user.role === "ADMIN" || user.roleType === "employee") {
-      // ADMIN can see all services based on type
-      switch (type) {
-        case "active":
-          serviceProviders = await ServiceProviderService.getActive();
-          break;
-        case "allServices":
-          serviceProviders = await ServiceProviderService.allServices();
-          break;
-        default:
-          serviceProviders = await ServiceProviderService.getAll();
-      }
+    let result;
+
+    if (type === "provider") {
+      result = await ServiceProviderService.update(id, req.body);
+    } else if (type === "service") {
+      result = await ServiceService.update(id, req.body);
     } else {
-      // Regular users can only see assigned services
-      serviceProviders = await ServiceProviderService.getUserServices(user.id);
+      throw ApiError.badRequest("Invalid type");
     }
 
-    return res
-      .status(200)
-      .json(
-        ApiResponse.success(
-          serviceProviders,
-          "Service Providers fetched successfully",
-          200
-        )
-      );
+    return res.json(
+      ApiResponse.success(result, `${type} updated successfully`)
+    );
   });
 
-  static updateEnvConfig = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { envConfig, subServices } = req.body;
+  // GET ALL (Filter + Search + Pagination)
+  static getAll = asyncHandler(async (req, res) => {
+    const { type, page, limit, search, isActive, providerId } = req.query;
 
-    if (!id) {
-      throw ApiError.badRequest("Service Provider ID is required");
+    if (!type) throw ApiError.badRequest("Type is required");
+
+    let result;
+
+    if (type === "provider") {
+      result = await ServiceProviderService.getAll({
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        search,
+        isActive: isActive !== undefined ? isActive === "true" : undefined,
+      });
+    } else if (type === "service") {
+      result = await ServiceService.getAll({
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        search,
+        providerId,
+        isActive: isActive !== undefined ? isActive === "true" : undefined,
+      });
+    } else {
+      throw ApiError.badRequest("Invalid type");
     }
 
-    const updatedServiceProvider = await ServiceProviderService.updateEnvConfig(
-      id,
-      {
-        envConfig,
-        subServices,
-      },
-      req,
-      res
-    );
-
-    return res
-      .status(200)
-      .json(
-        ApiResponse.success(
-          updatedServiceProvider,
-          "Environment configuration updated successfully",
-          200
-        )
-      );
+    return res.json(ApiResponse.success(result));
   });
 
-  static toggleServiceStatus = asyncHandler(async (req, res) => {
+  // DELETE
+  static delete = asyncHandler(async (req, res) => {
+    const { type } = req.body;
     const { id } = req.params;
 
-    if (!id) {
-      throw ApiError.badRequest("Service ID is required");
+    if (!type) throw ApiError.badRequest("Type is required");
+
+    let result;
+
+    if (type === "provider") {
+      result = await ServiceProviderService.delete(id);
+    } else if (type === "service") {
+      result = await ServiceService.delete(id);
+    } else {
+      throw ApiError.badRequest("Invalid type");
     }
 
-    const result = await ServiceProviderService.toggleServiceStatus(
-      id,
-      req,
-      res
+    return res.json(
+      ApiResponse.success(result, `${type} deleted successfully`)
     );
-
-    return res
-      .status(200)
-      .json(ApiResponse.success(result, "service updated", 200));
-  });
-
-  static toggleApiIntigrationStatus = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    if (!id) {
-      throw ApiError.badRequest("Api Intigration ID is required");
-    }
-
-    const result = await ServiceProviderService.toggleApiIntigrationStatus(
-      id,
-      req,
-      res
-    );
-
-    return res
-      .status(200)
-      .json(
-        ApiResponse.success(result, "successfully Api Intigration chnage", 200)
-      );
-  });
-
-  static apiTestConnection = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { envConfig } = req.body;
-
-    if (!id) {
-      throw ApiError.badRequest("Service Provider ID is required");
-    }
-
-    const testResult = await ServiceProviderService.testApiConnection(
-      id,
-      envConfig,
-      req,
-      res
-    );
-
-    return res
-      .status(200)
-      .json(ApiResponse.success(testResult, "Connection test successful", 200));
   });
 }
 

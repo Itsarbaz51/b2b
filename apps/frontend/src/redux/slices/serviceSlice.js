@@ -1,15 +1,13 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 axios.defaults.withCredentials = true;
-const baseURL = import.meta.env.VITE_API_BASE_URL;
-axios.defaults.baseURL = baseURL;
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
-  serviceProviders: [],
-  currentServiceProvider: null,
+  services: [],
+  currentItem: null,
   isLoading: false,
   error: null,
   success: null,
@@ -27,7 +25,6 @@ const serviceSlice = createSlice({
     serviceSuccess: (state, action) => {
       state.isLoading = false;
       state.success = action.payload?.message || null;
-      state.error = null;
       if (action.payload?.message) toast.success(action.payload.message);
     },
     serviceFail: (state, action) => {
@@ -35,34 +32,28 @@ const serviceSlice = createSlice({
       state.error = action.payload;
       if (action.payload) toast.error(action.payload);
     },
-    setServiceProviders: (state, action) => {
+    setServices: (state, action) => {
       state.isLoading = false;
-      state.serviceProviders = action.payload?.data || action.payload;
+      state.services = action.payload?.data || action.payload;
     },
-    setCurrentServiceProvider: (state, action) => {
-      state.isLoading = false;
-      state.currentServiceProvider = action.payload?.data || action.payload;
+    addService: (state, action) => {
+      state.services.unshift(action.payload?.data || action.payload);
     },
-    addServiceProvider: (state, action) => {
-      state.serviceProviders.unshift(action.payload?.data || action.payload);
-    },
-    updateServiceProviderInList: (state, action) => {
-      const updatedService = action.payload?.data || action.payload;
-      const index = state.serviceProviders.findIndex(
-        (service) => service.id === updatedService.id
-      );
+    updateServiceInList: (state, action) => {
+      const updated = action.payload?.data || action.payload;
+      const index = state.services.findIndex((item) => item.id === updated.id);
       if (index !== -1) {
-        state.serviceProviders[index] = updatedService;
+        state.services[index] = updated;
       }
     },
-    removeServiceProvider: (state, action) => {
-      state.serviceProviders = state.serviceProviders.filter(
-        (service) => service.id !== action.payload
+    removeService: (state, action) => {
+      state.services = state.services.filter(
+        (item) => item.id !== action.payload,
       );
     },
     resetService: (state) => {
-      state.serviceProviders = [];
-      state.currentServiceProvider = null;
+      state.services = [];
+      state.currentItem = null;
       state.isLoading = false;
       state.error = null;
       state.success = null;
@@ -74,97 +65,85 @@ export const {
   serviceRequest,
   serviceSuccess,
   serviceFail,
-  setServiceProviders,
-  setCurrentServiceProvider,
-  addServiceProvider,
-  updateServiceProviderInList,
-  removeServiceProvider,
+  setServices,
+  addService,
+  updateServiceInList,
+  removeService,
   resetService,
 } = serviceSlice.actions;
 
-// Get all service providers created by current user
-export const allServices = (type) => async (dispatch) => {
-  try {
-    dispatch(serviceRequest());
-    const { data } = await axios.post(`/services/lists`, { type });
-    dispatch(setServiceProviders(data));
-    return data;
-  } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
-    dispatch(serviceFail(errMsg));
-    throw error;
-  }
-};
+export default serviceSlice.reducer;
 
-export const envConfig =
-  ({ id, payload }) =>
+export const getAllServices =
+  (params = {}) =>
   async (dispatch) => {
     try {
       dispatch(serviceRequest());
-      const { data } = await axios.put(`/services/env-config/${id}`, payload);
-      dispatch(setServiceProviders(data));
-      dispatch(allServices());
+
+      const { type, search, page, limit, isActive } = params;
+
+      const { data } = await axios.post(`/services/lists`, {
+        type,
+        search,
+        page,
+        limit,
+        isActive,
+      });
+
+      dispatch(setServices(data));
       return data;
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
+      const errMsg = error?.response?.data?.message || error.message;
       dispatch(serviceFail(errMsg));
       throw error;
     }
   };
 
-export const toggleStatusService = (id) => async (dispatch) => {
+export const createService = (payload) => async (dispatch) => {
   try {
     dispatch(serviceRequest());
-    const { data } = await axios.put(`/services/status/${id}`);
-    dispatch(setServiceProviders(data));
-    dispatch(allServices());
+
+    const { data } = await axios.post(`/services/create`, payload);
+
+    dispatch(addService(data));
+    dispatch(serviceSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = error?.response?.data?.message || error.message;
     dispatch(serviceFail(errMsg));
     throw error;
   }
 };
 
-export const toggleStatusApiIntigration = (id) => async (dispatch) => {
+export const updateService = (id, payload) => async (dispatch) => {
   try {
     dispatch(serviceRequest());
-    const { data } = await axios.put(`/services/api-intigration-status/${id}`);
-    dispatch(setServiceProviders(data));
-    dispatch(allServices());
+
+    const { data } = await axios.put(`/services/${id}`, payload);
+
+    dispatch(updateServiceInList(data));
+    dispatch(serviceSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = error?.response?.data?.message || error.message;
     dispatch(serviceFail(errMsg));
     throw error;
   }
 };
 
-export const ApiTesting = (id, payload) => async (dispatch) => {
+export const deleteService = (id, type) => async (dispatch) => {
   try {
     dispatch(serviceRequest());
-    const { data } = await axios.post(`/services/api-testing/${id}`, payload);
-    dispatch(setServiceProviders(data));
-    dispatch(allServices());
-    return data;
+
+    await axios.delete(`/services/${id}`, {
+      data: { type },
+    });
+
+    dispatch(removeService(id));
+    toast.success("Deleted successfully");
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = error?.response?.data?.message || error.message;
     dispatch(serviceFail(errMsg));
     throw error;
   }
 };
-
-export const getServicesActive = (id) => async (dispatch) => {
-  try {
-    dispatch(serviceRequest());
-    const { data } = await axios.put(`/services/status/${id}`);
-    dispatch(setServiceProviders(data));
-    return data;
-  } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
-    dispatch(serviceFail(errMsg));
-    throw error;
-  }
-};
-
-export default serviceSlice.reducer;

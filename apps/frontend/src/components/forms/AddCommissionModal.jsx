@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { createOrUpdateCommissionSetting } from "../../redux/slices/commissionSlice";
 import { getAllRoles, getAllRolesByType } from "../../redux/slices/roleSlice";
 import { getAllBusinessUsersByParentId } from "../../redux/slices/userSlice";
-import { allServices } from "../../redux/slices/serviceSlice";
+import { getAllServices } from "../../redux/slices/serviceSlice";
 
 const scopes = ["ROLE", "USER"];
 const commissionTypes = ["FLAT", "PERCENTAGE"];
@@ -19,9 +19,8 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   const users = useSelector((state) => state.users?.users || []);
   const usersLoading = useSelector((state) => state.users?.isLoading || false);
 
-  const services = useSelector(
-    (state) => state.services?.serviceProviders?.allActiveServices || [],
-  );
+  const services = useSelector((state) => state.service?.services || []);
+
   const servicesLoading = useSelector(
     (state) => state.service?.isLoading || false,
   );
@@ -94,7 +93,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   // Fetch roles, users and services when component mounts
   useEffect(() => {
     dispatch(getAllRoles());
-    dispatch(allServices("active"));
+    dispatch(getAllServices({ type: "service", isActive: true }));
     dispatch(getAllRolesByType("business"));
     dispatch(getAllBusinessUsersByParentId({ search: "", status: "ACTIVE" }));
   }, [dispatch]);

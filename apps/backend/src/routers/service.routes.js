@@ -3,7 +3,6 @@ import AuthMiddleware from "../middlewares/auth.middleware.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
 import ServiceProviderController from "../controllers/service.controller.js";
 import { ServiceValidationSchemas } from "../validations/serviceValidation.schemas.js";
-import upload from "../middlewares/multer.middleware.js";
 
 const serviceRoutes = Router();
 
@@ -12,7 +11,6 @@ serviceRoutes.post(
   "/create",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["ADMIN"]),
-  upload.single("icon"),
   validateRequest(ServiceValidationSchemas.createServiceProvider),
   ServiceProviderController.create
 );
@@ -26,31 +24,17 @@ serviceRoutes.post(
 );
 
 serviceRoutes.put(
-  "/env-config/:id",
+  "/:id",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["ADMIN", "employee"]),
-  ServiceProviderController.updateEnvConfig
+  ServiceProviderController.update
 );
 
-serviceRoutes.put(
-  "/status/:id",
+serviceRoutes.delete(
+  "/:id",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["ADMIN", "employee"]),
-  ServiceProviderController.toggleServiceStatus
-);
-
-serviceRoutes.put(
-  "/api-intigration-status/:id",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize(["ADMIN", "employee"]),
-  ServiceProviderController.toggleApiIntigrationStatus
-);
-
-serviceRoutes.post(
-  "/api-testing/:id",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize(["ADMIN", "employee"]),
-  ServiceProviderController.apiTestConnection
+  ServiceProviderController.delete
 );
 
 export default serviceRoutes;
