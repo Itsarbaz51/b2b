@@ -21,7 +21,7 @@ export default function ManageServices() {
 
       await dispatch(
         updateService(id, {
-          type, // "provider" | "service"
+          type, // "provider" | "mappning "
           isActive: !currentStatus,
         }),
       );
@@ -91,28 +91,24 @@ function ServiceCard({ item, localLoading, toggleItem }) {
         />
       </div>
 
-      {/* Services Under Provider */}
+      {/* Mapping Toggle */}
       <div className="mt-4 space-y-3">
-        {item.mappings?.map((mapping) => {
-          const service = mapping.service;
+        {item.mappings?.map((mapping) => (
+          <div
+            key={mapping.id}
+            className="flex justify-between items-center bg-gray-50 p-3 rounded-lg"
+          >
+            <span className="text-sm font-medium">{mapping.service?.name}</span>
 
-          return (
-            <div
-              key={mapping.id}
-              className="flex justify-between items-center bg-gray-50 p-3 rounded-lg"
-            >
-              <span className="text-sm font-medium">{service?.name}</span>
-
-              <ToggleSwitch
-                isActive={service?.isActive}
-                isLoading={localLoading[service?.id]}
-                onClick={() =>
-                  toggleItem(service.id, "service", service.isActive)
-                }
-              />
-            </div>
-          );
-        })}
+            <ToggleSwitch
+              isActive={mapping.isActive}
+              isLoading={localLoading[mapping.id]}
+              onClick={() =>
+                toggleItem(mapping.id, "mapping", mapping.isActive)
+              }
+            />
+          </div>
+        ))}
       </div>
     </div>
   );
