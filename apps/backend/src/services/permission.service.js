@@ -49,7 +49,7 @@ export class RolePermissionService {
     const updatedPermissions = [];
 
     for (const serviceId of serviceIds) {
-      const service = await Prisma.serviceProvider.findUnique({
+      const service = await Prisma.service.findUnique({
         where: { id: serviceId },
       });
 
@@ -358,7 +358,7 @@ export class UserPermissionService {
 
     // Ab create/update karo remaining services ke liye
     for (const serviceId of serviceIds) {
-      const service = await Prisma.serviceProvider.findUnique({
+      const service = await Prisma.service.findUnique({
         where: { id: serviceId },
       });
 

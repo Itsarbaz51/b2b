@@ -5,7 +5,8 @@ import RefreshToast from "../components/ui/RefreshToast";
 
 export default function ManageServices() {
   const dispatch = useDispatch();
-  const { services, isLoading } = useSelector((state) => state.service);
+  const services = useSelector((state) => state?.service?.services?.data || []);
+  const { isLoading } = useSelector((state) => state?.service);
 
   const [localLoading, setLocalLoading] = useState({});
   const [refreshing, setRefreshing] = useState(false);
@@ -14,14 +15,14 @@ export default function ManageServices() {
     dispatch(getAllServices({ type: "provider" }));
   }, [dispatch]);
 
-  const toggleService = async (item) => {
+  const toggleItem = async (id, type, currentStatus) => {
     try {
-      setLocalLoading((prev) => ({ ...prev, [item.id]: true }));
+      setLocalLoading((prev) => ({ ...prev, [id]: true }));
 
       await dispatch(
-        updateService(item.id, {
-          type: item.providerId ? "service" : "provider",
-          isActive: !item.isActive,
+        updateService(id, {
+          type, // "provider" | "service"
+          isActive: !currentStatus,
         }),
       );
 
@@ -29,7 +30,7 @@ export default function ManageServices() {
     } catch (error) {
       console.error("Toggle error:", error);
     } finally {
-      setLocalLoading((prev) => ({ ...prev, [item.id]: false }));
+      setLocalLoading((prev) => ({ ...prev, [id]: false }));
     }
   };
 
@@ -61,54 +62,78 @@ export default function ManageServices() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {services.map((item) => (
+        {services?.map((item) => (
           <ServiceCard
             key={item.id}
             item={item}
             localLoading={localLoading}
-            toggleService={toggleService}
+            toggleItem={toggleItem}
           />
         ))}
       </div>
     </div>
   );
 }
-function ServiceCard({ item, localLoading, toggleService }) {
-  const isActive = item?.isActive || false;
-  const isLoading = localLoading[item.id];
+
+function ServiceCard({ item, localLoading, toggleItem }) {
+  const isProviderLoading = localLoading[item.id];
 
   return (
-    <div
-      className={`relative p-6 rounded-2xl border-2 transition-all duration-300 ${
-        isActive
-          ? "bg-white border-blue-200 shadow-lg"
-          : "bg-gray-50 border-red-200"
-      } ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
-      onClick={() => toggleService(item)}
-    >
-      <h3 className="text-xl font-semibold text-gray-900">{item.name}</h3>
+    <div className="p-6 rounded-2xl border-2 bg-white shadow-lg">
+      {/* Provider Toggle */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-semibold">{item.name}</h3>
 
-      <div className="flex justify-between mt-4">
-        <span
-          className={`text-sm font-medium ${
-            isActive ? "text-blue-600" : "text-red-500"
-          }`}
-        >
-          {isActive ? "Active" : "Inactive"}
-        </span>
-
-        <div
-          className={`relative inline-flex h-6 w-11 items-center rounded-full ${
-            isActive ? "bg-blue-600" : "bg-gray-300"
-          }`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-              isActive ? "translate-x-6" : "translate-x-1"
-            }`}
-          />
-        </div>
+        <ToggleSwitch
+          isActive={item.isActive}
+          isLoading={isProviderLoading}
+          onClick={() => toggleItem(item.id, "provider", item.isActive)}
+        />
       </div>
+
+      {/* Services Under Provider */}
+      <div className="mt-4 space-y-3">
+        {item.mappings?.map((mapping) => {
+          const service = mapping.service;
+
+          return (
+            <div
+              key={mapping.id}
+              className="flex justify-between items-center bg-gray-50 p-3 rounded-lg"
+            >
+              <span className="text-sm font-medium">{service?.name}</span>
+
+              <ToggleSwitch
+                isActive={service?.isActive}
+                isLoading={localLoading[service?.id]}
+                onClick={() =>
+                  toggleItem(service.id, "service", service.isActive)
+                }
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ToggleSwitch({ isActive, isLoading, onClick }) {
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!isLoading) onClick?.();
+      }}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer ${
+        isActive ? "bg-blue-600" : "bg-gray-300"
+      } ${isLoading ? "opacity-50" : ""}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+          isActive ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
     </div>
   );
 }

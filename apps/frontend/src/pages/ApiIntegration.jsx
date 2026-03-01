@@ -17,7 +17,9 @@ function ApiIntegration() {
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
 
   const dispatch = useDispatch();
-  const { services, isLoading } = useSelector((state) => state.service);
+  const services = useSelector((state) => state.service?.services?.data || []);
+
+  const { isLoading } = useSelector((state) => state.service);
 
   const fetchHandle = useCallback(() => {
     dispatch(getAllServices({ type: "provider" }));
@@ -28,20 +30,25 @@ function ApiIntegration() {
   }, [fetchHandle]);
 
   useEffect(() => {
-    if (Array.isArray(services)) {
-      const sanitized = services.map((sp) => ({
-        ...sp,
-        envConfig: sp.envConfig || [],
-        connected: sp.isActive || false,
-        envVars: (sp.envConfig || []).map((env) => ({
-          key: env.key || "",
-          value: env.value || "",
-          showValue: false,
-        })),
-      }));
+    if (!Array.isArray(services)) return;
 
-      setIntegrations(sanitized);
-    }
+    const sanitized = services.map((provider) => ({
+      ...provider,
+
+      // provider active status
+      connected: provider.isActive,
+
+      // use mappings as subServices
+      subServices:
+        provider.mappings?.map((mapping) => ({
+          id: mapping.service?.id,
+          name: mapping.service?.name,
+          code: mapping.service?.code,
+          apiIntegrationStatus: mapping.isActive,
+        })) || [],
+    }));
+
+    setIntegrations(sanitized);
   }, [services]);
 
   const handleConnect = useCallback((api) => {

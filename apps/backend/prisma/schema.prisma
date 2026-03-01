@@ -95,24 +95,23 @@ model User {
 }
 
 model ApiEntity {
-  id                String           @id @default(uuid())
-  entityType        String           @map("entity_type")
-  entityId          String           @unique @map("entity_id")
-  reference         String?          @unique
-  userId            String           @map("user_id")
-  serviceId         String?          @map("service_id")
-  serviceProviderId String?          @map("service_provider_id")
-  status            EntityStatus     @default(PENDING)
-  isActive          Boolean          @default(true) @map("is_active")
-  provider          ApiProvider      @default(BULKPE)
-  providerData      Json?            @map("provider_data")
+  id                String        @id @default(uuid())
+  entityType        String        @map("entity_type")
+  entityId          String        @unique @map("entity_id")
+  reference         String?       @unique
+  userId            String        @map("user_id")
+  serviceId         String?       @map("service_id")
+  serviceProviderId String?       @map("service_provider_id")
+  status            EntityStatus  @default(PENDING)
+  isActive          Boolean       @default(true) @map("is_active")
+  provider          ApiProvider   @default(BULKPE)
+  providerData      Json?         @map("provider_data")
   metadata          Json?
-  verificationData  Json?            @map("verification_data")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
-  verifiedAt        DateTime?        @map("verified_at")
-  serviceProvider   ServiceProvider? @relation(fields: [serviceProviderId], references: [id])
-  user              User             @relation(fields: [userId], references: [id])
+  verificationData  Json?         @map("verification_data")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  verifiedAt        DateTime?     @map("verified_at")
+  user              User          @relation(fields: [userId], references: [id])
   apiWebhooks       ApiWebhook[]
   transactions      Transaction[]
 
@@ -351,36 +350,16 @@ model CommissionEarning {
   @@map("commission_earnings")
 }
 
-model ServiceProvider {
-  id          String  @id @default(uuid())
-  name        String
-  code        String  @unique
-  isActive    Boolean @default(true) @map("is_active")
-  description String?
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  services    Service[]
-  apiEntities ApiEntity[]
-
-  @@map("service_providers")
-}
-
 model Service {
   id       String  @id @default(uuid())
   name     String
   code     String  @unique
-  isActive Boolean @default(true)
-
-  providerId String          @map("provider_id")
-  provider   ServiceProvider @relation(fields: [providerId], references: [id])
-
-  envConfig Json? @map("env_config")
+  isActive Boolean @default(true) @map("is_active")
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
+  mappings          ServiceProviderMapping[]
   UserPermission    UserPermission[]
   RolePermission    RolePermission[]
   Transaction       Transaction[]
@@ -388,8 +367,42 @@ model Service {
   CommissionEarning CommissionEarning[]
   LedgerEntry       LedgerEntry[]
 
-  @@index([providerId])
   @@map("services")
+}
+
+model Provider {
+  id       String  @id @default(uuid())
+  name     String
+  code     String  @unique
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  mappings ServiceProviderMapping[]
+
+  @@map("providers")
+}
+
+model ServiceProviderMapping {
+  id String @id @default(uuid())
+
+  serviceId  String @map("service_id")
+  providerId String @map("provider_id")
+
+  config Json?
+
+  priority Int     @default(1)
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  service  Service  @relation(fields: [serviceId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
+
+  @@unique([serviceId, providerId])
+  @@map("service_provider_mappings")
 }
 
 model UserPermission {

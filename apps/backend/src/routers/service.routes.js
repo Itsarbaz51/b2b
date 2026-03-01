@@ -6,16 +6,14 @@ import { ServiceValidationSchemas } from "../validations/serviceValidation.schem
 
 const serviceRoutes = Router();
 
-// Create service provider (ADMIN only)
 serviceRoutes.post(
   "/create",
   AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize(["ADMIN"]),
-  validateRequest(ServiceValidationSchemas.createServiceProvider),
+  AuthMiddleware.authorize(["ADMIN", "employee"]),
+  validateRequest(ServiceValidationSchemas.create), // ✅ FIXED
   ServiceProviderController.create
 );
 
-// Get all service providers (ADMIN sees all, business users see assigned)
 serviceRoutes.post(
   "/lists",
   AuthMiddleware.isAuthenticated,

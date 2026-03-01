@@ -201,7 +201,7 @@ class RoleServices {
     });
 
     // Assign default permissions to all active services
-    const services = await Prisma.serviceProvider.findMany({
+    const services = await Prisma.service.findMany({
       where: { isActive: true },
     });
 

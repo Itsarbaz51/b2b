@@ -115,7 +115,7 @@ function IntegrationTable({ integrations, onConnect, onDisconnect }) {
 
               {/* Actions */}
               <td className="py-4 px-6">
-                {api.apiIntegrationStatus ? (
+                {api.connected ? (
                   <div className="flex space-x-2">
                     <button
                       onClick={() => onConnect(api)}

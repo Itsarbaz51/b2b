@@ -41,7 +41,7 @@ const serviceSlice = createSlice({
     },
     updateServiceInList: (state, action) => {
       const updated = action.payload?.data || action.payload;
-      const index = state.services.findIndex((item) => item.id === updated.id);
+      const index = state.services.data.findIndex((item) => item.id === updated.id);
       if (index !== -1) {
         state.services[index] = updated;
       }

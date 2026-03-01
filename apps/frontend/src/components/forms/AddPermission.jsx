@@ -19,6 +19,7 @@ const AddPermission = ({
     canEdit: false,
     canSetCommission: false,
   });
+  console.log(services);
 
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
   const [showServiceSuggestions, setShowServiceSuggestions] = useState(false);
@@ -127,28 +128,11 @@ const AddPermission = ({
   const processedServices = useMemo(() => {
     if (!services || !Array.isArray(services)) return [];
 
-    const result = [];
-
-    services.forEach((service) => {
-      if (Array.isArray(service.subService) && service.subService.length > 0) {
-        service.subService.forEach((sub) => {
-          result.push({
-            id: sub.id,
-            name: sub.name,
-            code: sub.code,
-            parentName: service.name,
-          });
-        });
-      } else {
-        result.push({
-          id: service.id,
-          name: service.name,
-          code: service.code,
-        });
-      }
-    });
-
-    return result;
+    return services.map((service) => ({
+      id: service.id,
+      name: service.name,
+      code: service.code,
+    }));
   }, [services]);
 
   const filteredServices = useCallback(() => {
@@ -409,7 +393,7 @@ const AddPermission = ({
                           className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                         >
                           <div className="font-medium text-gray-900">
-                            {service.type || service.name}
+                            {service.name}
                           </div>
                           <div className="text-xs text-gray-500 font-mono">
                             {service.id}
