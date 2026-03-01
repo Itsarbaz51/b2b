@@ -17,9 +17,9 @@ const AddPermission = ({
     serviceIds: [],
     canView: false,
     canEdit: false,
+    canProcess: false,
     canSetCommission: false,
   });
-  console.log(services);
 
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
   const [showServiceSuggestions, setShowServiceSuggestions] = useState(false);
@@ -44,6 +44,7 @@ const AddPermission = ({
 
       let parsedServiceIds = [];
       let canView = false;
+      let canProcess = false;
       let canEdit = false;
       let canSetCommission = false;
 
@@ -65,6 +66,7 @@ const AddPermission = ({
         if (existingPermissions.length > 0) {
           canView = existingPermissions[0].canView ?? false;
           canEdit = existingPermissions[0].canEdit ?? false;
+          canProcess = existingPermissions[0].canProcess ?? false;
           canSetCommission = existingPermissions[0].canSetCommission ?? false;
         }
       }
@@ -73,6 +75,7 @@ const AddPermission = ({
         userId: permission?.userId || permission?.user?.id || selectedUser.id,
         serviceIds: parsedServiceIds,
         canView: canView,
+        canProcess: canProcess,
         canEdit: canEdit,
         canSetCommission: canSetCommission,
       });
@@ -110,6 +113,7 @@ const AddPermission = ({
           selectedUser.id,
         serviceIds: parsedServiceIds,
         canView: existingPermissions?.canView ?? false,
+        canProcess: existingPermissions?.canProcess ?? false,
         canEdit: existingPermissions?.canEdit ?? false,
         canSetCommission: existingPermissions?.canSetCommission ?? false,
       });
@@ -119,6 +123,7 @@ const AddPermission = ({
         userId: selectedUser.id,
         serviceIds: [],
         canView: false,
+        canProcess: false,
         canEdit: false,
         canSetCommission: false,
       });
@@ -187,6 +192,7 @@ const AddPermission = ({
           : { userId: formData.userId }),
         serviceIds: formData.serviceIds,
         canView: formData.canView,
+        canProcess: formData.canProcess,
         canEdit: formData.canEdit,
         canSetCommission: formData.canSetCommission,
       };
@@ -445,6 +451,20 @@ const AddPermission = ({
                   />
                   <span className="text-sm font-medium text-gray-700">
                     Can View
+                  </span>
+                </label>
+                <label className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.canProcess}
+                    onChange={(e) =>
+                      handleInputChange("canProcess", e.target.checked)
+                    }
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                    disabled={isSubmitting || isLoading}
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Can Process
                   </span>
                 </label>
 

@@ -463,6 +463,7 @@ export class UserPermissionService {
       select: {
         id: true,
         canView: true,
+        canProcess: true,
         service: {
           select: {
             id: true,
