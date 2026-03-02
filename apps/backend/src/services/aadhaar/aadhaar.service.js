@@ -12,14 +12,15 @@ import ProviderResolver from "../../resolvers/Provider.resolver.js";
 export default class AadhaarService {
   // STEP 1 — SEND OTP
   static async sendOtp(payload, actor) {
-    const { aadhaarNumber, serviceId } = payload;
+    const { aadhaarNumber, serviceId, idempotencyKey } = payload;
+    const userId = actor.id;
 
     await ServicePermissionResolver.validateHierarchyServiceAccess(
-      actor.id,
+      userId,
       serviceId
     );
 
-    const { service, provider, serviceProviderMapping } =
+    const { provider, serviceProviderMapping } =
       await ProviderResolver.resolveProvider(serviceId);
 
     const plugin = getAadhaarPlugin(
@@ -28,107 +29,164 @@ export default class AadhaarService {
     );
 
     return await Prisma.$transaction(async (tx) => {
-      //  Calculate Commission (Only base amount for hold)
+      const wallet = await WalletEngine.getWallet({
+        tx,
+        userId,
+        walletType: "PRIMARY",
+      });
+
+      // Hold full selling price
+      await WalletEngine.hold(tx, wallet, sellingPrice);
+
+      const sellingPrice = BigInt(serviceProviderMapping.sellingPrice);
+
+      const providerCost = BigInt(serviceProviderMapping.providerCost);
+
+      if (sellingPrice <= providerCost)
+        throw ApiError.notFound("Invalid pricing config");
+
+      const marginPool = sellingPrice - providerCost;
+
+      // Commission calculate on margin only
       const commissionData = await CommissionEngine.calculate({
         userId,
-        serviceId,
+        serviceProviderMappingId: serviceProviderMapping.id,
+        amount: marginPool,
       });
 
-      const amount = commissionData.baseAmount;
-
-      //  Create Transaction + ApiEntity
+      // Create transaction for full selling price
       const { transaction, apiEntity } = await TransactionService.create(tx, {
         userId,
-        serviceId,
-        amount,
-        entityType: "AADHAAR_OTP",
+        walletId: wallet.id,
+        serviceProviderMappingId: serviceProviderMapping.id,
+        amount: sellingPrice,
         idempotencyKey,
+        requestPayload: payload,
       });
 
-      //  Hold Wallet
-      const wallet = await WalletEngine.getWallet(tx, userId);
-      await WalletEngine.hold(tx, wallet, amount);
+      let providerResponse;
 
-      //  Call Provider
-      const providerResponse = await plugin.sendOtp({ aadhaarNumber });
+      try {
+        providerResponse = await plugin.sendOtp({ aadhaarNumber });
 
-      //  Save Provider Reference
-      await ApiEntityService.attachProviderReference(tx, {
-        apiEntityId: apiEntity.id,
-        providerReference: providerResponse.referenceId,
-      });
+        await ApiEntityService.updateProviderInit(tx, {
+          apiEntityId: apiEntity.id,
+          providerResponse,
+        });
 
-      return {
-        transactionId: transaction.id,
-        referenceId: providerResponse.referenceId,
-      };
+        return {
+          transactionId: transaction.id,
+          referenceId: providerResponse.referenceId,
+          commissionPreview: commissionData.breakdown,
+        };
+      } catch (error) {
+        // Release hold if provider fails
+        await WalletEngine.releaseHold(tx, wallet, sellingPrice);
+
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: { status: "FAILED" },
+        });
+
+        throw error;
+      }
     });
   }
 
   //  STEP 2 — VERIFY OTP
-  static async verifyOtp({ userId, transactionId, referenceId, otp }) {
-    const providerCode = "BULKPE";
-    const plugin = getAadhaarPlugin(providerCode, {
-      bulkpeBaseUrl: process.env.BULKPE_URL,
-      apiKey: process.env.BULKPE_KEY,
-    });
+  static async verifyOtp(payload, actor) {
+    const { transactionId, referenceId, otp } = payload;
+    const userId = actor.id;
 
     return await Prisma.$transaction(async (tx) => {
+      // Fetch Transaction with mapping
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
+        include: {
+          serviceProviderMapping: {
+            include: { provider: true },
+          },
+          apiEntity: true,
+        },
       });
 
       if (!transaction) throw ApiError.notFound("Transaction not found");
 
+      if (transaction.status !== "PENDING")
+        throw ApiError.badRequest("Invalid transaction state");
+
+      const { serviceProviderMapping } = transaction;
+
+      const plugin = getAadhaarPlugin(
+        serviceProviderMapping.provider.code,
+        serviceProviderMapping.config
+      );
+
       const wallet = await WalletEngine.getWallet(tx, userId);
 
-      //  Call Provider Verify
-      const result = await plugin.verifyOtp({ referenceId, otp });
+      let providerResponse;
 
-      if (result.data?.status === true) {
-        //  Capture Hold
-        await WalletEngine.captureHold(tx, wallet, transaction.amount);
-
-        //  Ledger Entry
-        await LedgerEngine.create(tx, {
-          walletId: wallet.id,
-          transactionId,
-          entryType: "DEBIT",
-          serviceId: transaction.serviceId,
-          amount: transaction.amount,
-          narration: "Aadhaar Verification Charge",
-          createdBy: userId,
+      try {
+        // Call Provider Verify
+        providerResponse = await plugin.verifyOtp({
+          referenceId,
+          otp,
         });
 
-        //  Commission Distribution
-        await CommissionEngine.distribute(tx, {
-          transactionId,
-          userId,
-          serviceId: transaction.serviceId,
-          amount: transaction.amount,
-          createdBy: userId,
-        });
+        if (providerResponse?.status === true) {
+          // Capture Hold
+          await WalletEngine.captureHold(tx, wallet, transaction.amount);
 
-        //  Update Transaction
-        await tx.transaction.update({
-          where: { id: transactionId },
-          data: {
+          // Ledger Entry
+          await LedgerEngine.create(tx, {
+            walletId: wallet.id,
+            transactionId: transaction.id,
+            entryType: "DEBIT",
+            referenceType: "TRANSACTION",
+            serviceProviderMappingId: serviceProviderMapping.id,
+            amount: transaction.amount,
+            narration: "Aadhaar Verification Charge",
+            createdBy: userId,
+          });
+
+          // Commission Distribution (margin only)
+          const marginPool =
+            BigInt(serviceProviderMapping.sellingPrice) -
+            BigInt(serviceProviderMapping.providerCost);
+
+          await CommissionEngine.distribute(tx, {
+            transactionId: transaction.id,
+            userId,
+            serviceProviderMappingId: serviceProviderMapping.id,
+            amount: marginPool,
+            createdBy: userId,
+          });
+
+          // Update Transaction + ApiEntity
+          await TransactionService.update(tx, {
+            transactionId: transaction.id,
             status: "SUCCESS",
-            completedAt: new Date(),
-          },
-        });
+            providerReference: referenceId,
+            providerResponse,
+          });
 
-        return { status: "SUCCESS" };
-      } else {
-        // ❌ Release Hold
+          return { status: "SUCCESS" };
+        } else {
+          throw new Error("OTP verification failed");
+        }
+      } catch (error) {
+        // Release Hold
         await WalletEngine.releaseHold(tx, wallet, transaction.amount);
 
-        await tx.transaction.update({
-          where: { id: transactionId },
-          data: { status: "FAILED" },
+        // Update Transaction + ApiEntity
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "FAILED",
+          providerReference: referenceId,
+          providerResponse: error.response || error.message,
         });
 
-        return { status: "FAILED" };
+        throw error;
       }
     });
   }

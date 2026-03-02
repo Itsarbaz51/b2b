@@ -1,8 +1,8 @@
 import { ApiError } from "../utils/ApiError.js";
 
 export default class WalletEngine {
-  // 🔎 Get Wallet
-  static async getWallet(tx, userId, walletType = "PRIMARY") {
+  // Get Wallet
+  static async getWallet({ tx, userId, walletType = "PRIMARY" }) {
     const wallet = await tx.wallet.findUnique({
       where: {
         userId_walletType: {
@@ -12,8 +12,9 @@ export default class WalletEngine {
       },
     });
 
-    if (!wallet || !wallet.isActive)
-      throw ApiError.notFound("Wallet not found");
+    if (!wallet) throw ApiError.notFound("Wallet not found");
+
+    if (!wallet.isActive) throw ApiError.notFound("Wallet not Active");
 
     return wallet;
   }
@@ -53,7 +54,7 @@ export default class WalletEngine {
     });
   }
 
-  // 🔒 Hold
+  // Hold
   static async hold(tx, wallet, amount) {
     const amt = BigInt(amount);
 
@@ -71,7 +72,7 @@ export default class WalletEngine {
     });
   }
 
-  // 🔓 Release Hold
+  // Release Hold
   static async releaseHold(tx, wallet, amount) {
     const amt = BigInt(amount);
 
@@ -87,7 +88,7 @@ export default class WalletEngine {
     });
   }
 
-  // 🔄 Move Hold → Debit (On Success)
+  // Move Hold → Debit (On Success)
   static async captureHold(tx, wallet, amount) {
     const amt = BigInt(amount);
 

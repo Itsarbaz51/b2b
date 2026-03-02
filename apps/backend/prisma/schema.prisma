@@ -95,32 +95,30 @@ model User {
 }
 
 model ApiEntity {
-  id                String        @id @default(uuid())
-  entityType        String        @map("entity_type")
-  entityId          String        @unique @map("entity_id")
-  reference         String?       @unique
-  userId            String        @map("user_id")
-  serviceId         String?       @map("service_id")
-  serviceProviderId String?       @map("service_provider_id")
-  status            EntityStatus  @default(PENDING)
-  isActive          Boolean       @default(true) @map("is_active")
-  provider          ApiProvider   @default(BULKPE)
-  providerData      Json?         @map("provider_data")
-  metadata          Json?
-  verificationData  Json?         @map("verification_data")
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
-  verifiedAt        DateTime?     @map("verified_at")
-  user              User          @relation(fields: [userId], references: [id])
-  apiWebhooks       ApiWebhook[]
-  transactions      Transaction[]
+  id        String @id @default(uuid())
+  reference String @unique
 
-  @@index([userId, serviceId])
-  @@index([entityType, entityId])
-  @@index([reference])
+  userId                   String @map("user_id")
+  serviceProviderMappingId String @map("service_provider_mapping_id")
+  status                   String @default("PENDING")
+
+  requestPayload    Json? @map("request_payload")
+  providerInitData  Json? @map("provider_init_data")
+  providerFinalData Json? @map("provider_final_data")
+  errorData         Json? @map("error_data")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  completedAt DateTime? @map("completed_at")
+
+  serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
+  user                   User                   @relation(fields: [userId], references: [id])
+
+  transaction Transaction?
+  apiWebhooks ApiWebhook[]
+
+  @@index([userId])
   @@index([status, createdAt])
-  @@index([serviceId], map: "api_entities_service_id_fkey")
-  @@map("api_entities")
 }
 
 model ApiWebhook {
@@ -244,13 +242,13 @@ model Wallet {
   currency   Currency   @default(INR)
 
   balance     BigInt @default(0)
-  holdBalance BigInt @default(0)
+  holdBalance BigInt @default(0) @map("hold_balance")
 
-  isActive Boolean @default(true)
+  isActive Boolean @default(true) @map("is_active")
   version  Int     @default(1)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("update_at")
 
   user          User          @relation(fields: [userId], references: [id])
   ledgerEntries LedgerEntry[]
@@ -280,35 +278,35 @@ model CommissionSetting {
   id    String          @id @default(uuid())
   scope CommissionScope @default(ROLE)
 
-  roleId       String?
-  targetUserId String?
-  serviceId    String?
+  roleId                   String? @map("role_id")
+  targetUserId             String? @map("target_user_id")
+  serviceProviderMappingId String
 
   mode  PricingMode
   type  CommissionType
   value Decimal        @db.Decimal(12, 4)
 
-  minAmount BigInt?
-  maxAmount BigInt?
+  minAmount BigInt? @map("min_amount")
+  maxAmount BigInt? @map("max_amount")
 
-  applyTDS   Boolean  @default(false)
-  tdsPercent Decimal? @db.Decimal(5, 2)
+  applyTDS   Boolean  @default(false) @map("apply_tds")
+  tdsPercent Decimal? @map("tds_percent") @db.Decimal(5, 2)
 
-  applyGST   Boolean  @default(false)
-  gstPercent Decimal? @db.Decimal(5, 2)
+  applyGST   Boolean  @default(false) @map("apply_gst")
+  gstPercent Decimal? @map("gst_percent") @db.Decimal(5, 2)
 
-  createdBy String
-  isActive  Boolean @default(true)
+  createdBy String  @map("created_by")
+  isActive  Boolean @default(true) @map("is_active")
 
-  effectiveTo DateTime?
+  effectiveTo DateTime? @map("effective_to")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("update_at")
 
   role       Role? @relation(fields: [roleId], references: [id])
   targetUser User? @relation(fields: [targetUserId], references: [id])
 
-  service Service? @relation(fields: [serviceId], references: [id])
+  serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
 
   @@map("commission_settings")
 }
@@ -319,34 +317,39 @@ model CommissionEarning {
   userId        String  @map("user_id")
   fromUserId    String? @map("from_user_id")
 
+  serviceProviderMappingId String @map("service_provider_mapping_id")
+
   amount BigInt
-  mode   PricingMode
-  type   CommissionType
+
+  mode PricingMode
+  type CommissionType
 
   commissionAmount BigInt  @map("commission_amount")
+  surchargeAmount  BigInt? @map("surcharge_amount")
   tdsAmount        BigInt? @map("tds_amount")
   gstAmount        BigInt? @map("gst_amount")
-  surchargeAmount  BigInt? @map("surcharge_amount")
-  netAmount        BigInt  @map("net_amount")
 
-  metadata Json?
+  netAmount BigInt @map("net_amount")
+
+  metadata Json? @map("meta_data")
 
   createdBy String   @map("created_by")
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  serviceId String?
-
-  createdByUser User  @relation("CommissionEarningCreatedBy", fields: [createdBy], references: [id])
-  fromUser      User? @relation("CommissionEarningFromUser", fields: [fromUserId], references: [id])
+  serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
 
   transaction Transaction @relation(fields: [transactionId], references: [id])
-  user        User        @relation("CommissionEarningToUser", fields: [userId], references: [id])
-  service     Service?    @relation(fields: [serviceId], references: [id])
+
+  user User @relation("CommissionEarningToUser", fields: [userId], references: [id])
+
+  fromUser User? @relation("CommissionEarningFromUser", fields: [fromUserId], references: [id])
+
+  createdByUser User @relation("CommissionEarningCreatedBy", fields: [createdBy], references: [id])
 
   @@index([transactionId, userId])
-  @@index([createdAt])
   @@index([userId, createdAt])
+  @@index([serviceProviderMappingId])
   @@map("commission_earnings")
 }
 
@@ -359,13 +362,9 @@ model Service {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  mappings          ServiceProviderMapping[]
-  UserPermission    UserPermission[]
-  RolePermission    RolePermission[]
-  Transaction       Transaction[]
-  CommissionSetting CommissionSetting[]
-  CommissionEarning CommissionEarning[]
-  LedgerEntry       LedgerEntry[]
+  mappings       ServiceProviderMapping[]
+  UserPermission UserPermission[]
+  RolePermission RolePermission[]
 
   @@map("services")
 }
@@ -390,6 +389,9 @@ model ServiceProviderMapping {
   serviceId  String @map("service_id")
   providerId String @map("provider_id")
 
+  providerCost BigInt @map("provider_cost")
+  sellingPrice BigInt @map("selling_price")
+
   config Json?
 
   priority Int     @default(1)
@@ -398,8 +400,13 @@ model ServiceProviderMapping {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  service  Service  @relation(fields: [serviceId], references: [id])
-  provider Provider @relation(fields: [providerId], references: [id])
+  service            Service             @relation(fields: [serviceId], references: [id])
+  provider           Provider            @relation(fields: [providerId], references: [id])
+  transactions       Transaction[]
+  apiEntities        ApiEntity[]
+  ledgerEntries      LedgerEntry[]
+  commissionSettings CommissionSetting[]
+  commissionEarnings CommissionEarning[]
 
   @@unique([serviceId, providerId])
   @@map("service_provider_mappings")
@@ -467,75 +474,66 @@ model SystemSetting {
 }
 
 model Transaction {
-  id                 String              @id @default(uuid())
-  referenceId        String?             @map("reference_id")
-  externalRefId      String?             @map("external_ref_id")
-  idempotencyKey     String?             @map("idempotency_key")
-  amount             BigInt
-  currency           Currency            @default(INR)
-  netAmount          BigInt
-  status             TxStatus            @default(PENDING)
-  serviceId          String?             @map("service_id")
-  paymentType        PaymentType         @map("payment_type")
-  userId             String              @map("user_id")
-  walletId           String?             @map("wallet_id")
-  apiEntityId        String?             @map("api_entity_id")
-  providerCharge     BigInt?
-  commissionAmount   BigInt?
-  taxAmount          BigInt?             @map("tax_amount")
-  feeAmount          BigInt?             @map("fee_amount")
-  cashbackAmount     BigInt?             @map("cashback_amount")
-  providerReference  String?             @map("provider_reference")
-  providerResponse   Json?               @map("provider_response")
-  requestPayload     Json?
-  responsePayload    Json?
-  initiatedAt        DateTime            @default(now()) @map("initiated_at")
-  processedAt        DateTime?           @map("processed_at")
-  completedAt        DateTime?           @map("completed_at")
-  apiWebhooks        ApiWebhook[]
+  id             String @id @default(uuid())
+  idempotencyKey String @unique @map("idempotency_key")
+  txnId          String @unique @map("txn_id")
+
+  amount    BigInt // selling price
+  netAmount BigInt @map("net_amount")
+
+  status                   String @default("PENDING")
+  serviceProviderMappingId String @map("service_provider_mapping_id")
+
+  userId      String @map("user_id")
+  walletId    String @map("wallet_id")
+  apiEntityId String @unique @map("api_entity_id")
+
+  providerReference String? @map("provider_reference")
+  providerResponse  Json?   @map("provider_response")
+
+  initiatedAt DateTime  @default(now()) @map("initiated_at")
+  processedAt DateTime? @map("processed_at")
+  completedAt DateTime? @map("completed_at")
+
   commissionEarnings CommissionEarning[]
   ledgerEntries      LedgerEntry[]
   refunds            Refund[]
-  apiEntity          ApiEntity?          @relation(fields: [apiEntityId], references: [id])
-  user               User                @relation(fields: [userId], references: [id])
-  wallet             Wallet?             @relation(fields: [walletId], references: [id])
-  service            Service?            @relation(fields: [serviceId], references: [id])
 
-  @@unique([idempotencyKey])
+  user   User   @relation(fields: [userId], references: [id])
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
+
+  apiEntity   ApiEntity    @relation(fields: [apiEntityId], references: [id])
+  apiWebhooks ApiWebhook[]
+
   @@index([userId, status])
-  @@index([idempotencyKey])
-  @@index([serviceId, initiatedAt])
-  @@index([externalRefId])
-  @@index([providerReference])
   @@index([status, initiatedAt])
-  @@index([apiEntityId], map: "transactions_api_entity_id_fkey")
-  @@index([walletId], map: "transactions_wallet_id_fkey")
-  @@map("transactions")
 }
 
 model LedgerEntry {
-  id             String          @id @default(uuid())
-  transactionId  String?         @map("transaction_id")
-  walletId       String          @map("wallet_id")
-  entryType      LedgerEntryType @map("entry_type")
-  referenceType  ReferenceType   @map("reference_type")
-  serviceId      String?         @map("service_id")
-  amount         BigInt
-  runningBalance BigInt          @map("running_balance")
-  narration      String          @db.Text
-  metadata       Json?
-  idempotencyKey String?         @map("idempotency_key")
-  createdBy      String          @map("created_by")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  transaction    Transaction?    @relation(fields: [transactionId], references: [id])
-  wallet         Wallet          @relation(fields: [walletId], references: [id])
+  id            String          @id @default(uuid())
+  transactionId String?         @map("transaction_id")
+  walletId      String          @map("wallet_id")
+  entryType     LedgerEntryType @map("entry_type")
+  referenceType String          @map("reference_type")
 
-  service Service? @relation(fields: [serviceId], references: [id])
+  amount         BigInt
+  runningBalance BigInt       @map("running_balance")
+  narration      String       @db.Text
+  metadata       Json?
+  idempotencyKey String?      @map("idempotency_key")
+  createdBy      String       @map("created_by")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  transaction    Transaction? @relation(fields: [transactionId], references: [id])
+  wallet         Wallet       @relation(fields: [walletId], references: [id])
+
+  serviceProviderMappingId String?
+  serviceProviderMapping   ServiceProviderMapping? @relation(fields: [serviceProviderMappingId], references: [id])
 
   @@unique([idempotencyKey])
   @@index([transactionId])
   @@index([walletId, createdAt])
-  @@index([serviceId, referenceType])
   @@index([idempotencyKey])
   @@map("ledger_entries")
 }
@@ -545,9 +543,9 @@ model Refund {
   transactionId String      @map("transaction_id")
   initiatedBy   String      @map("initiated_by")
   amount        BigInt
-  status        TxStatus    @default(PENDING)
+  status        String      @default("PENDING")
   reason        String?
-  metadata      Json?
+  metadata      Json?       @map("meta_data")
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
   transaction   Transaction @relation(fields: [transactionId], references: [id])
@@ -560,12 +558,12 @@ model PiiConsent {
   id         String   @id @default(uuid())
   userId     String   @map("user_id")
   userKycId  String?  @map("user_kyc_id")
-  piiType    String
-  piiHash    String
-  providedAt DateTime @default(now())
-  expiresAt  DateTime
+  piiType    String   @map("pii_type")
+  piiHash    String   @map("pii_hash")
+  providedAt DateTime @default(now()) @map("provided_at")
+  expiresAt  DateTime @map("expires_at")
   scope      String
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("create_at")
   user       User     @relation(fields: [userId], references: [id])
   userKyc    UserKyc? @relation(fields: [userKycId], references: [id])
 
@@ -593,15 +591,6 @@ enum AccountType {
 enum CommissionType {
   FLAT
   PERCENTAGE
-}
-
-enum TxStatus {
-  PENDING
-  SUCCESS
-  FAILED
-  REVERSED
-  REFUNDED
-  CANCELLED
 }
 
 enum CommissionScope {
@@ -637,41 +626,6 @@ enum Currency {
   EUR
   GBP
   AED
-}
-
-enum ReferenceType {
-  TRANSACTION
-  COMMISSION
-  REFUND
-  ADJUSTMENT
-  BONUS
-  CHARGE
-  FEE
-  TAX
-  PAYOUT
-  COLLECTION
-}
-
-enum EntityStatus {
-  ACTIVE
-  INACTIVE
-  PENDING
-  REJECTED
-  SUSPENDED
-}
-
-enum PaymentType {
-  COLLECTION
-  PAYOUT
-  REFUND
-  REVERSAL
-  COMMISSION
-  FEE
-  TAX
-  ADJUSTMENT
-  CHARGE
-  FUND_REQ_BANK
-  FUND_REQ_RAZORPAY
 }
 
 enum WalletType {

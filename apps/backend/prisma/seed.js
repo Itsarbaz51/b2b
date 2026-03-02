@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { CryptoService } from "../src/utils/cryptoService.js";
-import { ServiceProviderService } from "../src/services/service.service.js";
 
 const prisma = new PrismaClient();
 

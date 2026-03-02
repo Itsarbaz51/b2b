@@ -1,68 +1,91 @@
 import crypto from "crypto";
+import Prisma from "../../db/db.js";
 import { ApiError } from "../../utils/ApiError.js";
 
 export default class ApiEntityService {
-  // 1️⃣ Create ApiEntity
+  // CREATE
   static async create(
     tx,
-    {
-      userId,
-      serviceId,
-      entityType,
-      provider = "BULKPE",
-      metadata = {},
-      reference = null,
-    }
+    { userId, serviceProviderMappingId, requestPayload, reference = null }
   ) {
-    if (!userId || !entityType)
-      throw ApiError.badRequest("userId & entityType required");
+    if (!userId || !serviceProviderMappingId)
+      throw ApiError.badRequest("userId & serviceProviderMappingId required");
 
     return await tx.apiEntity.create({
       data: {
-        entityType,
-        entityId: crypto.randomUUID(),
-        reference,
+        reference: reference || crypto.randomUUID(),
         userId,
-        serviceId,
-        provider,
+        serviceProviderMappingId,
+        requestPayload,
         status: "PENDING",
-        metadata,
       },
     });
   }
 
-  // 2️⃣ Update Status
-  static async updateStatus(
-    tx,
-    { apiEntityId, status, providerData, verificationData }
-  ) {
+  // UPDATE PROVIDER INIT (OTP sent etc.)
+  static async updateProviderInit(tx, { apiEntityId, providerResponse }) {
+    if (!apiEntityId) throw ApiError.badRequest("apiEntityId required");
+
+    return await tx.apiEntity.update({
+      where: { id: apiEntityId },
+      data: {
+        providerInitData: providerResponse,
+        status: providerResponse.data.status,
+        errorData: providerResponse.data.status !== 'SUCCESS' ? providerResponse.data : null
+      },
+    });
+  }
+
+  // SUCCESS UPDATE (Final response)
+  static async markSuccess(tx, { apiEntityId, providerResponse }) {
+    if (!apiEntityId) throw ApiError.badRequest("apiEntityId required");
+
+    return await tx.apiEntity.update({
+      where: { id: apiEntityId },
+      data: {
+        providerFinalData: providerResponse,
+        status: "SUCCESS",
+        completedAt: new Date(),
+      },
+    });
+  }
+
+  // FAIL UPDATE
+  static async markFailed(tx, { apiEntityId, errorData }) {
+    if (!apiEntityId) throw ApiError.badRequest("apiEntityId required");
+
+    return await tx.apiEntity.update({
+      where: { id: apiEntityId },
+      data: {
+        errorData,
+        status: "FAILED",
+        completedAt: new Date(),
+      },
+    });
+  }
+
+  // GENERIC STATUS UPDATE
+  static async updateStatus(tx, { apiEntityId, status }) {
     if (!apiEntityId) throw ApiError.badRequest("apiEntityId required");
 
     return await tx.apiEntity.update({
       where: { id: apiEntityId },
       data: {
         status,
-        providerData,
-        verificationData,
-        verifiedAt: status === "ACTIVE" ? new Date() : null,
       },
     });
   }
 
-  // 3️⃣ Attach Provider Reference
-  static async attachProviderReference(tx, { apiEntityId, providerReference }) {
-    return await tx.apiEntity.update({
-      where: { id: apiEntityId },
-      data: {
-        reference: providerReference,
-      },
-    });
-  }
-
-  // 4️⃣ Get Entity
+  // GET BY ID
   static async getById(apiEntityId) {
+    if (!apiEntityId) throw ApiError.badRequest("apiEntityId required");
+
     return await Prisma.apiEntity.findUnique({
       where: { id: apiEntityId },
+      include: {
+        serviceProviderMapping: true,
+        transaction: true,
+      },
     });
   }
 }

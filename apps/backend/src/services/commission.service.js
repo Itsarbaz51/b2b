@@ -258,261 +258,137 @@ export class CommissionSettingService {
   }
 }
 
-export class CommissionEarningService {
-  static async createCommissionEarning(data) {
-    const {
-      userId,
-      fromUserId,
-      serviceId,
+export default class CommissionEarningService {
+  //  CREATE COMMISSION EARNING
+  static async create(
+    tx,
+    {
       transactionId,
+      userId,
+      fromUserId = null,
+      serviceProviderMappingId,
       amount,
-      commissionAmount,
-      commissionType,
-      tdsAmount = 0,
-      gstAmount = 0,
-      surchargeAmount = 0,
+      mode,
+      type,
+      commissionAmount = 0n,
+      surchargeAmount = 0n,
+      tdsAmount = null,
+      gstAmount = null,
       netAmount,
-      metadata,
+      metadata = null,
       createdBy,
-    } = data;
-
-    // Validate required references
-    const [user, transaction, createdByUser] = await Promise.all([
-      Prisma.user.findUnique({ where: { id: userId } }),
-      Prisma.transaction.findUnique({ where: { id: transactionId } }),
-      Prisma.user.findUnique({ where: { id: createdBy } }),
-    ]);
-
-    if (!user) throw ApiError.notFound("User not found");
-    if (!transaction) throw ApiError.notFound("Transaction not found");
-    if (!createdByUser) throw ApiError.notFound("Created by user not found");
-
-    // Validate optional references
-    if (fromUserId) {
-      const fromUser = await Prisma.user.findUnique({
-        where: { id: fromUserId },
-      });
-      if (!fromUser) throw ApiError.notFound("From user not found");
+    }
+  ) {
+    if (!transactionId || !userId || !serviceProviderMappingId || !createdBy) {
+      throw ApiError.badRequest("Required fields missing");
     }
 
-    if (serviceId) {
-      const service = await Prisma.serviceProvider.findUnique({
-        where: { id: serviceId },
-      });
-      if (!service) throw ApiError.notFound("Service not found");
-    }
-
-    const earning = await Prisma.commissionEarning.create({
+    return await tx.commissionEarning.create({
       data: {
-        userId,
-        fromUserId: fromUserId || null,
-        serviceId: serviceId || null,
         transactionId,
+        userId,
+        fromUserId,
+        serviceProviderMappingId,
+
         amount: BigInt(amount),
+
+        mode,
+        type,
+
         commissionAmount: BigInt(commissionAmount),
-        commissionType,
-        tdsAmount: BigInt(tdsAmount),
-        gstAmount: BigInt(gstAmount),
-        surchargeAmount: BigInt(surchargeAmount),
+        surchargeAmount: surchargeAmount ? BigInt(surchargeAmount) : null,
+        tdsAmount: tdsAmount ? BigInt(tdsAmount) : null,
+        gstAmount: gstAmount ? BigInt(gstAmount) : null,
+
         netAmount: BigInt(netAmount),
-        metadata: metadata || null,
+
+        metadata,
         createdBy,
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        fromUser: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        service: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            isActive: true,
-          },
-        },
-        createdByUser: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        transaction: {
-          select: {
-            id: true,
-            referenceId: true,
-            amount: true,
-            status: true,
-            initiatedAt: true,
-          },
-        },
-      },
     });
-
-    return Helper.serializeCommission(earning);
   }
 
-  static async getCommissionEarnings(filters) {
-    const { userId, fromUserId, serviceId, transactionId, startDate, endDate } =
-      filters;
+  //  GET BY TRANSACTION
+  static async getByTransaction(transactionId) {
+    if (!transactionId) throw ApiError.badRequest("TransactionId required");
 
-    const whereClause = {
-      ...(userId ? { userId } : {}),
-      ...(fromUserId ? { fromUserId } : {}),
-      ...(serviceId ? { serviceId } : {}),
-      ...(transactionId ? { transactionId } : {}),
-    };
-
-    // Date range filter - use initiatedAt for Transaction or createdAt for CommissionEarning
-    if (startDate || endDate) {
-      whereClause.createdAt = {};
-      if (startDate) whereClause.createdAt.gte = new Date(startDate);
-      if (endDate) whereClause.createdAt.lte = new Date(endDate);
-    }
-
-    const earnings = await Prisma.commissionEarning.findMany({
-      where: whereClause,
+    return await Prisma.commissionEarning.findMany({
+      where: { transactionId },
       include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        fromUser: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        service: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            isActive: true,
-          },
-        },
-        createdByUser: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        transaction: {
-          select: {
-            id: true,
-            referenceId: true,
-            amount: true,
-            status: true,
-            paymentType: true,
-            initiatedAt: true, // Use initiatedAt instead of createdAt
-          },
-        },
+        user: true,
+        fromUser: true,
+        serviceProviderMapping: true,
+        transaction: true,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  //  GET USER EARNINGS
+  static async getUserEarnings(userId) {
+    if (!userId) throw ApiError.badRequest("UserId required");
+
+    return await Prisma.commissionEarning.findMany({
+      where: { userId },
+      include: {
+        transaction: true,
+        serviceProviderMapping: true,
       },
       orderBy: { createdAt: "desc" },
     });
-
-    return Helper.serializeCommission(earnings);
   }
 
-  static async getCommissionSummary(userId, period) {
-    const whereClause = { userId };
+  //  TOTAL USER EARNING
+  static async getTotalUserEarning(userId) {
+    if (!userId) throw ApiError.badRequest("UserId required");
 
-    // Apply date range if provided
-    if (period && period.startDate && period.endDate) {
-      whereClause.createdAt = {
-        gte: new Date(period.startDate),
-        lte: new Date(period.endDate),
-      };
-    }
-
-    const earnings = await Prisma.commissionEarning.findMany({
-      where: whereClause,
-      select: {
-        commissionAmount: true,
-        tdsAmount: true,
-        gstAmount: true,
-        surchargeAmount: true,
-        netAmount: true,
-        commissionType: true,
-        createdAt: true,
-        service: { select: { name: true, code: true } },
-      },
-      orderBy: { createdAt: "desc" },
+    const result = await Prisma.commissionEarning.aggregate({
+      where: { userId },
+      _sum: { netAmount: true },
     });
 
-    // Calculate totals
-    const totalCommission = earnings.reduce(
-      (sum, e) => sum + Number(e.commissionAmount),
-      0
-    );
-    const totalTDS = earnings.reduce(
-      (sum, e) => sum + Number(e.tdsAmount || 0),
-      0
-    );
-    const totalGST = earnings.reduce(
-      (sum, e) => sum + Number(e.gstAmount || 0),
-      0
-    );
-    const totalSurcharge = earnings.reduce(
-      (sum, e) => sum + Number(e.surchargeAmount || 0),
-      0
-    );
-    const totalNet = earnings.reduce((sum, e) => sum + Number(e.netAmount), 0);
+    return result._sum.netAmount ?? 0n;
+  }
 
-    // Group by service
-    const earningsByService = earnings.reduce((acc, e) => {
-      const serviceName = e.service?.name || "Unknown";
-      if (!acc[serviceName]) {
-        acc[serviceName] = {
-          totalCommission: 0,
-          totalNet: 0,
-          count: 0,
-        };
-      }
-      acc[serviceName].totalCommission += Number(e.commissionAmount);
-      acc[serviceName].totalNet += Number(e.netAmount);
-      acc[serviceName].count += 1;
-      return acc;
-    }, {});
+  //  REVERSE COMMISSION (Refund Case)
+  static async reverse(
+    tx,
+    { originalTransactionId, newTransactionId, createdBy }
+  ) {
+    if (!originalTransactionId || !newTransactionId)
+      throw ApiError.badRequest("Transaction IDs required");
 
-    const summary = {
-      totalCommission,
-      totalTDS,
-      totalGST,
-      totalNet,
-      totalSurcharge,
-      transactionCount: earnings.length,
-      earningsByService,
-    };
+    const earnings = await tx.commissionEarning.findMany({
+      where: { transactionId: originalTransactionId },
+    });
 
-    return summary;
+    for (const earning of earnings) {
+      await tx.commissionEarning.create({
+        data: {
+          transactionId: newTransactionId,
+          userId: earning.userId,
+          fromUserId: earning.fromUserId,
+          serviceProviderMappingId: earning.serviceProviderMappingId,
+
+          amount: earning.amount,
+          mode: earning.mode,
+          type: earning.type,
+
+          commissionAmount: earning.commissionAmount,
+          surchargeAmount: earning.surchargeAmount,
+          tdsAmount: earning.tdsAmount,
+          gstAmount: earning.gstAmount,
+
+          // 🔁 reverse amount
+          netAmount: -earning.netAmount,
+
+          metadata: {
+            reversedFrom: originalTransactionId,
+          },
+
+          createdBy,
+        },
+      });
+    }
   }
 }

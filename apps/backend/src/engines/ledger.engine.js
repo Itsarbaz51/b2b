@@ -6,9 +6,9 @@ export default class LedgerEngine {
     {
       walletId,
       transactionId,
-      entryType, // DEBIT | CREDIT
+      entryType, // "DEBIT" | "CREDIT"
       referenceType = "TRANSACTION",
-      serviceId,
+      serviceProviderMappingId,
       amount,
       narration,
       createdBy,
@@ -16,11 +16,12 @@ export default class LedgerEngine {
       metadata,
     }
   ) {
+    if (!walletId) throw ApiError.badRequest("Wallet ID required");
+    if (!entryType) throw ApiError.badRequest("Entry type required");
+
     const amt = BigInt(amount);
 
-    if (!walletId) throw ApiError.badRequest("Wallet ID required");
-
-    // 🔒 Idempotency check
+    // 🔒 Idempotency Check
     if (idempotencyKey) {
       const existing = await tx.ledgerEntry.findUnique({
         where: { idempotencyKey },
@@ -29,23 +30,29 @@ export default class LedgerEngine {
       if (existing) return existing;
     }
 
-    // 🔎 Fetch current balance
+    // 🔎 Fetch Wallet
     const wallet = await tx.wallet.findUnique({
       where: { id: walletId },
     });
 
     if (!wallet) throw ApiError.notFound("Wallet not found");
 
+    // Calculate running balance
     const runningBalance =
       entryType === "CREDIT" ? wallet.balance + amt : wallet.balance - amt;
 
-    return tx.ledgerEntry.create({
+    // 🚨 Optional Safety Check
+    if (entryType === "DEBIT" && wallet.balance < amt) {
+      throw ApiError.badRequest("Insufficient wallet balance");
+    }
+
+    return await tx.ledgerEntry.create({
       data: {
         walletId,
         transactionId,
         entryType,
         referenceType,
-        serviceId,
+        serviceProviderMappingId,
         amount: amt,
         runningBalance,
         narration,

@@ -1,57 +1,104 @@
-import crypto from "crypto";
 import { ApiError } from "../../utils/ApiError.js";
+import ApiEntityService from "./apiEntity.service.js";
 
 export default class TransactionService {
+  // CREATE
   static async create(
     tx,
     {
       userId,
-      serviceId,
+      walletId,
+      serviceProviderMappingId,
       amount,
-      paymentType = "COLLECTION",
-      entityType,
       idempotencyKey,
+      requestPayload,
     }
   ) {
-    if (!userId || !serviceId)
-      throw ApiError.badRequest("User and Service required");
+    if (!userId || !walletId || !serviceProviderMappingId)
+      throw ApiError.badRequest("Required fields missing");
 
-    // 🔒 Idempotency Check
+    // Idempotency Check
     if (idempotencyKey) {
       const existingTxn = await tx.transaction.findUnique({
         where: { idempotencyKey },
+        include: { apiEntity: true },
       });
 
-      if (existingTxn) return existingTxn;
+      if (existingTxn) {
+        return {
+          transaction: existingTxn,
+          apiEntity: existingTxn.apiEntity,
+        };
+      }
     }
 
-    // 1️⃣ Create Transaction
+    const txnId = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const apiEntity = await ApiEntityService.create(tx, {
+      userId,
+      serviceProviderMappingId,
+      requestPayload,
+    });
+
     const transaction = await tx.transaction.create({
       data: {
+        txnId,
         userId,
-        serviceId,
+        walletId,
+        serviceProviderMappingId,
+        apiEntityId: apiEntity.id,
         amount,
         netAmount: amount,
-        paymentType,
         status: "PENDING",
         idempotencyKey,
       },
     });
 
-    // 2️⃣ Create ApiEntity
-    const apiEntity = await tx.apiEntity.create({
+    return { transaction, apiEntity };
+  }
+
+  // UPDATE (Provider response / Final status)
+  static async update(
+    tx,
+    { transactionId, status, netAmount, providerReference, providerResponse }
+  ) {
+    if (!transactionId) throw ApiError.badRequest("TransactionId required");
+
+    const existingTxn = await tx.transaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!existingTxn) throw ApiError.notFound("Transaction not found");
+
+    if (existingTxn.status === "SUCCESS")
+      throw ApiError.badRequest("Transaction already completed");
+
+    // 1️⃣ Update Transaction
+    const updatedTxn = await tx.transaction.update({
+      where: { id: transactionId },
       data: {
-        entityType,
-        entityId: crypto.randomUUID(),
-        userId,
-        serviceId,
-        status: "PENDING",
+        status: status ?? existingTxn.status,
+        netAmount: netAmount ?? existingTxn.netAmount,
+        providerReference,
+        providerResponse,
+        processedAt: status ? new Date() : undefined,
+        completedAt: status === "SUCCESS" ? new Date() : undefined,
       },
     });
 
-    return {
-      transaction,
-      apiEntity,
-    };
+    // 2️⃣ Update ApiEntity accordingly
+    if (status) {
+      await tx.apiEntity.update({
+        where: { id: existingTxn.apiEntityId },
+        data: {
+          status,
+          providerFinalData: providerResponse,
+          completedAt: status === "SUCCESS" ? new Date() : undefined,
+          errorData: status === "FAILED" ? providerResponse : undefined,
+        },
+      });
+    }
+
+    return updatedTxn;
   }
 }
