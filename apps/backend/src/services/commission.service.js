@@ -43,7 +43,7 @@ export class CommissionSettingService {
 
     // Verify referenced entities exist
     if (serviceId) {
-      const service = await Prisma.serviceProvider.findUnique({
+      const service = await Prisma.service.findUnique({
         where: { id: serviceId },
       });
       if (!service) throw ApiError.notFound("Service not found");
@@ -128,7 +128,7 @@ export class CommissionSettingService {
         OR: [{ targetUserId: userId }, { scope: "ROLE", roleId: user.roleId }],
       },
       include: {
-        serviceProvider: {
+        service: {
           select: {
             id: true,
             code: true,
@@ -187,7 +187,7 @@ export class CommissionSettingService {
     const settings = await Prisma.commissionSetting.findMany({
       where: filter,
       include: {
-        serviceProvider: {
+        service: {
           select: {
             id: true,
             code: true,
@@ -214,15 +214,47 @@ export class CommissionSettingService {
     return Helper.serializeCommission(settings);
   }
 
-  static async resolveRule(userId, serviceId) {
-    return Prisma.commissionSetting.findFirst({
-      where: {
-        serviceId,
-        isActive: true,
-        OR: [{ scope: "USER", targetUserId: userId }, { scope: "ROLE" }],
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  static async resolveRule({ userId, roleId, serviceId }) {
+    try {
+      const now = new Date();
+
+      // 1️⃣ USER LEVEL CHECK
+      const userRule = await Prisma.commissionSetting.findFirst({
+        where: {
+          scope: "USER",
+          targetUserId: userId,
+          serviceId,
+          isActive: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (userRule) {
+        console.log("User Rule Found");
+        return userRule;
+      }
+
+      // 2️⃣ ROLE LEVEL CHECK
+      const roleRule = await Prisma.commissionSetting.findFirst({
+        where: {
+          scope: "ROLE",
+          roleId,
+          serviceId,
+          isActive: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (roleRule) {
+        console.log("Role Rule Found");
+        return roleRule;
+      }
+
+      throw ApiError.notFound("Commission rule not configured");
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
   }
 }
 

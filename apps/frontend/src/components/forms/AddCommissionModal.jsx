@@ -19,7 +19,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   const users = useSelector((state) => state.users?.users || []);
   const usersLoading = useSelector((state) => state.users?.isLoading || false);
 
-  const services = useSelector((state) => state.service?.services || []);
+  const services = useSelector((state) => state.service?.services?.data || []);
 
   const servicesLoading = useSelector(
     (state) => state.service?.isLoading || false,

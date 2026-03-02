@@ -135,18 +135,12 @@ export default class CommissionEngine {
     }
   }
 
-  static async calculate({
-    retailerId,
-    serviceId,
-    amount, // BigInt (paise)
-  }) {
+  static async calculate({ userId, serviceId, amount = 0n }) {
     const baseAmount = BigInt(amount);
 
     let currentUser = await Prisma.user.findUnique({
-      where: { id: retailerId },
+      where: { id: userId },
     });
-
-    let previousRate = 0n;
 
     const breakdown = [];
 
@@ -181,47 +175,41 @@ export default class CommissionEngine {
       }
 
       const value = Number(setting.value);
-
-      let rate = 0n;
+      let gross = 0n;
 
       if (setting.type === "PERCENTAGE") {
-        rate = (baseAmount * BigInt(Math.round(value * 100))) / 10000n;
+        gross = (baseAmount * BigInt(Math.round(value * 100))) / 10000n;
       } else {
-        rate = BigInt(Math.round(value * 100));
+        // FLAT (already in rupees convert to paise)
+        gross = BigInt(Math.round(value * 100));
       }
 
-      const margin = rate - previousRate;
+      let tdsAmount = 0n;
+      let gstAmount = 0n;
+      let netAmount = gross;
 
-      if (margin > 0n) {
-        let tdsAmount = 0n;
-        let gstAmount = 0n;
-        let netAmount = margin;
-
-        if (setting.mode === "COMMISSION" && setting.applyTDS) {
-          const tdsPercent = Number(setting.tdsPercent);
-          tdsAmount = (margin * BigInt(Math.round(tdsPercent * 100))) / 10000n;
-          netAmount = margin - tdsAmount;
-        }
-
-        if (setting.mode === "SURCHARGE" && setting.applyGST) {
-          const gstPercent = Number(setting.gstPercent);
-          gstAmount = (margin * BigInt(Math.round(gstPercent * 100))) / 10000n;
-          netAmount = margin + gstAmount;
-        }
-
-        breakdown.push({
-          userId: currentUser.id,
-          roleId: currentUser.roleId,
-          mode: setting.mode,
-          type: setting.type,
-          gross: margin,
-          tdsAmount,
-          gstAmount,
-          netAmount,
-        });
+      if (setting.mode === "COMMISSION" && setting.applyTDS) {
+        const tdsPercent = Number(setting.tdsPercent);
+        tdsAmount = (gross * BigInt(Math.round(tdsPercent * 100))) / 10000n;
+        netAmount = gross - tdsAmount;
       }
 
-      previousRate = rate;
+      if (setting.mode === "SURCHARGE" && setting.applyGST) {
+        const gstPercent = Number(setting.gstPercent);
+        gstAmount = (gross * BigInt(Math.round(gstPercent * 100))) / 10000n;
+        netAmount = gross + gstAmount;
+      }
+
+      breakdown.push({
+        userId: currentUser.id,
+        roleId: currentUser.roleId,
+        mode: setting.mode,
+        type: setting.type,
+        gross,
+        tdsAmount,
+        gstAmount,
+        netAmount,
+      });
 
       if (!currentUser.parentId) break;
 

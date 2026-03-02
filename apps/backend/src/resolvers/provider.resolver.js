@@ -2,25 +2,43 @@ import Prisma from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 
 export default class ProviderResolver {
-  static async resolveProviderCode(serviceId) {
-    const service = await Prisma.serviceProvider.findUnique({
+  static async resolveProvider(serviceId) {
+    if (!serviceId) throw ApiError.badRequest("ServiceId required");
+
+    const service = await Prisma.service.findUnique({
       where: { id: serviceId },
+      include: {
+        mappings: {
+          where: { isActive: true },
+          include: {
+            provider: true,
+          },
+          orderBy: {
+            priority: "asc",
+          },
+        },
+      },
     });
 
-    if (!service) throw ApiError.badRequest("Invalid service");
+    if (!service) throw ApiError.notFound("Service not found");
 
-    //  If service has parent → parent is provider
-    if (service.parentId) {
-      const provider = await Prisma.serviceProvider.findUnique({
-        where: { id: service.parentId },
-      });
+    if (!service.mappings.length)
+      throw ApiError.badRequest("No active provider mapping found");
 
-      if (!provider) throw ApiError.badRequest("Provider not found");
+    // Highest priority mapping
+    const serviceProviderMapping = service.mappings.find(
+      (m) => m.provider && m.provider.isActive
+    );
 
-      return provider.code;
-    }
+    if (!serviceProviderMapping)
+      throw ApiError.badRequest("No active provider available");
 
-    // 🔥 If no parent → this itself is provider
-    return service.code;
+    const provider = serviceProviderMapping.provider;
+
+    return {
+      service,
+      provider,
+      serviceProviderMapping,
+    };
   }
 }

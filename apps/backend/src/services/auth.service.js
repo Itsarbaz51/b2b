@@ -66,7 +66,7 @@ class AuthServices {
     if (!user) {
       if (req) {
         await AuditLogService.createAuditLog({
-          userId: req.id,
+          userId: user.id,
           action: "LOGIN_RETRIEVAL_FAILED",
           entityType: "LOGIN",
           entityId: id,
@@ -85,7 +85,7 @@ class AuthServices {
     if (isValid !== password) {
       if (req) {
         await AuditLogService.createAuditLog({
-          userId: req.id,
+          userId: user.id,
           action: "LOGIN_CREDENTIALS_FAILED",
           entityType: "LOGIN",
           entityId: id,

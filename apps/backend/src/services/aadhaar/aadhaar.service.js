@@ -3,9 +3,9 @@ import WalletEngine from "../../engines/wallet.engine.js";
 import LedgerEngine from "../../engines/ledger.engine.js";
 import CommissionEngine from "../../engines/commission.engine.js";
 import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
-import ApiEntityService from "../common/api-entity.service.js";
-import TransactionService from "../common/transaction.service.js";
-import { getAadhaarPlugin } from "../../plugin_registry/aadhaar.registry.js";
+import ApiEntityService from "../apiEntity.service.js";
+import TransactionService from "../transaction.service.js";
+import { getAadhaarPlugin } from "../../plugin_registry/aadhaar/pluginRegistry.js";
 import { ApiError } from "../../utils/ApiError.js";
 import ProviderResolver from "../../resolvers/Provider.resolver.js";
 
@@ -19,24 +19,24 @@ export default class AadhaarService {
       serviceId
     );
 
-    const providerCode = await ProviderResolver.resolveProviderCode(serviceId);
+    const { service, provider, serviceProviderMapping } =
+      await ProviderResolver.resolveProvider(serviceId);
 
-    const plugin = getAadhaarPlugin(providerCode, {
-      bulkpeBaseUrl: process.env.BULKPE_URL,
-      apiKey: process.env.BULKPE_KEY,
-    });
+    const plugin = getAadhaarPlugin(
+      provider.code,
+      serviceProviderMapping.config
+    );
 
     return await Prisma.$transaction(async (tx) => {
-      // 1️⃣ Calculate Commission (Only base amount for hold)
+      //  Calculate Commission (Only base amount for hold)
       const commissionData = await CommissionEngine.calculate({
-        retailerId: userId,
+        userId,
         serviceId,
-        amount: 10000n, // ₹100 example
       });
 
       const amount = commissionData.baseAmount;
 
-      // 2️⃣ Create Transaction + ApiEntity
+      //  Create Transaction + ApiEntity
       const { transaction, apiEntity } = await TransactionService.create(tx, {
         userId,
         serviceId,
@@ -45,14 +45,14 @@ export default class AadhaarService {
         idempotencyKey,
       });
 
-      // 3️⃣ Hold Wallet
+      //  Hold Wallet
       const wallet = await WalletEngine.getWallet(tx, userId);
       await WalletEngine.hold(tx, wallet, amount);
 
-      // 4️⃣ Call Provider
+      //  Call Provider
       const providerResponse = await plugin.sendOtp({ aadhaarNumber });
 
-      // 5️⃣ Save Provider Reference
+      //  Save Provider Reference
       await ApiEntityService.attachProviderReference(tx, {
         apiEntityId: apiEntity.id,
         providerReference: providerResponse.referenceId,
@@ -65,7 +65,7 @@ export default class AadhaarService {
     });
   }
 
-  // 🔹 STEP 2 — VERIFY OTP
+  //  STEP 2 — VERIFY OTP
   static async verifyOtp({ userId, transactionId, referenceId, otp }) {
     const providerCode = "BULKPE";
     const plugin = getAadhaarPlugin(providerCode, {
@@ -82,14 +82,14 @@ export default class AadhaarService {
 
       const wallet = await WalletEngine.getWallet(tx, userId);
 
-      // 1️⃣ Call Provider Verify
+      //  Call Provider Verify
       const result = await plugin.verifyOtp({ referenceId, otp });
 
       if (result.data?.status === true) {
-        // 2️⃣ Capture Hold
+        //  Capture Hold
         await WalletEngine.captureHold(tx, wallet, transaction.amount);
 
-        // 3️⃣ Ledger Entry
+        //  Ledger Entry
         await LedgerEngine.create(tx, {
           walletId: wallet.id,
           transactionId,
@@ -100,7 +100,7 @@ export default class AadhaarService {
           createdBy: userId,
         });
 
-        // 4️⃣ Commission Distribution
+        //  Commission Distribution
         await CommissionEngine.distribute(tx, {
           transactionId,
           userId,
@@ -109,7 +109,7 @@ export default class AadhaarService {
           createdBy: userId,
         });
 
-        // 5️⃣ Update Transaction
+        //  Update Transaction
         await tx.transaction.update({
           where: { id: transactionId },
           data: {
