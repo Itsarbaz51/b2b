@@ -1,6 +1,6 @@
 import axios from "axios";
 import AadhaarPluginInterface from "./bulkpe.interface.js";
-import { ApiError } from "../../lib/ApiError.js";
+import { ApiError } from "../../utils/ApiError.js";
 
 class BulkpeAadhaarPlugin extends AadhaarPluginInterface {
   constructor(config) {

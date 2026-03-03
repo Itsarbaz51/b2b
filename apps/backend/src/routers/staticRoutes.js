@@ -15,6 +15,7 @@ import userRoutes from "./user.routes.js";
 // import walletRoutes from "./wallet.routes.js";
 // import fundRequestRoutes from "./fundRequest/fundRequest.routes.js";
 import employeeRoutes from "./employee.routes.js";
+import aadhaarRoutes from "./aadhaar/aadhaar.routes.js";
 
 export function StaticRoutes(app) {
   app.use("/api/v1/addresses", addressRoutes);
@@ -32,6 +33,7 @@ export function StaticRoutes(app) {
   app.use("/api/v1/system-setting", systemSettingRoutes);
   app.use("/api/v1/users", userRoutes);
   app.use("/api/v1/employees", employeeRoutes);
+  app.use("/api/v1/aadhaar", aadhaarRoutes);
   // app.use("api/v1/wallets", walletRoutes);
   // app.use("/api/v1/fund-req", fundRequestRoutes);
 }

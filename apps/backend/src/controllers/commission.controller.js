@@ -1,7 +1,6 @@
 import asyncHandler from "../utils/AsyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import {
-  CommissionEarningService,
+import CommissionEarningService, {
   CommissionSettingService,
 } from "../services/commission.service.js";
 import { ApiError } from "../utils/ApiError.js";

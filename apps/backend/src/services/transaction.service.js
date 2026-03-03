@@ -1,4 +1,4 @@
-import { ApiError } from "../../utils/ApiError.js";
+import { ApiError } from "../utils/ApiError.js";
 import ApiEntityService from "./apiEntity.service.js";
 
 export default class TransactionService {

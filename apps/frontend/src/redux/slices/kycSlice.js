@@ -164,3 +164,5 @@ export const verifyKyc = (payload) => async (dispatch) => {
     toast.error(errMsg);
   }
 };
+
+

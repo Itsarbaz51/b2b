@@ -1,4 +1,4 @@
-import { ApiError } from "../../lib/ApiError.js";
+import { ApiError } from "../../utils/ApiError.js";
 import BulkpeAadhaarPlugin from "../../plugins/aadhaar/bulkpe.plugin.js";
 
 export function getAadhaarPlugin(providerCode, config) {
