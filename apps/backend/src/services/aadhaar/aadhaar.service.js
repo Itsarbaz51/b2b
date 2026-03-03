@@ -165,7 +165,7 @@ export default class AadhaarService {
           // Update Transaction + ApiEntity
           await TransactionService.update(tx, {
             transactionId: transaction.id,
-            status: "SUCCESS",
+            status: providerResponse.data.status,
             providerReference: referenceId,
             providerResponse,
           });

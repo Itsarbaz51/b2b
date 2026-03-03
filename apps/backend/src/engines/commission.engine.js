@@ -2,6 +2,7 @@ import Prisma from "../db/db.js";
 import WalletEngine from "./wallet.engine.js";
 import LedgerEngine from "./ledger.engine.js";
 import { ApiError } from "../utils/ApiError.js";
+import CommissionEarningService from "../services/commission.service.js";
 
 export default class CommissionEngine {
   // static async distribute(
