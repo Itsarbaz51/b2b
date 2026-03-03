@@ -6,6 +6,7 @@ import {
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/AsyncHandler.js";
+import Helper from "../utils/helper.js";
 
 class ServiceProviderController {
   // CREATE
@@ -20,7 +21,7 @@ class ServiceProviderController {
     else if (type === "mapping") result = await MappingService.create(req.body);
     else throw ApiError.badRequest("Invalid type");
 
-    res.status(201).json(ApiResponse.success(result));
+    res.status(201).json(ApiResponse.success(Helper.serializeBigInt(result)));
   });
 
   // UPDATE
@@ -44,7 +45,10 @@ class ServiceProviderController {
     }
 
     return res.json(
-      ApiResponse.success(result, `${type} updated successfully`)
+      ApiResponse.success(
+        Helper.serializeBigInt(result),
+        `${type} updated successfully`
+      )
     );
   });
 
@@ -82,7 +86,7 @@ class ServiceProviderController {
       throw ApiError.badRequest("Invalid type");
     }
 
-    return res.json(ApiResponse.success(result));
+    return res.json(ApiResponse.success(Helper.serializeBigInt(result)));
   });
 
   // DELETE
@@ -106,7 +110,10 @@ class ServiceProviderController {
     }
 
     return res.json(
-      ApiResponse.success(result, `${type} deleted successfully`)
+      ApiResponse.success(
+        Helper.serializeBigInt(result),
+        `${type} deleted successfully`
+      )
     );
   });
 }

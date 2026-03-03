@@ -6,11 +6,11 @@ import { StaticRoutes } from "./routers/staticRoutes.js";
 import { requestId } from "./middlewares/requestId.middleware.js";
 import { rateLimiterMiddleware } from "./middlewares/rateLimiter.middleware.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import path from "path";
 
 const app = express();
 
 app.set("trust proxy", 1);
-
 app.use(
   cors({
     origin: (origin, callback) => {

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node dist/src/index.js",
     "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "seed-city": "node prisma/city.js"
   },
   "author": "",
   "license": "ISC",

@@ -29,8 +29,8 @@ export default class ApiEntityService {
       where: { id: apiEntityId },
       data: {
         providerInitData: providerResponse,
-        status: providerResponse.data.status,
-        errorData: providerResponse.data.status !== 'SUCCESS' ? providerResponse.data : null
+        status: providerResponse?.data?.status,
+        errorData: providerResponse?.data?.status !== 'SUCCESS' ? providerResponse?.data : null
       },
     });
   }

@@ -32,9 +32,7 @@ class BulkpeAadhaarPlugin extends AadhaarPluginInterface {
         response,
       };
     } catch (err) {
-      throw ApiError.internal(
-        err.response?.data?.message || "Aadhaar OTP request failed"
-      );
+      throw ApiError.internal(err);
     }
   }
 

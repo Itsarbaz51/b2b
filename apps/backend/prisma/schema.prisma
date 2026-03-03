@@ -155,6 +155,7 @@ model UserKyc {
   gender             Gender
   status             KycStatus    @default(PENDING)
   type               KycTypes     @default(USER_KYC)
+  kycType            String       @default("MANUAL")
   kycRejectionReason String?      @map("kyc_rejection_reason") @db.LongText
   addressId          String       @map("address_id")
   panFile            String       @map("pan_file")

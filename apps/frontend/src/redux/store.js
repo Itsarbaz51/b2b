@@ -12,6 +12,7 @@ import serviceReducer from "./slices/serviceSlice.js";
 import permissionReducer from "./slices/permissionSlice.js";
 import loginLogsReducer from "./slices/logsSlice.js";
 import settingReducer from "./slices/settingSlice.js";
+import aadhaarReducer from "./slices/aadhaarSlice.js";
 
 const store = configureStore({
   reducer: {
@@ -28,6 +29,7 @@ const store = configureStore({
     permission: permissionReducer,
     logs: loginLogsReducer,
     setting: settingReducer,
+    aadhaar: aadhaarReducer,
   },
 });
 

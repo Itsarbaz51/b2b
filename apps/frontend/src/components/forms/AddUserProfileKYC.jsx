@@ -33,6 +33,8 @@ import { FileUpload } from "../ui/FileUpload";
 import { DropdownField } from "../ui/DropdownField";
 import ButtonField from "../ui/ButtonField";
 import CloseBtn from "../ui/CloseBtn";
+import AadhaarVerificationModal from "./AadhaarVerificationModal";
+import { usePermissions } from "../hooks/usePermissions";
 
 // ---------- KYC Status Card ----------
 const KYCStatusCard = ({ kycDetail }) => {
@@ -156,6 +158,9 @@ export default function AddUserProfileKYC() {
     addressProofFile: false,
   });
 
+  const [showAadhaarModal, setShowAadhaarModal] = useState(false);
+  const [kycType, setKycType] = useState("MANUAL");
+
   const [errors, setErrors] = useState({});
 
   const { currentUser } = useSelector((state) => state.auth);
@@ -204,49 +209,86 @@ export default function AddUserProfileKYC() {
 
   const stateList = useMemo(
     () => addressState?.stateList?.filter((i) => i.stateName) || [],
-    [addressState.stateList]
+    [addressState.stateList],
   );
 
   const cityList = useMemo(
     () => addressState?.cityList?.filter((i) => i.cityName) || [],
-    [addressState.cityList]
+    [addressState.cityList],
   );
 
   const findStateIdByName = useCallback(
     (stateName) => {
       if (!stateName) return "";
+
+      const cleanedInput = stateName.toLowerCase().trim();
+
       const state = stateList.find(
-        (s) =>
-          s.stateName?.toLowerCase().trim() === stateName?.toLowerCase().trim()
+        (s) => s.stateName?.toLowerCase().trim() === cleanedInput,
       );
-      return state ? state.id : "";
+
+      if (state) return state.id;
+
+      // Fallback: partial match
+      const partialState = stateList.find((s) =>
+        cleanedInput.includes(s.stateName?.toLowerCase().trim()),
+      );
+
+      return partialState ? partialState.id : "";
     },
-    [stateList]
+    [stateList],
   );
+
   const findCityIdByName = useCallback(
-    (cityName) => {
+    (cityName, stateId = null) => {
       if (!cityName) return "";
-      const city = cityList.find(
-        (c) =>
-          c.cityName?.toLowerCase().trim() === cityName?.toLowerCase().trim()
+
+      const cleanedInput = cityName.toLowerCase().trim();
+
+      // Filter by state first (important)
+      const selectedState = stateList.find((s) => s.id === stateId);
+
+      const citiesInState = selectedState
+        ? cityList.filter((c) =>
+            c.cityCode.startsWith(selectedState.stateCode + "_"),
+          )
+        : cityList;
+
+      const city = citiesInState.find(
+        (c) => c.cityName?.toLowerCase().trim() === cleanedInput,
       );
-      return city ? city.id : "";
+
+      if (city) return city.id;
+
+      // Fallback partial match
+      const partialCity = citiesInState.find(
+        (c) =>
+          cleanedInput.includes(c.cityName?.toLowerCase().trim()) ||
+          c.cityName?.toLowerCase().trim().includes(cleanedInput),
+      );
+
+      return partialCity ? partialCity.id : "";
     },
-    [cityList]
+    [cityList],
   );
 
   const filteredCities = useMemo(() => {
-    if (!formData.stateId) return cityList;
-    return cityList.filter(
-      (city) => city.stateId === formData.stateId || !city.stateId
+    if (!formData.stateId) return [];
+
+    const selectedState = stateList.find((s) => s.id === formData.stateId);
+
+    if (!selectedState) return [];
+
+    return cityList.filter((city) =>
+      city.cityCode.startsWith(selectedState.stateCode + "_"),
     );
-  }, [cityList, formData.stateId]);
+  }, [cityList, formData.stateId, stateList]);
 
   useEffect(() => {
     if (kycDetail && kycDetail.status === "REJECT") {
       // Convert state and city names to IDs
       const stateId = findStateIdByName(kycDetail.location?.state);
-      const cityId = findCityIdByName(kycDetail.location?.city);
+      const cityId = findCityIdByName(kycDetail.location?.city, stateId);
 
       // Format date properly
       const dob = kycDetail.profile?.dob
@@ -281,7 +323,7 @@ export default function AddUserProfileKYC() {
       ) {
         aadhaarNumber = `${aadhaarNumber.slice(0, 4)}-${aadhaarNumber.slice(
           4,
-          8
+          8,
         )}-${aadhaarNumber.slice(8)}`;
       }
 
@@ -363,7 +405,7 @@ export default function AddUserProfileKYC() {
       } else {
         value = `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(
           4,
-          8
+          8,
         )}-${digitsOnly.slice(8, 12)}`;
       }
     }
@@ -429,7 +471,7 @@ export default function AddUserProfileKYC() {
 
     if (step === 1) {
       ["firstName", "lastName", "fatherName", "dob", "gender"].forEach(
-        (f) => !formData[f] && (newErrors[f] = "Required")
+        (f) => !formData[f] && (newErrors[f] = "Required"),
       );
 
       const namePattern = /^[A-Za-z\s]{2,50}$/;
@@ -488,7 +530,7 @@ export default function AddUserProfileKYC() {
 
     if (step === 3) {
       ["address", "pinCode", "stateId", "cityId"].forEach(
-        (f) => !formData[f] && (newErrors[f] = "Required")
+        (f) => !formData[f] && (newErrors[f] = "Required"),
       );
       if (formData.pinCode && !/^\d{6}$/.test(formData.pinCode))
         newErrors.pinCode = "PIN code must be 6 digits";
@@ -531,7 +573,7 @@ export default function AddUserProfileKYC() {
         };
 
         await dispatch(
-          updateEntity("address-update", kycDetail.location.id, addressPayload)
+          updateEntity("address-update", kycDetail.location.id, addressPayload),
         );
         addressId = kycDetail.location.id;
       } else {
@@ -544,7 +586,7 @@ export default function AddUserProfileKYC() {
         };
 
         const addressRes = await dispatch(
-          createEntity("address-store", addressPayload)
+          createEntity("address-store", addressPayload),
         );
         addressId = addressRes.data?.id;
       }
@@ -558,6 +600,7 @@ export default function AddUserProfileKYC() {
       kycPayload.append("panNumber", formData.panNumber);
       kycPayload.append("aadhaarNumber", aadhaarNumberClean);
       kycPayload.append("addressId", addressId);
+      kycPayload.append("kycType", kycType);
 
       if (files.photo) kycPayload.append("photo", files.photo);
       if (files.panFile) kycPayload.append("panFile", files.panFile);
@@ -571,7 +614,7 @@ export default function AddUserProfileKYC() {
           updatekycSubmit({
             id: kycDetail.id,
             data: kycPayload,
-          })
+          }),
         );
       } else {
         await dispatch(kycSubmit(kycPayload));
@@ -622,8 +665,8 @@ export default function AddUserProfileKYC() {
   };
 
   const steps = [
-    { number: 1, title: "Personal Info", icon: User },
-    { number: 2, title: "Documents", icon: FileText },
+    { number: 1, title: "Documents", icon: FileText },
+    { number: 2, title: "Personal Info", icon: User },
     { number: 3, title: "Address", icon: MapPin },
     { number: 4, title: "Upload Files", icon: Upload },
   ];
@@ -718,11 +761,19 @@ export default function AddUserProfileKYC() {
     );
   }
 
+  const permissions = usePermissions();
+  const aadhaarServiceId = useMemo(() => {
+    const service = permissions.normalizedServices?.find(
+      (s) => s.code === "AADHAAR",
+    );
+    return service?.original?.service?.id || null;
+  }, [permissions.normalizedServices]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header with Logout Button */}
-        <div className="bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl shadow-xl p-8 mb-8">
+        <div className="bg-linear-to-r from-cyan-500 to-purple-600 rounded-2xl shadow-xl p-8 mb-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <Shield className="text-white" size={32} />
@@ -756,8 +807,8 @@ export default function AddUserProfileKYC() {
                       currentStep > step.number
                         ? "bg-green-500 text-white"
                         : currentStep === step.number
-                        ? "bg-gradient-to-r from-cyan-500 to-purple-600 text-white"
-                        : "bg-gray-200 text-gray-500"
+                          ? "bg-gradient-to-r from-cyan-500 to-purple-600 text-white"
+                          : "bg-gray-200 text-gray-500"
                     }`}
                   >
                     {currentStep > step.number ? (
@@ -792,6 +843,59 @@ export default function AddUserProfileKYC() {
         <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
           {/* Step 1 */}
           {currentStep === 1 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* PAN FIELD */}
+              <div className="flex flex-col">
+                <InputField
+                  label="PAN Number"
+                  name="panNumber"
+                  icon={CreditCard}
+                  value={formData.panNumber}
+                  onChange={handleInputChange}
+                  error={errors.panNumber}
+                  placeholder="ABCDE1234F"
+                  maxLength={10}
+                />
+
+                <div className="flex justify-end mt-2">
+                  <ButtonField
+                    name="Verify PAN"
+                    type="button"
+                    isOpen={() => console.log("Verify PAN")}
+                    btncss="px-4 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  />
+                </div>
+              </div>
+
+              {/* AADHAAR FIELD */}
+              <div className="flex flex-col">
+                <InputField
+                  label="Aadhaar Number"
+                  name="aadhaarNumber"
+                  icon={CreditCard}
+                  value={formData.aadhaarNumber}
+                  onChange={handleInputChange}
+                  error={errors.aadhaarNumber}
+                  placeholder="1234-5678-9012"
+                  maxLength={14}
+                />
+
+                <div className="flex justify-end mt-2">
+                  {permissions.hasAadhaarVerification && (
+                    <ButtonField
+                      name="Verify Aadhaar"
+                      type="button"
+                      isOpen={() => setShowAadhaarModal(true)}
+                      btncss="px-4 py-1 text-sm bg-blue-600 text-white rounded-lg"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2 */}
+          {currentStep === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputField
                 label="First Name"
@@ -849,32 +953,6 @@ export default function AddUserProfileKYC() {
                   </label>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Step 2 */}
-          {currentStep === 2 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                label="PAN Number"
-                name="panNumber"
-                icon={CreditCard}
-                value={formData.panNumber}
-                onChange={handleInputChange}
-                error={errors.panNumber}
-                placeholder="ABCDE1234F"
-                maxLength={10}
-              />
-              <InputField
-                label="Aadhaar Number"
-                name="aadhaarNumber"
-                icon={CreditCard}
-                value={formData.aadhaarNumber}
-                onChange={handleInputChange}
-                error={errors.aadhaarNumber}
-                placeholder="1234-5678-9012"
-                maxLength={14}
-              />
             </div>
           )}
 
@@ -1032,6 +1110,84 @@ export default function AddUserProfileKYC() {
           </div>
         </div>
       </div>
+      {showAadhaarModal && (
+        <AadhaarVerificationModal
+          aadhaarNumber={formData.aadhaarNumber}
+          serviceId={aadhaarServiceId}
+          onClose={() => setShowAadhaarModal(false)}
+          onSuccess={(data) => {
+            setKycType("API");
+
+            // Name Split
+            const fullName = data?.name || "";
+            const nameParts = fullName.trim().split(" ");
+
+            const firstName = nameParts[0] || "";
+            const lastName = nameParts.slice(1).join(" ") || "";
+
+            // Convert DOB from DD-MM-YYYY → YYYY-MM-DD
+            let formattedDob = "";
+            if (data?.dob) {
+              const [day, month, year] = data.dob.split("-");
+              formattedDob = `${year}-${month}-${day}`;
+            }
+
+            // Gender Map
+            const genderMap = {
+              M: "MALE",
+              F: "FEMALE",
+              O: "OTHER",
+            };
+
+            const mappedGender = genderMap[data?.gender] || "MALE";
+
+            // State & City ID mapping
+            const apiState = data?.split_address?.state;
+            const apiCity =
+              data?.split_address?.dist ||
+              data?.split_address?.vtc ||
+              data?.split_address?.subdist;
+
+            const stateId = findStateIdByName(apiState);
+            const cityId = findCityIdByName(apiCity, stateId);
+
+            // Autofill form
+            setFormData((prev) => ({
+              ...prev,
+              firstName,
+              lastName,
+              fatherName: data?.care_of || "",
+              dob: formattedDob,
+              gender: mappedGender,
+              address: data?.address || "",
+              pinCode: data?.split_address?.pincode || "",
+              stateId,
+              cityId,
+            }));
+
+            // 6️⃣ Auto Photo Fill (Base64 Safe Handling)
+            if (data?.photo_link) {
+              let cleanedPhoto = data.photo_link.trim();
+
+              // Fix double base64 prefix issue
+              const parts = cleanedPhoto.split("base64,");
+              if (parts.length > 2) {
+                cleanedPhoto = "data:image/png;base64," + parts.pop();
+              }
+
+              setFilePreviews((prev) => ({
+                ...prev,
+                photo: cleanedPhoto,
+              }));
+
+              setPreFilledFiles((prev) => ({
+                ...prev,
+                photo: true,
+              }));
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

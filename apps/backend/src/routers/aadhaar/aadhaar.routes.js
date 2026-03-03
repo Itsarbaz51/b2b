@@ -16,7 +16,7 @@ aadhaarRoutes.post(
 
 // Verify OTP (Business)
 aadhaarRoutes.post(
-  "/verify",
+  "/verify-otp",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["business"]),
   AadhaarController.verify

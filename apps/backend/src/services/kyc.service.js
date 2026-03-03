@@ -415,6 +415,7 @@ class KycServices {
           fatherName: payload.fatherName.trim(),
           dob: new Date(payload.dob),
           gender: payload.gender,
+          kycType: payload.kycType,
           addressId: addressExists.id,
           panFile: panUrl,
           aadhaarFile: aadhaarUrl,

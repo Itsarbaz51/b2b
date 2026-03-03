@@ -29,7 +29,7 @@ export const usePermissions = (routePath = null) => {
       // Employee users ke liye
       if (userType === USER_TYPES.EMPLOYEE) {
         return permissions.some(
-          (perm) => perm.key === permissionKey.toLowerCase()
+          (perm) => perm.key === permissionKey.toLowerCase(),
         );
       }
 
@@ -38,7 +38,7 @@ export const usePermissions = (routePath = null) => {
 
     const hasService = (serviceCode) => {
       return services.some(
-        (service) => service.code === serviceCode && service.canView
+        (service) => service.code === serviceCode && service.canView,
       );
     };
 
@@ -89,7 +89,7 @@ export const usePermissions = (routePath = null) => {
         // Business users ke liye fund tabs filter karo based on available services
         if (pagePath === "/request-fund") {
           return pageTabs.filter((tab) =>
-            services.some((service) => service.code === tab.permission)
+            services.some((service) => service.code === tab.permission),
           );
         }
         return pageTabs;
@@ -128,6 +128,7 @@ export const usePermissions = (routePath = null) => {
       // Services
       hasRazorpay: hasService(PERMISSIONS.RAZORPAY),
       hasBankTransfer: hasService(PERMISSIONS.BANK_TRANSFER),
+      hasAadhaarVerification: hasService(PERMISSIONS.AADHAAR_VERIFICATION),
     };
 
     // Feature flags - FIXED: Same logic for both user types

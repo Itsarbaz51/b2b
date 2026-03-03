@@ -10,7 +10,7 @@ export default class ServicePermissionResolver {
     const service = await Prisma.service.findUnique({
       where: { id: serviceId },
       include: {
-        serviceProviderMapping: {
+        mappings: {
           include: {
             provider: true,
           },
@@ -23,21 +23,23 @@ export default class ServicePermissionResolver {
     if (!service.isActive)
       throw ApiError.forbidden("Service is inactive contact your admin");
 
-    if (!service.serviceProviderMapping)
+    if (!service.mappings || service.mappings.length === 0)
       throw ApiError.forbidden("Service provider mapping missing");
 
-    if (!service.serviceProviderMapping.isActive)
+    // ✅ Get active provider mapping (priority supported)
+    const activeMapping = service.mappings
+      .filter((m) => m.isActive && m.provider?.isActive)
+      .sort((a, b) => a.priority - b.priority)[0];
+
+    if (!activeMapping)
       throw ApiError.forbidden(
-        "Service provider mapping inactive contact your admin"
+        "No active provider mapping available contact admin"
       );
 
-    if (!service.serviceProviderMapping.provider)
-      throw ApiError.forbidden("Provider not found");
-
-    if (!service.serviceProviderMapping.provider.isActive)
-      throw ApiError.forbidden("Provider inactive contact your admin");
-
+    // ===========================
     // HIERARCHY PERMISSION CHECK
+    // ===========================
+
     let currentUser = await Prisma.user.findUnique({
       where: { id: userId },
       include: { role: true },
@@ -46,7 +48,6 @@ export default class ServicePermissionResolver {
     if (!currentUser) throw ApiError.notFound("User not found");
 
     while (currentUser) {
-      // USER LEVEL PERMISSION
       const userPermission = await Prisma.userPermission.findUnique({
         where: {
           userId_serviceId: {
@@ -62,7 +63,6 @@ export default class ServicePermissionResolver {
             `Service blocked at user level (${currentUser.id})`
           );
       } else {
-        // ROLE LEVEL FALLBACK
         const rolePermission = await Prisma.rolePermission.findUnique({
           where: {
             roleId_serviceId: {
@@ -72,18 +72,12 @@ export default class ServicePermissionResolver {
           },
         });
 
-        if (!rolePermission)
-          throw ApiError.forbidden(
-            `Role permission missing (${currentUser.roleId})`
-          );
-
-        if (!rolePermission.canProcess)
+        if (rolePermission && !rolePermission.canProcess)
           throw ApiError.forbidden(
             `Service blocked at role level (${currentUser.roleId})`
           );
       }
 
-      // Move to parent
       if (!currentUser.parentId) break;
 
       currentUser = await Prisma.user.findUnique({
@@ -92,6 +86,7 @@ export default class ServicePermissionResolver {
       });
     }
 
-    return true;
+    // ✅ Return mapping for execution layer
+    return activeMapping;
   }
 }

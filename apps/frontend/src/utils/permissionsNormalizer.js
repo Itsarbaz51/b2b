@@ -33,7 +33,9 @@ export class PermissionNormalizer {
     rawPermissions.forEach((perm) => {
       if (typeof perm === "string") {
         // Check if it's a service permission
-        if (["RAZORPAY", "BANK_TRANSFER"].includes(perm)) {
+        if (
+          ["RAZORPAY", "BANK_TRANSFER", "AADHAAR_VERIFICATION"].includes(perm)
+        ) {
           services.push({
             code: perm,
             canView: true,

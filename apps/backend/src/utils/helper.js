@@ -358,6 +358,26 @@ class Helper {
 
     return Object.keys(deviceInfo).length > 0 ? deviceInfo : undefined;
   }
+
+  static serializeBigInt(obj) {
+    return JSON.parse(
+      JSON.stringify(obj, (_, value) =>
+        typeof value === "bigint" ? value.toString() : value
+      )
+    );
+  }
+
+  static sanitizeBase64Image(base64String) {
+    if (!base64String) return null;
+
+    // Remove duplicate prefixes (1 ya multiple case handle karega)
+    const cleaned = base64String.replace(
+      /(data:image\/\w+;base64,)+/,
+      "data:image/png;base64,"
+    );
+
+    return cleaned;
+  }
 }
 
 export default Helper;

@@ -17,7 +17,7 @@ class AadhaarController {
   });
 
   static verify = asyncHandler(async (req, res) => {
-    const result = await AadhaarService.verify(req.body, req.user);
+    const result = await AadhaarService.verifyOtp(req.body, req.user);
 
     if (!result) {
       throw ApiError.internal("Verification failed");

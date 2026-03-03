@@ -136,7 +136,7 @@ export class ProviderService {
         include: {
           mappings: {
             include: {
-              service: true, 
+              service: true,
             },
           },
         },
@@ -158,7 +158,15 @@ export class ProviderService {
 
 export class MappingService {
   static async create(payload) {
-    const { serviceId, providerId, config, priority, isActive } = payload;
+    const {
+      serviceId,
+      providerId,
+      config,
+      priority,
+      isActive,
+      sellingPrice,
+      providerCost,
+    } = payload;
 
     if (!serviceId || !providerId)
       throw ApiError.badRequest("serviceId and providerId required");
@@ -175,6 +183,8 @@ export class MappingService {
       data: {
         serviceId,
         providerId,
+        sellingPrice,
+        providerCost,
         config: config ?? null,
         priority: priority ?? 1,
         isActive: isActive ?? true,
@@ -193,6 +203,8 @@ export class MappingService {
       where: { id },
       data: {
         config: payload.config,
+        sellingPrice: payload.sellingPrice,
+        providerCost: payload.providerCost,
         priority: payload.priority,
         isActive: payload.isActive,
       },

@@ -24,6 +24,7 @@ export const PERMISSIONS = {
   // Services
   RAZORPAY: "RAZORPAY",
   BANK_TRANSFER: "BANK_TRANSFER",
+  AADHAAR_VERIFICATION: "AADHAAR",
 
   // Settings Tabs
   GENERAL_SETTINGS: "General Settings",

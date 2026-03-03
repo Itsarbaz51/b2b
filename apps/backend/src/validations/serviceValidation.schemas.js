@@ -10,6 +10,9 @@ export class ServiceValidationSchemas {
       serviceId: z.string().uuid().optional(),
       providerId: z.string().uuid().optional(),
 
+      providerCost: z.coerce.number().positive().optional(),
+      sellingPrice: z.coerce.number().positive().optional(),
+
       config: z.any().optional(),
       priority: z.number().optional(),
       isActive: z.boolean().optional(),
