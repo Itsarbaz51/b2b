@@ -7,6 +7,8 @@ axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
   services: [],
+  providers: [],
+  mappings: [],
   currentItem: null,
   isLoading: false,
   error: null,
@@ -22,41 +24,72 @@ const serviceSlice = createSlice({
       state.error = null;
       state.success = null;
     },
+
     serviceSuccess: (state, action) => {
       state.isLoading = false;
       state.success = action.payload?.message || null;
-      if (action.payload?.message) toast.success(action.payload.message);
+
+      if (action.payload?.message) {
+        toast.success(action.payload.message);
+      }
     },
+
     serviceFail: (state, action) => {
       state.isLoading = false;
       state.error = action.payload;
+
       if (action.payload) toast.error(action.payload);
     },
+
     setServices: (state, action) => {
+      state.services = action.payload;
       state.isLoading = false;
-      state.services = action.payload?.data || action.payload;
     },
-    addService: (state, action) => {
-      state.services.unshift(action.payload?.data || action.payload);
-    },
-    updateServiceInList: (state, action) => {
-      const updated = action.payload?.data || action.payload;
-      const index = state.services.data.findIndex((item) => item.id === updated.id);
-      if (index !== -1) {
-        state.services[index] = updated;
-      }
-    },
-    removeService: (state, action) => {
-      state.services = state.services.filter(
-        (item) => item.id !== action.payload,
-      );
-    },
-    resetService: (state) => {
-      state.services = [];
-      state.currentItem = null;
+
+    setProviders: (state, action) => {
+      state.providers = action.payload;
       state.isLoading = false;
-      state.error = null;
-      state.success = null;
+    },
+
+    setMappings: (state, action) => {
+      state.mappings = action.payload;
+      state.isLoading = false;
+    },
+
+    addItem: (state, action) => {
+      const { type, data } = action.payload;
+
+      if (type === "service") state.services.unshift(data);
+      if (type === "provider") state.providers.unshift(data);
+      if (type === "mapping") state.mappings.unshift(data);
+    },
+
+    updateItem: (state, action) => {
+      const { type, data } = action.payload;
+
+      const list =
+        type === "service"
+          ? state.services
+          : type === "provider"
+            ? state.providers
+            : state.mappings;
+
+      const index = list.findIndex((i) => i.id === data.id);
+
+      if (index !== -1) list[index] = data;
+    },
+
+    removeItem: (state, action) => {
+      const { type, id } = action.payload;
+
+      if (type === "service")
+        state.services = state.services.filter((i) => i.id !== id);
+
+      if (type === "provider")
+        state.providers = state.providers.filter((i) => i.id !== id);
+
+      if (type === "mapping")
+        state.mappings = state.mappings.filter((i) => i.id !== id);
     },
   },
 });
@@ -66,10 +99,11 @@ export const {
   serviceSuccess,
   serviceFail,
   setServices,
-  addService,
-  updateServiceInList,
-  removeService,
-  resetService,
+  setProviders,
+  setMappings,
+  addItem,
+  updateItem,
+  removeItem,
 } = serviceSlice.actions;
 
 export default serviceSlice.reducer;
@@ -90,7 +124,12 @@ export const getAllServices =
         isActive,
       });
 
-      dispatch(setServices(data));
+      const list = data?.data?.data || [];
+
+      if (type === "service") dispatch(setServices(list));
+      if (type === "provider") dispatch(setProviders(list));
+      if (type === "mapping") dispatch(setMappings(list));
+
       return data;
     } catch (error) {
       const errMsg = error?.response?.data?.message || error.message;
@@ -105,8 +144,10 @@ export const createService = (payload) => async (dispatch) => {
 
     const { data } = await axios.post(`/services/create`, payload);
 
-    dispatch(addService(data));
+    dispatch(addItem({ type: payload.type, data: data.data }));
+
     dispatch(serviceSuccess(data));
+
     return data;
   } catch (error) {
     const errMsg = error?.response?.data?.message || error.message;
@@ -121,26 +162,11 @@ export const updateService = (id, payload) => async (dispatch) => {
 
     const { data } = await axios.put(`/services/${id}`, payload);
 
-    dispatch(updateServiceInList(data));
+    dispatch(updateItem({ type: payload.type, data: data.data }));
+
     dispatch(serviceSuccess(data));
+
     return data;
-  } catch (error) {
-    const errMsg = error?.response?.data?.message || error.message;
-    dispatch(serviceFail(errMsg));
-    throw error;
-  }
-};
-
-export const deleteService = (id, type) => async (dispatch) => {
-  try {
-    dispatch(serviceRequest());
-
-    await axios.delete(`/services/${id}`, {
-      data: { type },
-    });
-
-    dispatch(removeService(id));
-    toast.success("Deleted successfully");
   } catch (error) {
     const errMsg = error?.response?.data?.message || error.message;
     dispatch(serviceFail(errMsg));
