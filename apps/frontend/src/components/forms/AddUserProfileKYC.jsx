@@ -11,10 +11,9 @@ import {
   CheckCircle,
   AlertCircle,
   Shield,
-  Ban,
-  Clock,
   LogOut,
 } from "lucide-react";
+
 import { useDispatch, useSelector } from "react-redux";
 import {
   createEntity,
@@ -35,85 +34,7 @@ import ButtonField from "../ui/ButtonField";
 import CloseBtn from "../ui/CloseBtn";
 import AadhaarVerificationModal from "./AadhaarVerificationModal";
 import { usePermissions } from "../hooks/usePermissions";
-
-// ---------- KYC Status Card ----------
-const KYCStatusCard = ({ kycDetail }) => {
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case "VERIFIED":
-        return {
-          icon: CheckCircle,
-          color: "text-green-600",
-          bgColor: "bg-green-50",
-          borderColor: "border-green-200",
-          title: "KYC VERIFIED",
-          message: "Your KYC verification has been VERIFIED successfully.",
-        };
-      case "REJECT":
-        return {
-          icon: Ban,
-          color: "text-red-600",
-          bgColor: "bg-red-50",
-          borderColor: "border-red-200",
-          title: "KYC Rejected",
-          message: `Your KYC was rejected. Reason: ${kycDetail.rejectReason}`,
-        };
-      case "PENDING":
-        return {
-          icon: Clock,
-          color: "text-yellow-600",
-          bgColor: "bg-yellow-50",
-          borderColor: "border-yellow-200",
-          title: "KYC Pending",
-          message:
-            "Your KYC verification is under review. Please wait for approval.",
-        };
-      default:
-        return {
-          icon: Clock,
-          color: "text-gray-600",
-          bgColor: "bg-gray-50",
-          borderColor: "border-gray-200",
-          title: "KYC Status Unknown",
-          message: "Unable to determine KYC status.",
-        };
-    }
-  };
-
-  const config = getStatusConfig(kycDetail.status);
-  const StatusIcon = config.icon;
-
-  return (
-    <div
-      className={`border-2 ${config.borderColor} ${config.bgColor} rounded-2xl p-6 mb-6`}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-full ${config.bgColor}`}>
-            <StatusIcon className={config.color} size={32} />
-          </div>
-          <div className="flex-1">
-            <h3 className={`text-xl font-bold ${config.color} mb-2`}>
-              {config.title}
-            </h3>
-            <p className="text-gray-700 mb-3">{config.message}</p>
-
-            {kycDetail.status === "REJECT" && (
-              <div className="mt-4">
-                <ButtonField
-                  name="Resubmit KYC"
-                  type="button"
-                  isOpen={() => window.location.reload()}
-                  btncss="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { KYCStatusCard } from "../KYCStatusCard";
 
 // ---------- Main Form ----------
 export default function AddUserProfileKYC() {
@@ -164,6 +85,14 @@ export default function AddUserProfileKYC() {
   const [errors, setErrors] = useState({});
 
   const { currentUser } = useSelector((state) => state.auth);
+  const permissions = usePermissions();
+
+  const aadhaarServiceId = useMemo(() => {
+    const service = permissions.normalizedServices?.find(
+      (s) => s.code === "AADHAAR",
+    );
+    return service?.original?.service?.id || null;
+  }, [permissions.normalizedServices]);
 
   // Logout handler
   const handleLogout = () => {
@@ -673,7 +602,7 @@ export default function AddUserProfileKYC() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading KYC status...</p>
@@ -684,10 +613,10 @@ export default function AddUserProfileKYC() {
 
   if (kycDetail && kycDetail.status !== "REJECT") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4">
         <div className="max-w-4xl mx-auto">
           {/* Header with Logout Button */}
-          <div className="bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl shadow-xl p-8 mb-8">
+          <div className="bg-linear-to-r from-cyan-500 to-purple-600 rounded-2xl shadow-xl p-8 mb-8">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <Shield className="text-white" size={32} />
@@ -761,14 +690,6 @@ export default function AddUserProfileKYC() {
     );
   }
 
-  const permissions = usePermissions();
-  const aadhaarServiceId = useMemo(() => {
-    const service = permissions.normalizedServices?.find(
-      (s) => s.code === "AADHAAR",
-    );
-    return service?.original?.service?.id || null;
-  }, [permissions.normalizedServices]);
-
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -807,7 +728,7 @@ export default function AddUserProfileKYC() {
                       currentStep > step.number
                         ? "bg-green-500 text-white"
                         : currentStep === step.number
-                          ? "bg-gradient-to-r from-cyan-500 to-purple-600 text-white"
+                          ? "bg-linear-to-r from-cyan-500 to-purple-600 text-white"
                           : "bg-gray-200 text-gray-500"
                     }`}
                   >
@@ -1175,9 +1096,34 @@ export default function AddUserProfileKYC() {
                 cleanedPhoto = "data:image/png;base64," + parts.pop();
               }
 
+              // Preview
               setFilePreviews((prev) => ({
                 ...prev,
                 photo: cleanedPhoto,
+              }));
+
+              // Convert base64 → File
+              const byteString = atob(cleanedPhoto.split(",")[1]);
+              const mimeString = cleanedPhoto
+                .split(",")[0]
+                .split(":")[1]
+                .split(";")[0];
+
+              const ab = new ArrayBuffer(byteString.length);
+              const ia = new Uint8Array(ab);
+
+              for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+              }
+
+              const file = new File([ab], "aadhaar_photo.png", {
+                type: mimeString,
+              });
+
+              // Save to files state
+              setFiles((prev) => ({
+                ...prev,
+                photo: file,
               }));
 
               setPreFilledFiles((prev) => ({

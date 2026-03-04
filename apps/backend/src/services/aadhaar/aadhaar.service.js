@@ -20,13 +20,9 @@ export default class AadhaarService {
       userId,
       serviceId
     );
-    console.log(
-      "done ServicePermissionResolver.validateHierarchyServiceAccess "
-    );
 
     const { provider, serviceProviderMapping } =
       await ProviderResolver.resolveProvider(serviceId);
-    console.log("done ProviderResolver.resolveProvider ");
 
     const plugin = getAadhaarPlugin(
       provider.code,
@@ -34,8 +30,6 @@ export default class AadhaarService {
     );
 
     return await Prisma.$transaction(async (tx) => {
-      console.log("wallte get");
-
       const wallet = await WalletEngine.getWallet({
         tx,
         userId,
@@ -45,10 +39,8 @@ export default class AadhaarService {
 
       // Hold full selling price
       await WalletEngine.hold(tx, wallet, sellingPrice);
-      console.log("wallte Hold");
 
       const providerCost = BigInt(serviceProviderMapping.providerCost);
-      console.log("wallte providerCost");
 
       if (sellingPrice <= providerCost)
         throw ApiError.notFound("Invalid pricing config");
@@ -76,7 +68,7 @@ export default class AadhaarService {
         status: true,
         statusCode: 200,
         data: {
-          ref_id: "71463359",
+          ref_id: "71464459",
           status: "SUCCESS",
         },
         message: "",
@@ -84,14 +76,12 @@ export default class AadhaarService {
 
       try {
         // providerResponse = await plugin.sendOtp({ aadhaarNumber });
-        console.log("in the plugin.sendOtp");
 
         await ApiEntityService.updateProviderInit(tx, {
           apiEntityId: apiEntity.id,
           providerResponse,
         });
 
-        console.log("providerResponse", providerResponse);
         return {
           transactionId: transaction.id,
           referenceId: providerResponse?.referenceId || "71463359",
@@ -118,7 +108,6 @@ export default class AadhaarService {
 
     return await Prisma.$transaction(async (tx) => {
       // Fetch Transaction with mapping
-      console.log("      // Fetch Transaction with mapping");
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
         include: {
@@ -140,7 +129,6 @@ export default class AadhaarService {
         serviceProviderMapping.provider.code,
         serviceProviderMapping.config
       );
-      console.log("plugin");
 
       const wallet = await WalletEngine.getWallet({
         tx,
@@ -148,13 +136,11 @@ export default class AadhaarService {
         walletType: "PRIMARY",
       });
 
-      console.log("wallet", wallet);
-
       let providerResponse = {
         status: true,
         statusCode: 200,
         data: {
-          ref_id: "71463359",
+          ref_id: "71464459",
           status: "VALID",
           care_of: "Sultan Ahmed",
           address:
@@ -188,15 +174,11 @@ export default class AadhaarService {
       };
 
       try {
-        // return console.log("init await plugin.verifyOtp");
-
         // Call Provider Verify
         // providerResponse = await plugin.verifyOtp({
         //   referenceId,
         //   otp,
         // });
-
-        console.log("init await plugin.verifyOtp");
 
         if (providerResponse?.status === true) {
           let cleanedPhoto = null;
@@ -213,7 +195,7 @@ export default class AadhaarService {
           // Ledger Entry
           await LedgerEngine.create(tx, {
             walletId: wallet.id,
-            transactionId: transaction.id,
+            transactionId,
             entryType: "DEBIT",
             referenceType: "TRANSACTION",
             serviceProviderMappingId: serviceProviderMapping.id,

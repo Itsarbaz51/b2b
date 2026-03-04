@@ -209,6 +209,19 @@ class UserServices {
           version: 1,
         },
       });
+      // Create wallet for commission user
+      await Prisma.wallet.create({
+        data: {
+          userId: user.id,
+          balance: BigInt(0),
+          currency: "INR",
+          walletType: "COMMISSION",
+          holdBalance: BigInt(0),
+          availableBalance: BigInt(0),
+          isActive: true,
+          version: 1,
+        },
+      });
 
       // Send business-specific credentials email
       await sendCredentialsEmail(

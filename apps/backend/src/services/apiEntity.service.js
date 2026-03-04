@@ -28,9 +28,13 @@ export default class ApiEntityService {
     return await tx.apiEntity.update({
       where: { id: apiEntityId },
       data: {
+        reference: providerResponse?.data?.ref_id,
         providerInitData: providerResponse,
         status: providerResponse?.data?.status,
-        errorData: providerResponse?.data?.status !== 'SUCCESS' ? providerResponse?.data : null
+        errorData:
+          providerResponse?.data?.status !== "SUCCESS"
+            ? providerResponse?.data
+            : null,
       },
     });
   }

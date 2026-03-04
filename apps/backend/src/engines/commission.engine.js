@@ -5,135 +5,6 @@ import { ApiError } from "../utils/ApiError.js";
 import CommissionEarningService from "../services/commission.service.js";
 
 export default class CommissionEngine {
-  // static async distribute(
-  //   tx,
-  //   { transactionId, userId, serviceProviderMappingId, amount, createdBy }
-  // ) {
-  //   let currentUser = await tx.user.findUnique({
-  //     where: { id: userId },
-  //   });
-
-  //   let previousRate = 0n;
-  //   let totalDistributed = 0n;
-  //   const baseAmount = BigInt(amount);
-
-  //   while (currentUser) {
-  //     // Find Commission Setting (User → Role fallback)
-  //     let setting = await tx.commissionSetting.findFirst({
-  //       where: {
-  //         serviceProviderMappingId: serviceProviderMappingId,
-  //         targetUserId: currentUser.id,
-  //         isActive: true,
-  //       },
-  //     });
-
-  //     if (!setting) {
-  //       setting = await tx.commissionSetting.findFirst({
-  //         where: {
-  //           serviceProviderMappingId: serviceProviderMappingId,
-  //           roleId: currentUser.roleId,
-  //           isActive: true,
-  //         },
-  //       });
-  //     }
-
-  //     if (!setting) {
-  //       if (!currentUser.parentId) break;
-
-  //       currentUser = await tx.user.findUnique({
-  //         where: { id: currentUser.parentId },
-  //       });
-  //       continue;
-  //     }
-
-  //     const value = Number(setting.value);
-  //     let rate = 0n;
-
-  //     if (setting.type === "PERCENTAGE") {
-  //       rate = (baseAmount * BigInt(Math.round(value * 100))) / 10000n;
-  //     } else {
-  //       rate = BigInt(Math.round(value * 100));
-  //     }
-
-  //     const margin = rate - previousRate;
-
-  //     if (margin > 0n) {
-  //       let tdsAmount = 0n;
-  //       let gstAmount = 0n;
-  //       let netAmount = margin;
-
-  //       if (setting.mode === "COMMISSION" && setting.applyTDS) {
-  //         const tdsPercent = Number(setting.tdsPercent);
-  //         tdsAmount = (margin * BigInt(Math.round(tdsPercent * 100))) / 10000n;
-  //         netAmount -= tdsAmount;
-  //       }
-
-  //       if (setting.mode === "SURCHARGE" && setting.applyGST) {
-  //         const gstPercent = Number(setting.gstPercent);
-  //         gstAmount = (margin * BigInt(Math.round(gstPercent * 100))) / 10000n;
-  //         netAmount += gstAmount;
-  //       }
-
-  //       // Safety: prevent overflow
-  //       totalDistributed += margin;
-  //       if (totalDistributed > baseAmount) {
-  //         throw new Error("Commission exceeds margin pool");
-  //       }
-
-  //       // Get COMMISSION wallet
-  //       const wallet = await WalletEngine.getWallet({
-  //         tx,
-  //         userId,
-  //         walletType: "PRIMARY",
-  //       });
-
-  //       if (!wallet) {
-  //         throw new Error(`wallet missing for user ${currentUser.id}`);
-  //       }
-
-  //       // Credit wallet
-  //       await WalletEngine.credit(tx, wallet, netAmount);
-
-  //       // Ledger Entry
-  //       await LedgerEngine.create(tx, {
-  //         walletId: wallet.id,
-  //         transactionId,
-  //         entryType: "CREDIT",
-  //         referenceType: "COMMISSION",
-  //         serviceProviderMappingId,
-  //         amount: netAmount,
-  //         narration: "Commission Earned",
-  //         createdBy,
-  //       });
-
-  //       // Save CommissionEarning
-  //       await CommissionEarningService.create(tx, {
-  //         transactionId,
-  //         userId: currentUser.id,
-  //         fromUserId: rootUserId,
-  //         serviceProviderMappingId,
-  //         amount: baseAmount,
-  //         mode: setting.mode,
-  //         type: setting.type,
-  //         commissionAmount,
-  //         surchargeAmount,
-  //         tdsAmount,
-  //         gstAmount,
-  //         netAmount,
-  //         createdBy,
-  //       });
-  //     }
-
-  //     previousRate = rate;
-
-  //     if (!currentUser.parentId) break;
-
-  //     currentUser = await tx.user.findUnique({
-  //       where: { id: currentUser.parentId },
-  //     });
-  //   }
-  // }
-
   static async distribute(
     tx,
     { transactionId, userId, serviceProviderMappingId, amount, createdBy }
@@ -142,14 +13,17 @@ export default class CommissionEngine {
       where: { id: userId },
     });
 
-    const rootUserId = userId; // original transaction user
+    const rootUserId = userId;
     const baseAmount = BigInt(amount);
 
     let previousRate = 0n;
     let totalDistributed = 0n;
+    let lastUser = null;
 
     while (currentUser) {
-      // 🔎 Find Commission Setting (User → Role fallback)
+      lastUser = currentUser;
+
+      // Find Commission Setting (User → Role fallback)
       let setting = await tx.commissionSetting.findFirst({
         where: {
           serviceProviderMappingId,
@@ -174,13 +48,14 @@ export default class CommissionEngine {
         currentUser = await tx.user.findUnique({
           where: { id: currentUser.parentId },
         });
+
         continue;
       }
 
       const value = Number(setting.value);
       let rate = 0n;
 
-      // 📌 Calculate Rate
+      // Calculate Rate
       if (setting.type === "PERCENTAGE") {
         rate = (baseAmount * BigInt(Math.round(value * 100))) / 10000n;
       } else {
@@ -205,41 +80,45 @@ export default class CommissionEngine {
           surchargeAmount = margin;
         }
 
-        // 🧾 Apply TDS
+        // Apply TDS
         if (setting.mode === "COMMISSION" && setting.applyTDS) {
           const tdsPercent = Number(setting.tdsPercent);
           tdsAmount = (margin * BigInt(Math.round(tdsPercent * 100))) / 10000n;
+
           netAmount -= tdsAmount;
         }
 
-        // 🧾 Apply GST
+        // Apply GST
         if (setting.mode === "SURCHARGE" && setting.applyGST) {
           const gstPercent = Number(setting.gstPercent);
+
           gstAmount = (margin * BigInt(Math.round(gstPercent * 100))) / 10000n;
+
           netAmount += gstAmount;
         }
 
-        // 🚨 Safety Check
+        // Safety Check
         totalDistributed += margin;
+
         if (totalDistributed > baseAmount) {
-          throw new Error("Commission exceeds margin pool");
+          throw ApiError.internal("Commission exceeds margin pool");
         }
 
-        // 💰 Get CURRENT USER Wallet
+        // Get Commission Wallet
         const wallet = await WalletEngine.getWallet({
           tx,
           userId: currentUser.id,
-          walletType: "PRIMARY",
+          walletType: "COMMISSION",
         });
 
         if (!wallet) {
-          throw new Error(`Wallet missing for user ${currentUser.id}`);
+          throw ApiError.internal(`Wallet missing for user ${currentUser.id}`);
         }
 
         // Credit wallet
         await WalletEngine.credit(tx, wallet, netAmount);
 
-        // 📒 Ledger Entry
+        // Ledger Entry
         await LedgerEngine.create(tx, {
           walletId: wallet.id,
           transactionId,
@@ -251,7 +130,7 @@ export default class CommissionEngine {
           createdBy,
         });
 
-        // 💾 Save CommissionEarning
+        // Commission Earning
         await CommissionEarningService.create(tx, {
           transactionId,
           userId: currentUser.id,
@@ -275,6 +154,55 @@ export default class CommissionEngine {
 
       currentUser = await tx.user.findUnique({
         where: { id: currentUser.parentId },
+      });
+    }
+
+    // ADMIN FALLBACK (Remaining Margin)
+    const remainingMargin = baseAmount - totalDistributed;
+
+    if (remainingMargin > 0n && lastUser) {
+      // find top admin
+      let adminUser = lastUser;
+
+      while (adminUser.parentId) {
+        adminUser = await tx.user.findUnique({
+          where: { id: adminUser.parentId },
+        });
+      }
+
+      const adminWallet = await WalletEngine.getWallet({
+        tx,
+        userId: adminUser.id,
+        walletType: "COMMISSION",
+      });
+
+      await WalletEngine.credit(tx, adminWallet, remainingMargin);
+
+      await LedgerEngine.create(tx, {
+        walletId: adminWallet.id,
+        transactionId,
+        entryType: "CREDIT",
+        referenceType: "COMMISSION",
+        serviceProviderMappingId,
+        amount: remainingMargin,
+        narration: "Admin Remaining Commission",
+        createdBy,
+      });
+
+      await CommissionEarningService.create(tx, {
+        transactionId,
+        userId: adminUser.id,
+        fromUserId: rootUserId,
+        serviceProviderMappingId,
+        amount: baseAmount,
+        mode: "COMMISSION",
+        type: "PERCENTAGE",
+        commissionAmount: remainingMargin,
+        surchargeAmount: 0n,
+        tdsAmount: 0n,
+        gstAmount: 0n,
+        netAmount: remainingMargin,
+        createdBy,
       });
     }
   }

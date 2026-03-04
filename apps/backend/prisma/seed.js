@@ -6,42 +6,42 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🚀 Starting minimal seed...");
 
-  const statesData = [
-    {
-      stateName: "Maharashtra",
-      stateCode: "27",
-      cities: ["Mumbai", "Pune"],
-    },
-  ];
+  // const statesData = [
+  //   {
+  //     stateName: "Maharashtra",
+  //     stateCode: "27",
+  //     cities: ["Mumbai", "Pune"],
+  //   },
+  // ];
 
-  const createdStates = {};
-  const createdCities = {};
+  // const createdStates = {};
+  // const createdCities = {};
 
-  for (const stateData of statesData) {
-    const state = await prisma.state.upsert({
-      where: { stateCode: stateData.stateCode },
-      update: {},
-      create: {
-        stateName: stateData.stateName,
-        stateCode: stateData.stateCode,
-      },
-    });
-    createdStates[state.id] = state;
-    createdCities[state.id] = [];
+  // for (const stateData of statesData) {
+  //   const state = await prisma.state.upsert({
+  //     where: { stateCode: stateData.stateCode },
+  //     update: {},
+  //     create: {
+  //       stateName: stateData.stateName,
+  //       stateCode: stateData.stateCode,
+  //     },
+  //   });
+  //   createdStates[state.id] = state;
+  //   createdCities[state.id] = [];
 
-    for (const cityName of stateData.cities) {
-      const cityCode = cityName.toUpperCase().replace(/\s+/g, "_");
-      const city = await prisma.city.upsert({
-        where: { cityCode },
-        update: {},
-        create: {
-          cityName,
-          cityCode,
-        },
-      });
-      createdCities[state.id].push(city);
-    }
-  }
+  //   for (const cityName of stateData.cities) {
+  //     const cityCode = cityName.toUpperCase().replace(/\s+/g, "_");
+  //     const city = await prisma.city.upsert({
+  //       where: { cityCode },
+  //       update: {},
+  //       create: {
+  //         cityName,
+  //         cityCode,
+  //       },
+  //     });
+  //     createdCities[state.id].push(city);
+  //   }
+  // }
 
   console.log("\n👥 Creating roles...");
 
@@ -197,15 +197,19 @@ async function main() {
   });
 
   console.log(`✅ HR Employee created: ${hrEmployee.username}`);
-
   console.log("\n💰 Creating wallets for business users only...");
 
   // Only create wallets for business users (Admin and State Head)
   const businessUsers = [admin, stateHead];
+
   for (const user of businessUsers) {
+    // PRIMARY
     await prisma.wallet.upsert({
       where: {
-        userId_walletType: { userId: user.id, walletType: "PRIMARY" },
+        userId_walletType: {
+          userId: user.id,
+          walletType: "PRIMARY",
+        },
       },
       update: {},
       create: {
@@ -215,13 +219,34 @@ async function main() {
         holdBalance: BigInt(0),
         currency: "INR",
         isActive: true,
+        version: 1,
       },
     });
-    console.log(`💳 Wallet created for ${user.username}`);
+
+    // COMMISSION
+    await prisma.wallet.upsert({
+      where: {
+        userId_walletType: {
+          userId: user.id,
+          walletType: "COMMISSION",
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        walletType: "COMMISSION",
+        balance: BigInt(0),
+        holdBalance: BigInt(0),
+        currency: "INR",
+        isActive: true,
+        version: 1,
+      },
+    });
+
+    console.log(`💳 PRIMARY + COMMISSION wallet created for ${user.username}`);
   }
 
-  console.log("⏭️  Skipping wallet creation for HR employee (employee role)");
-
+  console.log("⏭️ Skipping wallet creation for HR employee (employee role)");
 
   console.log("\n🎉 Seeding completed successfully!");
 }

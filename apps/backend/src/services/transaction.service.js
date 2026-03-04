@@ -93,7 +93,7 @@ export default class TransactionService {
         data: {
           status,
           providerFinalData: providerResponse,
-          completedAt: status === "SUCCESS" ? new Date() : undefined,
+          completedAt: status === "VALID" ? new Date() : undefined,
           errorData: status === "FAILED" ? providerResponse : undefined,
         },
       });
