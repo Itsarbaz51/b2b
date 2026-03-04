@@ -91,7 +91,7 @@ const MembersTable = () => {
   const totalUsers = pagination.total || 0;
   const limit = pagination.limit || 10;
 
-  const services = useSelector((state) => state.service?.services.data || []);
+  const services = useSelector((state) => state.service?.services || []);
 
   //  Check if current user is ADMIN
   const isAdminUser =

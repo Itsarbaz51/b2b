@@ -187,12 +187,16 @@ export class CommissionSettingService {
     const settings = await Prisma.commissionSetting.findMany({
       where: filter,
       include: {
-        service: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            isActive: true,
+        serviceProviderMapping: {
+          include: {
+            service: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                isActive: true,
+              },
+            },
           },
         },
         role: {
