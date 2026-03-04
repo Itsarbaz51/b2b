@@ -35,7 +35,12 @@ export default class AadhaarService {
         userId,
         walletType: "PRIMARY",
       });
-      const sellingPrice = BigInt(serviceProviderMapping.sellingPrice);
+      const priceData = await CommissionEngine.calculatePrice({
+        userId,
+        serviceProviderMappingId: serviceProviderMapping.id,
+      });
+
+      const sellingPrice = priceData.finalPrice;
 
       // Hold full selling price
       await WalletEngine.hold(tx, wallet, sellingPrice);
@@ -44,15 +49,6 @@ export default class AadhaarService {
 
       if (sellingPrice <= providerCost)
         throw ApiError.notFound("Invalid pricing config");
-
-      const marginPool = sellingPrice - providerCost;
-
-      // Commission calculate on margin only
-      const commissionData = await CommissionEngine.calculate({
-        userId,
-        serviceProviderMappingId: serviceProviderMapping.id,
-        amount: marginPool,
-      });
 
       // Create transaction for full selling price
       const { transaction, apiEntity } = await TransactionService.create(tx, {
@@ -68,7 +64,7 @@ export default class AadhaarService {
         status: true,
         statusCode: 200,
         data: {
-          ref_id: "71464459",
+          ref_id: "71468859",
           status: "SUCCESS",
         },
         message: "",
@@ -85,7 +81,6 @@ export default class AadhaarService {
         return {
           transactionId: transaction.id,
           referenceId: providerResponse?.referenceId || "71463359",
-          commissionPreview: commissionData?.breakdown || "",
         };
       } catch (error) {
         console.log(error);
@@ -132,7 +127,7 @@ export default class AadhaarService {
 
       const wallet = await WalletEngine.getWallet({
         tx,
-        userId,
+        userId: transaction.userId,
         walletType: "PRIMARY",
       });
 
@@ -205,9 +200,8 @@ export default class AadhaarService {
           });
 
           // Commission Distribution (margin only)
-          const marginPool =
-            BigInt(serviceProviderMapping.sellingPrice) -
-            BigInt(serviceProviderMapping.providerCost);
+          const providerCost = BigInt(serviceProviderMapping.providerCost);
+          const marginPool = BigInt(transaction.amount) - providerCost;
 
           await CommissionEngine.distribute(tx, {
             transactionId: transaction.id,

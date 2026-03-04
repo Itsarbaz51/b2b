@@ -43,7 +43,7 @@ export class CommissionSettingService {
 
     // Verify referenced entities exist
     if (serviceId) {
-      const service = await Prisma.service.findUnique({
+      const service = await Prisma.serviceProviderMapping.findUnique({
         where: { id: serviceId },
       });
       if (!service) throw ApiError.notFound("Service not found");
@@ -69,7 +69,7 @@ export class CommissionSettingService {
         scope,
         roleId: roleId || null,
         targetUserId: targetUserId || null,
-        serviceId: serviceId || null,
+        serviceProviderMappingId: serviceId || null,
         isActive: true,
       },
     });
@@ -78,7 +78,7 @@ export class CommissionSettingService {
       scope,
       roleId: roleId || null,
       targetUserId: targetUserId || null,
-      serviceId: serviceId || null,
+      serviceProviderMappingId: serviceId || null,
 
       mode,
       type,
@@ -215,51 +215,9 @@ export class CommissionSettingService {
       orderBy: { createdAt: "desc" },
     });
 
-    return Helper.serializeCommission(settings);
+    return settings;
   }
 
-  static async resolveRule({ userId, roleId, serviceId }) {
-    try {
-      const now = new Date();
-
-      // 1️⃣ USER LEVEL CHECK
-      const userRule = await Prisma.commissionSetting.findFirst({
-        where: {
-          scope: "USER",
-          targetUserId: userId,
-          serviceId,
-          isActive: true,
-        },
-        orderBy: { createdAt: "desc" },
-      });
-
-      if (userRule) {
-        console.log("User Rule Found");
-        return userRule;
-      }
-
-      // 2️⃣ ROLE LEVEL CHECK
-      const roleRule = await Prisma.commissionSetting.findFirst({
-        where: {
-          scope: "ROLE",
-          roleId,
-          serviceId,
-          isActive: true,
-        },
-        orderBy: { createdAt: "desc" },
-      });
-
-      if (roleRule) {
-        console.log("Role Rule Found");
-        return roleRule;
-      }
-
-      throw ApiError.notFound("Commission rule not configured");
-    } catch (err) {
-      console.log(err);
-      throw err;
-    }
-  }
 }
 
 export default class CommissionEarningService {

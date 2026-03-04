@@ -159,10 +159,10 @@ const CommissionTable = ({
 
                 <td className="px-6 py-5 text-sm text-gray-700">
                   <div className="font-semibold">
-                    {commission.service?.name || "Unknown Service"}
+                    {commission.serviceProviderMapping?.service?.name || "Unknown Service"}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {commission.service?.code || "-"}
+                    {commission.serviceProviderMapping?.service?.code || "-"}
                   </div>
                 </td>
 
@@ -200,7 +200,7 @@ const CommissionTable = ({
                     </div>
                   </div>
                 </td>
-
+                {console.log(commission)}
                 <td className="px-6 py-5 text-sm text-gray-600">
                   <div className="space-y-1">
                     {commission.mode === "COMMISSION" &&

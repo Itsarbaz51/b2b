@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError.js";
 import CommissionEarningService from "../services/commission.service.js";
 
 export default class CommissionEngine {
+  // DISTRIBUTE COMMISSION
   static async distribute(
     tx,
     { transactionId, userId, serviceProviderMappingId, amount, createdBy }
@@ -18,12 +19,16 @@ export default class CommissionEngine {
 
     let previousRate = 0n;
     let totalDistributed = 0n;
-    let lastUser = null;
+
+    // FIND ADMIN USER
+    let adminUser = currentUser;
+    while (adminUser.parentId) {
+      adminUser = await tx.user.findUnique({
+        where: { id: adminUser.parentId },
+      });
+    }
 
     while (currentUser) {
-      lastUser = currentUser;
-
-      // Find Commission Setting (User → Role fallback)
       let setting = await tx.commissionSetting.findFirst({
         where: {
           serviceProviderMappingId,
@@ -53,9 +58,9 @@ export default class CommissionEngine {
       }
 
       const value = Number(setting.value);
+
       let rate = 0n;
 
-      // Calculate Rate
       if (setting.type === "PERCENTAGE") {
         rate = (baseAmount * BigInt(Math.round(value * 100))) / 10000n;
       } else {
@@ -74,63 +79,78 @@ export default class CommissionEngine {
 
         if (setting.mode === "COMMISSION") {
           commissionAmount = margin;
+
+          if (setting.applyTDS) {
+            const tdsPercent = Number(setting.tdsPercent || 0);
+
+            tdsAmount =
+              (margin * BigInt(Math.round(tdsPercent * 100))) / 10000n;
+
+            netAmount -= tdsAmount;
+          }
         }
 
         if (setting.mode === "SURCHARGE") {
           surchargeAmount = margin;
+
+          if (setting.applyGST) {
+            const gstPercent = Number(setting.gstPercent || 0);
+
+            gstAmount =
+              (margin * BigInt(Math.round(gstPercent * 100))) / 10000n;
+          }
         }
 
-        // Apply TDS
-        if (setting.mode === "COMMISSION" && setting.applyTDS) {
-          const tdsPercent = Number(setting.tdsPercent);
-          tdsAmount = (margin * BigInt(Math.round(tdsPercent * 100))) / 10000n;
-
-          netAmount -= tdsAmount;
-        }
-
-        // Apply GST
-        if (setting.mode === "SURCHARGE" && setting.applyGST) {
-          const gstPercent = Number(setting.gstPercent);
-
-          gstAmount = (margin * BigInt(Math.round(gstPercent * 100))) / 10000n;
-
-          netAmount += gstAmount;
-        }
-
-        // Safety Check
         totalDistributed += margin;
 
         if (totalDistributed > baseAmount) {
           throw ApiError.internal("Commission exceeds margin pool");
         }
 
-        // Get Commission Wallet
-        const wallet = await WalletEngine.getWallet({
-          tx,
-          userId: currentUser.id,
-          walletType: "COMMISSION",
-        });
+        // ❗ ROOT USER KO COMMISSION NA DO
+        if (currentUser.id !== rootUserId) {
+          const wallet = await WalletEngine.getWallet({
+            tx,
+            userId: currentUser.id,
+            walletType: "COMMISSION",
+          });
 
-        if (!wallet) {
-          throw ApiError.internal(`Wallet missing for user ${currentUser.id}`);
+          await WalletEngine.credit(tx, wallet, netAmount);
+
+          await LedgerEngine.create(tx, {
+            walletId: wallet.id,
+            transactionId,
+            entryType: "CREDIT",
+            referenceType: "COMMISSION",
+            serviceProviderMappingId,
+            amount: netAmount,
+            narration: "Commission Earned",
+            createdBy,
+          });
         }
 
-        // Credit wallet
-        await WalletEngine.credit(tx, wallet, netAmount);
+        // ✅ GST → ADMIN WALLET
+        if (gstAmount > 0n) {
+          const gstWallet = await WalletEngine.getWallet({
+            tx,
+            userId: adminUser.id,
+            walletType: "GST",
+          });
 
-        // Ledger Entry
-        await LedgerEngine.create(tx, {
-          walletId: wallet.id,
-          transactionId,
-          entryType: "CREDIT",
-          referenceType: "COMMISSION",
-          serviceProviderMappingId,
-          amount: netAmount,
-          narration: "Commission Earned",
-          createdBy,
-        });
+          await WalletEngine.credit(tx, gstWallet, gstAmount);
+        }
 
-        // Commission Earning
+        // ✅ TDS → ADMIN WALLET
+        if (tdsAmount > 0n) {
+          const tdsWallet = await WalletEngine.getWallet({
+            tx,
+            userId: adminUser.id,
+            walletType: "TDS",
+          });
+
+          await WalletEngine.credit(tx, tdsWallet, tdsAmount);
+        }
+
         await CommissionEarningService.create(tx, {
           transactionId,
           userId: currentUser.id,
@@ -156,59 +176,11 @@ export default class CommissionEngine {
         where: { id: currentUser.parentId },
       });
     }
-
-    // ADMIN FALLBACK (Remaining Margin)
-    const remainingMargin = baseAmount - totalDistributed;
-
-    if (remainingMargin > 0n && lastUser) {
-      // find top admin
-      let adminUser = lastUser;
-
-      while (adminUser.parentId) {
-        adminUser = await tx.user.findUnique({
-          where: { id: adminUser.parentId },
-        });
-      }
-
-      const adminWallet = await WalletEngine.getWallet({
-        tx,
-        userId: adminUser.id,
-        walletType: "COMMISSION",
-      });
-
-      await WalletEngine.credit(tx, adminWallet, remainingMargin);
-
-      await LedgerEngine.create(tx, {
-        walletId: adminWallet.id,
-        transactionId,
-        entryType: "CREDIT",
-        referenceType: "COMMISSION",
-        serviceProviderMappingId,
-        amount: remainingMargin,
-        narration: "Admin Remaining Commission",
-        createdBy,
-      });
-
-      await CommissionEarningService.create(tx, {
-        transactionId,
-        userId: adminUser.id,
-        fromUserId: rootUserId,
-        serviceProviderMappingId,
-        amount: baseAmount,
-        mode: "COMMISSION",
-        type: "PERCENTAGE",
-        commissionAmount: remainingMargin,
-        surchargeAmount: 0n,
-        tdsAmount: 0n,
-        gstAmount: 0n,
-        netAmount: remainingMargin,
-        createdBy,
-      });
-    }
   }
 
+  // COMMISSION PREVIEW
   static async calculate({ userId, serviceProviderMappingId, amount = 0n }) {
-    const baseAmount = BigInt(amount); // margin pool
+    const baseAmount = BigInt(amount);
 
     let currentUser = await Prisma.user.findUnique({
       where: { id: userId },
@@ -218,7 +190,6 @@ export default class CommissionEngine {
     let totalNetDistributed = 0n;
 
     while (currentUser) {
-      // 1️⃣ USER override
       let setting = await Prisma.commissionSetting.findFirst({
         where: {
           serviceProviderMappingId,
@@ -227,7 +198,6 @@ export default class CommissionEngine {
         },
       });
 
-      // 2️⃣ ROLE fallback
       if (!setting) {
         setting = await Prisma.commissionSetting.findFirst({
           where: {
@@ -244,17 +214,17 @@ export default class CommissionEngine {
         currentUser = await Prisma.user.findUnique({
           where: { id: currentUser.parentId },
         });
+
         continue;
       }
 
       const value = Number(setting.value);
+
       let gross = 0n;
 
-      // 3️⃣ % or FLAT support
       if (setting.type === "PERCENTAGE") {
         gross = (baseAmount * BigInt(Math.round(value * 100))) / 10000n;
       } else {
-        // FLAT (₹ to paise)
         gross = BigInt(Math.round(value * 100));
       }
 
@@ -262,17 +232,17 @@ export default class CommissionEngine {
       let gstAmount = 0n;
       let netAmount = gross;
 
-      // 4️⃣ COMMISSION → TDS cut
       if (setting.mode === "COMMISSION" && setting.applyTDS) {
         const tdsPercent = Number(setting.tdsPercent || 0);
+
         tdsAmount = (gross * BigInt(Math.round(tdsPercent * 100))) / 10000n;
 
         netAmount = gross - tdsAmount;
       }
 
-      // 5️⃣ SURCHARGE → GST add
       if (setting.mode === "SURCHARGE" && setting.applyGST) {
         const gstPercent = Number(setting.gstPercent || 0);
+
         gstAmount = (gross * BigInt(Math.round(gstPercent * 100))) / 10000n;
 
         netAmount = gross + gstAmount;
@@ -298,13 +268,90 @@ export default class CommissionEngine {
       });
     }
 
-    if (totalNetDistributed > baseAmount)
-      throw ApiError.notFound("Commission exceeds margin pool");
+    if (totalNetDistributed > baseAmount) {
+      throw ApiError.internal("Commission exceeds margin pool");
+    }
 
     return {
       baseAmount,
       totalNetDistributed,
       breakdown,
+    };
+  }
+
+  // SURCHARGE PRICE CALCULATION
+  static async calculatePrice({ userId, serviceProviderMappingId }) {
+    const mapping = await Prisma.serviceProviderMapping.findUnique({
+      where: { id: serviceProviderMappingId },
+    });
+
+    const providerCost = BigInt(mapping.providerCost);
+
+    let totalSurcharge = 0n;
+    let totalGST = 0n;
+
+    let currentUser = await Prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    while (currentUser) {
+      let setting = await Prisma.commissionSetting.findFirst({
+        where: {
+          serviceProviderMappingId,
+          targetUserId: currentUser.id,
+          isActive: true,
+        },
+      });
+
+      if (!setting) {
+        setting = await Prisma.commissionSetting.findFirst({
+          where: {
+            serviceProviderMappingId,
+            roleId: currentUser.roleId,
+            isActive: true,
+          },
+        });
+      }
+
+      if (setting && setting.mode === "SURCHARGE") {
+        const value = Number(setting.value);
+
+        let surcharge = 0n;
+
+        if (setting.type === "PERCENTAGE") {
+          surcharge = (providerCost * BigInt(Math.round(value * 100))) / 10000n;
+        } else {
+          surcharge = BigInt(Math.round(value * 100));
+        }
+
+        totalSurcharge += surcharge;
+
+        // GST calculation
+        if (setting.applyGST) {
+          const gstPercent = Number(setting.gstPercent || 0);
+
+          const gst =
+            (surcharge * BigInt(Math.round(gstPercent * 100))) / 10000n;
+
+          totalGST += gst;
+        }
+      }
+
+      if (!currentUser.parentId) break;
+
+      currentUser = await Prisma.user.findUnique({
+        where: { id: currentUser.parentId },
+      });
+    }
+
+    const finalPrice = providerCost + totalSurcharge + totalGST;
+
+    return {
+      providerCost,
+      surcharge: totalSurcharge,
+      gst: totalGST,
+      finalPrice,
+      margin: totalSurcharge,
     };
   }
 }

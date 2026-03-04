@@ -19,7 +19,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   const users = useSelector((state) => state.users?.users || []);
   const usersLoading = useSelector((state) => state.users?.isLoading || false);
 
-  const services = useSelector((state) => state.service?.services || []);
+  const services = useSelector((state) => state.service?.mappings || []);
 
   const servicesLoading = useSelector(
     (state) => state.service?.isLoading || false,
@@ -93,7 +93,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   // Fetch roles, users and services when component mounts
   useEffect(() => {
     dispatch(getAllRoles());
-    dispatch(getAllServices({ type: "service", isActive: true }));
+    dispatch(getAllServices({ type: "mapping", isActive: true }));
     dispatch(getAllRolesByType("business"));
     dispatch(getAllBusinessUsersByParentId({ search: "", status: "ACTIVE" }));
   }, [dispatch]);
@@ -376,7 +376,11 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   const formatServiceDisplayName = (service) => {
     if (!service) return "";
 
-    return service.name || service.code || "Unknown Service";
+    return (
+      `${service.service.name} (${service.provider.name})` ||
+      `${service.service.code} (${service.provider.code})` ||
+      "Unknown Service"
+    );
   };
 
   // Handle click outside to close dropdown

@@ -243,6 +243,45 @@ async function main() {
       },
     });
 
+    // GST
+    await prisma.wallet.upsert({
+      where: {
+        userId_walletType: {
+          userId: user.id,
+          walletType: "GST",
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        walletType: "GST",
+        balance: BigInt(0),
+        holdBalance: BigInt(0),
+        currency: "INR",
+        isActive: true,
+        version: 1,
+      },
+    });
+    // TDS
+    await prisma.wallet.upsert({
+      where: {
+        userId_walletType: {
+          userId: user.id,
+          walletType: "TDS",
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        walletType: "TDS",
+        balance: BigInt(0),
+        holdBalance: BigInt(0),
+        currency: "INR",
+        isActive: true,
+        version: 1,
+      },
+    });
+
     console.log(`💳 PRIMARY + COMMISSION wallet created for ${user.username}`);
   }
 

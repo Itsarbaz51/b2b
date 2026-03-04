@@ -634,6 +634,8 @@ enum WalletType {
   COMMISSION
   ESCROW
   BONUS
+  GST
+  TDS
 }
 
 enum ApiProvider {

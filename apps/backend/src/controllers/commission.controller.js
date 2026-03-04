@@ -4,6 +4,7 @@ import CommissionEarningService, {
   CommissionSettingService,
 } from "../services/commission.service.js";
 import { ApiError } from "../utils/ApiError.js";
+import Helper from "../utils/helper.js";
 
 export class CommissionSettingController {
   static createOrUpdate = asyncHandler(async (req, res) => {
@@ -56,7 +57,7 @@ export class CommissionSettingController {
       .status(200)
       .json(
         ApiResponse.success(
-          settings,
+          Helper.serializeBigInt(settings),
           "Commission settings fetched successfully",
           200
         )
