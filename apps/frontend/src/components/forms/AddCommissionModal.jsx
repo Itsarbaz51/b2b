@@ -65,9 +65,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         type: editData.type || "FLAT",
         value: editData.value || "",
 
-        minAmount: editData.minAmount ?? "",
-        maxAmount: editData.maxAmount ?? "",
-
         applyTDS: editData.applyTDS || false,
         tdsPercent: editData.tdsPercent ?? "",
 
@@ -246,15 +243,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       ) {
         newErrors.gstPercent = "GST percentage must be between 0 and 100";
       }
-    }
-
-    // Min/Max validation
-    if (
-      formData.minAmount &&
-      formData.maxAmount &&
-      Number(formData.minAmount) > Number(formData.maxAmount)
-    ) {
-      newErrors.maxAmount = "Max amount must be greater than min amount";
     }
 
     setErrors(newErrors);

@@ -14,7 +14,9 @@ app.set("trust proxy", 1);
 app.use(
   cors({
     origin: (origin, callback) => {
-      const allowed = [process.env.CLIENT_URL];
+      const allowed = [
+        process.env.CLIENT_URL || "https://7m6g6bvg-5173.inc1.devtunnels.ms",
+      ];
       if (!origin || allowed.includes(origin)) {
         callback(null, true);
       } else {

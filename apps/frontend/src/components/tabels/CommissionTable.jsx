@@ -74,9 +74,7 @@ const CommissionTable = ({
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Value
             </th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
-              Min/Max
-            </th>
+
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               TDS/GST
             </th>
@@ -159,7 +157,8 @@ const CommissionTable = ({
 
                 <td className="px-6 py-5 text-sm text-gray-700">
                   <div className="font-semibold">
-                    {commission.serviceProviderMapping?.service?.name || "Unknown Service"}
+                    {commission.serviceProviderMapping?.service?.name ||
+                      "Unknown Service"}
                   </div>
                   <div className="text-xs text-gray-500">
                     {commission.serviceProviderMapping?.service?.code || "-"}
@@ -184,23 +183,6 @@ const CommissionTable = ({
                   </div>
                 </td>
 
-                <td className="px-6 py-5 text-sm text-gray-600">
-                  <div className="space-y-1">
-                    <div>
-                      Min:{" "}
-                      {commission.minAmount != null
-                        ? `₹${commission.minAmount}`
-                        : "-"}
-                    </div>
-                    <div>
-                      Max:{" "}
-                      {commission.maxAmount != null
-                        ? `₹${commission.maxAmount}`
-                        : "-"}
-                    </div>
-                  </div>
-                </td>
-                {console.log(commission)}
                 <td className="px-6 py-5 text-sm text-gray-600">
                   <div className="space-y-1">
                     {commission.mode === "COMMISSION" &&

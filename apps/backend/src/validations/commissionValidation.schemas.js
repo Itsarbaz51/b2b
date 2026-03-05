@@ -12,9 +12,6 @@ class CommissionValidationSchemas {
       type: z.enum(["FLAT", "PERCENTAGE"]),
       value: z.number().positive(),
 
-      minAmount: z.number().nonnegative().optional(),
-      maxAmount: z.number().nonnegative().optional(),
-
       applyTDS: z.boolean().optional(),
       tdsPercent: z.number().min(0).max(100).optional(),
 

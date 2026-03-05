@@ -19,6 +19,8 @@ const ReferenceTypeEnum = z.enum([
   "TAX",
   "PAYOUT",
   "COLLECTION",
+  "GST",
+  "TDS",
 ]);
 
 class WallletValidationSchemas {

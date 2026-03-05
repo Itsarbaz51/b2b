@@ -36,36 +36,57 @@ export default class AadhaarService {
         walletType: "PRIMARY",
       });
 
-      const priceData = await CommissionEngine.calculate(tx, {
-        userId,
-        serviceProviderMappingId: serviceProviderMapping.id,
-      });
+      if (serviceProviderMapping?.pricingValueType !== "FLAT") {
+        throw ApiError.badRequest("Aadhaar service supports only FLAT pricing");
+      }
 
-      const finalPrice = priceData.finalPrice;
+      const providerCost = Number(serviceProviderMapping.providerCost);
+      const sellingPrice = Number(serviceProviderMapping.sellingPrice);
 
-      // Hold full selling price
+      if (providerCost <= 0 || sellingPrice <= 0) {
+        throw ApiError.badRequest("Service pricing not configured");
+      }
+
+      if (sellingPrice <= providerCost) {
+        throw ApiError.badRequest("Invalid pricing configuration");
+      }
+
+      const margin = sellingPrice - providerCost;
+      const finalPrice = sellingPrice;
+
+      const priceData = {
+        pricingValueType: serviceProviderMapping.pricingValueType,
+        providerCost,
+        sellingPrice,
+        margin,
+        finalPrice,
+      };
+
+      if (finalPrice <= priceData.providerCost) {
+        throw ApiError.badRequest("Invalid pricing configuration");
+      }
+
       await WalletEngine.hold(tx, wallet, finalPrice);
 
-      const providerCost = BigInt(serviceProviderMapping.providerCost);
-
-      if (finalPrice <= providerCost)
-        throw ApiError.notFound("Invalid pricing config");
-
-      // Create transaction for full selling price
       const { transaction, apiEntity } = await TransactionService.create(tx, {
         userId,
         walletId: wallet.id,
         serviceProviderMappingId: serviceProviderMapping.id,
         amount: finalPrice,
+        pricing: priceData,
         idempotencyKey,
         requestPayload: payload,
       });
+
+      if (!transaction.pricing?.margin) {
+        throw ApiError.badRequest("Pricing data missing");
+      }
 
       let providerResponse = {
         status: true,
         statusCode: 200,
         data: {
-          ref_id: "71468859",
+          ref_id: "71811881",
           status: "SUCCESS",
         },
         message: "",
@@ -115,6 +136,10 @@ export default class AadhaarService {
       });
 
       if (!transaction) throw ApiError.notFound("Transaction not found");
+
+      if (transaction.userId !== actor.id) {
+        throw ApiError.forbidden("Unauthorized transaction access");
+      }
 
       if (transaction.status !== "PENDING")
         throw ApiError.badRequest("Invalid transaction state");
@@ -200,18 +225,11 @@ export default class AadhaarService {
             createdBy: userId,
           });
 
-          // Recalculate pricing for commission distribution
-          const pricing = await CommissionEngine.calculate(tx, {
-            userId,
-            serviceProviderMappingId: serviceProviderMapping.id,
-            amount: transaction.amount,
-          });
-
-          // Distribute commission
           await CommissionEngine.distribute(tx, {
             transactionId: transaction.id,
-            pricing,
+            userId: transaction.userId,
             serviceProviderMappingId: serviceProviderMapping.id,
+            amount: transaction.pricing.margin,
             createdBy: userId,
           });
 

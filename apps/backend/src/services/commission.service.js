@@ -12,8 +12,6 @@ export class CommissionSettingService {
       mode,
       type,
       value,
-      minAmount,
-      maxAmount,
       applyTDS,
       tdsPercent,
       applyGST,
@@ -83,9 +81,6 @@ export class CommissionSettingService {
       mode,
       type,
       value: value.toString(),
-
-      minAmount: minAmount ? BigInt(minAmount) : null,
-      maxAmount: maxAmount ? BigInt(maxAmount) : null,
 
       applyTDS: applyTDS || false,
       tdsPercent: tdsPercent ? tdsPercent.toString() : null,
@@ -217,7 +212,6 @@ export class CommissionSettingService {
 
     return settings;
   }
-
 }
 
 export default class CommissionEarningService {

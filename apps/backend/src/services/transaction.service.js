@@ -12,6 +12,7 @@ export default class TransactionService {
       amount,
       idempotencyKey,
       requestPayload,
+      pricing,
     }
   ) {
     if (!userId || !walletId || !serviceProviderMappingId)
@@ -48,6 +49,7 @@ export default class TransactionService {
         serviceProviderMappingId,
         apiEntityId: apiEntity.id,
         amount,
+        pricing,
         netAmount: amount,
         status: "PENDING",
         idempotencyKey,
