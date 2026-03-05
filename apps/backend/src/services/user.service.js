@@ -200,11 +200,11 @@ class UserServices {
       await Prisma.wallet.create({
         data: {
           userId: user.id,
-          balance: BigInt(0),
+          balance: 0,
           currency: "INR",
           walletType: "PRIMARY",
-          holdBalance: BigInt(0),
-          availableBalance: BigInt(0),
+          holdBalance: 0,
+          availableBalance: 0,
           isActive: true,
           version: 1,
         },
@@ -213,11 +213,11 @@ class UserServices {
       await Prisma.wallet.create({
         data: {
           userId: user.id,
-          balance: BigInt(0),
+          balance: 0,
           currency: "INR",
           walletType: "COMMISSION",
-          holdBalance: BigInt(0),
-          availableBalance: BigInt(0),
+          holdBalance: 0,
+          availableBalance: 0,
           isActive: true,
           version: 1,
         },
@@ -833,7 +833,7 @@ class UserServices {
     const isCurrentUserAdmin = currentUser && currentUser.role === "ADMIN";
 
     if (isCurrentUserAdmin) {
-      const serialized = Helper.serializeUser(transformedUser);
+      const serialized = transformedUser;
 
       if (serialized.password) {
         try {
@@ -855,7 +855,7 @@ class UserServices {
 
       safeUser = serialized;
     } else {
-      const serialized = Helper.serializeUser(transformedUser);
+      const serialized = transformedUser;
       const { password, transactionPin, refreshToken, ...safeData } =
         serialized;
       safeUser = safeData;
@@ -924,7 +924,7 @@ class UserServices {
       orderBy: { createdAt: "desc" },
     });
 
-    const safeUsers = users.map((user) => Helper.serializeUser(user));
+    const safeUsers = users.map((user) => user);
 
     return safeUsers;
   }
@@ -1105,7 +1105,7 @@ class UserServices {
     // Only ADMIN can see decrypted passwords/pins
     if (parent.role.name === "ADMIN" || parent.role?.type === "employee") {
       safeUsers = filteredUsers.map((user) => {
-        const serialized = Helper.serializeUser(user);
+        const serialized = user;
 
         if (serialized.password) {
           try {
@@ -1130,7 +1130,7 @@ class UserServices {
     } else {
       // For employee and other users, remove sensitive data
       safeUsers = filteredUsers.map((user) => {
-        const serialized = Helper.serializeUser(user);
+        const serialized = user;
         const { password, transactionPin, refreshToken, ...safeUser } =
           serialized;
         return safeUser;
@@ -1878,7 +1878,7 @@ class UserServices {
       orderBy: { hierarchyLevel: "asc" },
     });
 
-    const safeUsers = users.map((user) => Helper.serializeUser(user));
+    const safeUsers = users.map((user) => user);
 
     return safeUsers;
   }

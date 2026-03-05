@@ -21,10 +21,6 @@ export default function MappingTable() {
 
   const data = mappings || [];
 
-  const formatMoney = (value) => {
-    return (Number(value) / 100).toFixed(2);
-  };
-
   const loadMappings = useCallback(() => {
     dispatch(getAllServices({ type: "mapping" }));
   }, [dispatch]);
@@ -132,16 +128,14 @@ export default function MappingTable() {
                     <td className="px-6 py-4">{item.provider?.name}</td>
 
                     <td className="px-6 py-4 text-green-600">
-                      ₹{formatMoney(item.sellingPrice)}
+                      ₹{item.sellingPrice}
                     </td>
 
                     <td className="px-6 py-4 text-red-500">
-                      ₹{formatMoney(item.providerCost)}
+                      ₹{item.providerCost}
                     </td>
 
-                    <td className="px-6 py-4 text-blue-600">
-                      ₹{formatMoney(margin)}
-                    </td>
+                    <td className="px-6 py-4 text-blue-600">₹{margin}</td>
                     <td className="px-6 py-4">
                       <span
                         className={`px-2 py-1 text-xs rounded-full font-semibold ${

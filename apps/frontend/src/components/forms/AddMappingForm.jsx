@@ -15,8 +15,8 @@ export default function AddMappingForm({
   const [form, setForm] = useState({
     serviceId: "",
     providerId: "",
-    sellingPrice: "",
-    providerCost: "",
+    sellingPrice: 0,
+    providerCost: 0,
     isActive: true,
   });
 
@@ -39,13 +39,9 @@ export default function AddMappingForm({
     }
   }, [editData]);
 
-  const providerCost = Number(form.providerCost || 0);
-  const sellingPrice = Number(form.sellingPrice || 0);
+  const providerCost = form.providerCost;
+  const sellingPrice = form.sellingPrice;
   const margin = sellingPrice - providerCost;
-
-  const formatMoney = (value) => {
-    return (Number(value) / 100).toFixed(2);
-  };
 
   const handleConfigChange = (key, value) => {
     setConfig({
@@ -187,7 +183,7 @@ export default function AddMappingForm({
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Display: ₹{formatMoney(sellingPrice)}
+                  Display: ₹{sellingPrice}
                 </p>
               </div>
 
@@ -206,7 +202,7 @@ export default function AddMappingForm({
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Display: ₹{formatMoney(providerCost)}
+                  Display: ₹{providerCost}
                 </p>
               </div>
             </div>
@@ -219,7 +215,7 @@ export default function AddMappingForm({
                   margin >= 0 ? "text-green-600" : "text-red-500"
                 }`}
               >
-                ₹{formatMoney(margin)}
+                ₹{margin}
               </span>
             </div>
 

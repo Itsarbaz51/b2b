@@ -21,7 +21,7 @@ export default class WalletEngine {
 
   // ➖ Debit
   static async debit(tx, wallet, amount) {
-    const amt = BigInt(amount);
+    const amt = amount;
 
     const available = wallet.balance - wallet.holdBalance;
 
@@ -43,7 +43,7 @@ export default class WalletEngine {
 
   // ➕ Credit
   static async credit(tx, wallet, amount) {
-    const amt = BigInt(amount);
+    const amt = amount;
 
     await tx.wallet.update({
       where: { id: wallet.id },
@@ -56,7 +56,7 @@ export default class WalletEngine {
 
   // Hold
   static async hold(tx, wallet, amount) {
-    const amt = BigInt(amount);
+    const amt = amount;
 
     const available = wallet.balance - wallet.holdBalance;
 
@@ -74,7 +74,7 @@ export default class WalletEngine {
 
   // Release Hold
   static async releaseHold(tx, wallet, amount) {
-    const amt = BigInt(amount);
+    const amt = amount;
 
     if (wallet.holdBalance < amt)
       throw ApiError.badRequest("Invalid hold release");
@@ -90,7 +90,7 @@ export default class WalletEngine {
 
   // Move Hold → Debit (On Success)
   static async captureHold(tx, wallet, amount) {
-    const amt = BigInt(amount);
+    const amt = amount;
 
     if (wallet.holdBalance < amt)
       throw ApiError.badRequest("Invalid hold capture");

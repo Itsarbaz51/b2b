@@ -80,7 +80,7 @@ export class CommissionSettingService {
 
       mode,
       type,
-      value: value.toString(),
+      value: value,
 
       applyTDS: applyTDS || false,
       tdsPercent: tdsPercent ? tdsPercent.toString() : null,
@@ -104,7 +104,7 @@ export class CommissionSettingService {
       result = await Prisma.commissionSetting.create({ data: payload });
     }
 
-    return Helper.serializeCommission(result);
+    return result;
   }
 
   static async getCommissionSettingsByRoleOrUser(userId) {
@@ -147,7 +147,7 @@ export class CommissionSettingService {
       orderBy: { updatedAt: "desc" },
     });
 
-    return Helper.serializeCommission(settings);
+    return settings;
   }
 
   static async getCommissionSettingsAll(userId) {
@@ -246,17 +246,17 @@ export default class CommissionEarningService {
         fromUserId,
         serviceProviderMappingId,
 
-        amount: BigInt(amount),
+        amount: amount,
 
         mode,
         type,
 
-        commissionAmount: BigInt(commissionAmount),
-        surchargeAmount: surchargeAmount ? BigInt(surchargeAmount) : null,
-        tdsAmount: tdsAmount ? BigInt(tdsAmount) : null,
-        gstAmount: gstAmount ? BigInt(gstAmount) : null,
+        commissionAmount: commissionAmount,
+        surchargeAmount: surchargeAmount ? surchargeAmount : null,
+        tdsAmount: tdsAmount ? tdsAmount : null,
+        gstAmount: gstAmount ? gstAmount : null,
 
-        netAmount: BigInt(netAmount),
+        netAmount: netAmount,
 
         metadata,
         createdBy,

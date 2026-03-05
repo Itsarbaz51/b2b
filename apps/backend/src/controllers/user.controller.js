@@ -32,7 +32,7 @@ class UserController {
       throw ApiError.internal("Business user creation failed!");
     }
 
-    const safeUser = Helper.serializeUser(user);
+    const safeUser = user;
 
     return res
       .status(201)
@@ -63,7 +63,7 @@ class UserController {
       res
     );
 
-    const safeUser = Helper.serializeUser(user);
+    const safeUser = user;
 
     return res
       .status(200)
@@ -95,7 +95,7 @@ class UserController {
       res
     );
 
-    const safeUser = Helper.serializeUser(user);
+    const safeUser = user;
 
     return res
       .status(200)
@@ -313,7 +313,7 @@ class UserController {
         res
       );
 
-      const safeUser = Helper.serializeUser(user);
+      const safeUser = user;
 
       return res
         .status(200)
@@ -353,7 +353,7 @@ class UserController {
         res
       );
 
-      const safeUser = Helper.serializeUser(user);
+      const safeUser = user;
 
       return res
         .status(200)
@@ -393,7 +393,7 @@ class UserController {
         res
       );
 
-      const safeUser = Helper.serializeUser(user);
+      const safeUser = user;
 
       return res
         .status(200)
