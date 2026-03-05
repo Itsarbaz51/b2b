@@ -35,19 +35,20 @@ export default class AadhaarService {
         userId,
         walletType: "PRIMARY",
       });
-      const priceData = await CommissionEngine.calculatePrice({
+
+      const priceData = await CommissionEngine.calculate(tx, {
         userId,
         serviceProviderMappingId: serviceProviderMapping.id,
       });
 
-      const sellingPrice = priceData.finalPrice;
+      const finalPrice = priceData.finalPrice;
 
       // Hold full selling price
-      await WalletEngine.hold(tx, wallet, sellingPrice);
+      await WalletEngine.hold(tx, wallet, finalPrice);
 
       const providerCost = BigInt(serviceProviderMapping.providerCost);
 
-      if (sellingPrice <= providerCost)
+      if (finalPrice <= providerCost)
         throw ApiError.notFound("Invalid pricing config");
 
       // Create transaction for full selling price
@@ -55,7 +56,7 @@ export default class AadhaarService {
         userId,
         walletId: wallet.id,
         serviceProviderMappingId: serviceProviderMapping.id,
-        amount: sellingPrice,
+        amount: finalPrice,
         idempotencyKey,
         requestPayload: payload,
       });
@@ -85,7 +86,7 @@ export default class AadhaarService {
       } catch (error) {
         console.log(error);
         // Release hold if provider fails
-        await WalletEngine.releaseHold(tx, wallet, sellingPrice);
+        await WalletEngine.releaseHold(tx, wallet, finalPrice);
         await tx.transaction.update({
           where: { id: transaction.id },
           data: { status: "FAILED" },
@@ -199,15 +200,18 @@ export default class AadhaarService {
             createdBy: userId,
           });
 
-          // Commission Distribution (margin only)
-          const providerCost = BigInt(serviceProviderMapping.providerCost);
-          const marginPool = BigInt(transaction.amount) - providerCost;
-
-          await CommissionEngine.distribute(tx, {
-            transactionId: transaction.id,
+          // Recalculate pricing for commission distribution
+          const pricing = await CommissionEngine.calculate(tx, {
             userId,
             serviceProviderMappingId: serviceProviderMapping.id,
-            amount: marginPool,
+            amount: transaction.amount,
+          });
+
+          // Distribute commission
+          await CommissionEngine.distribute(tx, {
+            transactionId: transaction.id,
+            pricing,
+            serviceProviderMappingId: serviceProviderMapping.id,
             createdBy: userId,
           });
 
