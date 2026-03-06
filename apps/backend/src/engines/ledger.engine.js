@@ -19,7 +19,7 @@ export default class LedgerEngine {
     if (!walletId) throw ApiError.badRequest("Wallet ID required");
     if (!entryType) throw ApiError.badRequest("Entry type required");
 
-    const amt = amount;
+    const amt = BigInt(amount);
 
     // 🔒 Idempotency Check
     if (idempotencyKey) {
@@ -37,9 +37,11 @@ export default class LedgerEngine {
 
     if (!wallet) throw ApiError.notFound("Wallet not found");
 
+    console.log(wallet);
+
     // Calculate running balance
-    const runningBalance =
-      entryType === "CREDIT" ? wallet.balance + amt : wallet.balance - amt;
+    const balanceAfter =
+      entryType === "CREDIT" ? wallet.balance + amt : wallet.balance;
 
     // 🚨 Optional Safety Check
     if (entryType === "DEBIT" && wallet.balance < amt) {
@@ -54,7 +56,7 @@ export default class LedgerEngine {
         referenceType,
         serviceProviderMappingId,
         amount: amt,
-        runningBalance,
+        runningBalance: balanceAfter,
         narration,
         metadata,
         idempotencyKey,

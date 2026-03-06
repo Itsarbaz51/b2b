@@ -27,7 +27,7 @@ class AuthController {
     );
 
     // Serialize and remove sensitive fields
-    const safeUser = user;
+    const safeUser = Helper.serializeUser(user);
     const {
       password,
       transactionPin,
@@ -109,7 +109,7 @@ class AuthController {
     res.cookie("refreshToken", refreshToken, refreshCookieOptions);
     res.cookie("accessToken", accessToken, cookieOptions);
 
-    const safeUser = user;
+    const safeUser = Helper.serializeUser(user);
     const {
       password,
       transactionPin,

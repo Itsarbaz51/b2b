@@ -18,6 +18,7 @@ export class CommissionSettingService {
       gstPercent,
       effectiveTo,
     } = data;
+    return console.log(BigInt(value));
 
     if (!mode || !type || value === undefined || value === null) {
       throw ApiError.badRequest("mode, type and value are required");
@@ -80,13 +81,13 @@ export class CommissionSettingService {
 
       mode,
       type,
-      value: value,
+      value: BigInt(value),
 
       applyTDS: applyTDS || false,
-      tdsPercent: tdsPercent ? tdsPercent.toString() : null,
+      tdsPercent: tdsPercent ? BigInt(tdsPercent) : null,
 
       applyGST: applyGST || false,
-      gstPercent: gstPercent ? gstPercent.toString() : null,
+      gstPercent: gstPercent ? BigInt(gstPercent) : null,
 
       effectiveTo: effectiveTo ? new Date(effectiveTo) : null,
 
@@ -104,7 +105,7 @@ export class CommissionSettingService {
       result = await Prisma.commissionSetting.create({ data: payload });
     }
 
-    return result;
+    return Helper.serializeBigInt(result);
   }
 
   static async getCommissionSettingsByRoleOrUser(userId) {
@@ -147,7 +148,7 @@ export class CommissionSettingService {
       orderBy: { updatedAt: "desc" },
     });
 
-    return settings;
+    return Helper.serializeCommission(settings);
   }
 
   static async getCommissionSettingsAll(userId) {
@@ -210,7 +211,46 @@ export class CommissionSettingService {
       orderBy: { createdAt: "desc" },
     });
 
-    return settings;
+    return Helper.serializeBigInt(settings);
+  }
+
+  static async getApplicableRule(tx, userId, serviceProviderMappingId, mode) {
+    const currentUser = await tx.user.findUnique({
+      where: { id: userId },
+      select: { id: true, roleId: true },
+    });
+
+    if (!currentUser) {
+      throw ApiError.notFound("User not found");
+    }
+
+    const normalizedMode = mode.toUpperCase();
+
+    // 1️⃣ USER RULE
+    let rule = await tx.commissionSetting.findFirst({
+      where: {
+        serviceProviderMappingId,
+        mode: normalizedMode,
+        isActive: true,
+        targetUserId: currentUser.id,
+      },
+    });
+
+    if (rule) return rule;
+
+    // 2️⃣ ROLE RULE
+    rule = await tx.commissionSetting.findFirst({
+      where: {
+        serviceProviderMappingId,
+        mode: normalizedMode,
+        isActive: true,
+        roleId: currentUser.roleId,
+      },
+    });
+
+    if (rule) return rule;
+
+    throw ApiError.badRequest(`Pricing rule not configured for user ${userId}`);
   }
 }
 
@@ -246,17 +286,17 @@ export default class CommissionEarningService {
         fromUserId,
         serviceProviderMappingId,
 
-        amount: amount,
+        amount: BigInt(amount),
 
         mode,
         type,
 
-        commissionAmount: commissionAmount,
-        surchargeAmount: surchargeAmount ? surchargeAmount : null,
-        tdsAmount: tdsAmount ? tdsAmount : null,
-        gstAmount: gstAmount ? gstAmount : null,
+        commissionAmount: BigInt(commissionAmount),
+        surchargeAmount: surchargeAmount ? BigInt(surchargeAmount) : null,
+        tdsAmount: tdsAmount ? BigInt(tdsAmount) : null,
+        gstAmount: gstAmount ? BigInt(gstAmount) : null,
 
-        netAmount: netAmount,
+        netAmount: BigInt(netAmount),
 
         metadata,
         createdBy,

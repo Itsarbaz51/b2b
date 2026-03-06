@@ -30,8 +30,8 @@ export default function AddMappingForm({
       setForm({
         serviceId: editData.serviceId,
         providerId: editData.providerId,
-        sellingPrice: editData.sellingPrice,
-        providerCost: editData.providerCost,
+        sellingPrice: paisaToRupee(editData.sellingPrice),
+        providerCost: paisaToRupee(editData.providerCost),
         isActive: editData.isActive ?? true,
       });
 
@@ -39,10 +39,17 @@ export default function AddMappingForm({
     }
   }, [editData]);
 
-  const providerCost = form.providerCost;
-  const sellingPrice = form.sellingPrice;
+  const providerCost = Number(form.providerCost);
+  const sellingPrice = Number(form.sellingPrice);
   const margin = sellingPrice - providerCost;
 
+  const rupeeToPaisa = (value) => {
+    return Math.round(parseFloat(value || 0) * 100);
+  };
+
+  const paisaToRupee = (value) => {
+    return (value || 0) / 100;
+  };
   const handleConfigChange = (key, value) => {
     setConfig({
       ...config,
@@ -71,14 +78,13 @@ export default function AddMappingForm({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (sellingPrice < providerCost) {
-      setError("Selling price cannot be less than provider cost");
-      return;
-    }
-
     const payload = {
       type: "mapping",
-      ...form,
+      serviceId: form.serviceId,
+      providerId: form.providerId,
+      sellingPrice: rupeeToPaisa(form.sellingPrice),
+      providerCost: rupeeToPaisa(form.providerCost),
+      isActive: form.isActive,
       config,
     };
 
@@ -170,12 +176,13 @@ export default function AddMappingForm({
 
               <div>
                 <label className="text-sm font-semibold mb-2 block">
-                  Selling Price (paisa)
+                  Selling Price (₹)
                 </label>
 
                 <input
                   type="number"
-                  className="w-full px-4 py-3 border  border-gray-300 rounded-xl"
+                  step="0.01"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
                   value={form.sellingPrice}
                   onChange={(e) =>
                     setForm({ ...form, sellingPrice: e.target.value })
@@ -183,17 +190,18 @@ export default function AddMappingForm({
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Display: ₹{sellingPrice}
+                  Stored: {(Number(sellingPrice) * 100).toFixed(0)} paisa
                 </p>
               </div>
 
               <div>
                 <label className="text-sm font-semibold mb-2 block">
-                  Provider Cost (paisa)
+                  Provider Cost (₹)
                 </label>
 
                 <input
                   type="number"
+                  step="0.01"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl"
                   value={form.providerCost}
                   onChange={(e) =>
@@ -202,7 +210,7 @@ export default function AddMappingForm({
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Display: ₹{providerCost}
+                  Stored: {(Number(providerCost) * 100).toFixed(0)} paisa
                 </p>
               </div>
             </div>

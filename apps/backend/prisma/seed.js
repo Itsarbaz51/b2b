@@ -215,8 +215,8 @@ async function main() {
       create: {
         userId: user.id,
         walletType: "PRIMARY",
-        balance: 100,
-        holdBalance: 0,
+        balance: BigInt(100000),
+        holdBalance: BigInt(0),
         currency: "INR",
         isActive: true,
         version: 1,
@@ -235,8 +235,8 @@ async function main() {
       create: {
         userId: user.id,
         walletType: "COMMISSION",
-        balance: 0,
-        holdBalance: 0,
+        balance: BigInt(0),
+        holdBalance: BigInt(0),
         currency: "INR",
         isActive: true,
         version: 1,
@@ -255,8 +255,8 @@ async function main() {
       create: {
         userId: user.id,
         walletType: "GST",
-        balance: 0,
-        holdBalance: 0,
+        balance: BigInt(0),
+        holdBalance: BigInt(0),
         currency: "INR",
         isActive: true,
         version: 1,
@@ -274,8 +274,8 @@ async function main() {
       create: {
         userId: user.id,
         walletType: "TDS",
-        balance: 0,
-        holdBalance: 0,
+        balance: BigInt(0),
+        holdBalance: BigInt(0),
         currency: "INR",
         isActive: true,
         version: 1,

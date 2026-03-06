@@ -52,7 +52,6 @@ export class ServiceService {
         ],
       }),
     };
-    console.log(where);
 
     const [data, total] = await Promise.all([
       Prisma.service.findMany({

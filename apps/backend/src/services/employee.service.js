@@ -1227,7 +1227,7 @@ class EmployeeServices {
   }
 
   static sanitizeUserData(user, currentUserRole) {
-    const serialized = user;
+    const serialized = Helper.serializeUser(user);
 
     // ADMIN can see decrypted passwords
     if (

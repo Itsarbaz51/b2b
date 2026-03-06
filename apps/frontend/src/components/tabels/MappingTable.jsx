@@ -35,11 +35,15 @@ export default function MappingTable() {
     setProviderList(res?.data?.data || []);
   };
 
+  const paisaToRupee = (value) => {
+    return (Number(value || 0) / 100).toFixed(2);
+  };
+
   useEffect(() => {
     loadMappings();
     loadServices();
     loadProviders();
-  }, []);
+  }, [loadMappings]);
 
   const filteredMappings = data.filter(
     (item) =>
@@ -114,8 +118,12 @@ export default function MappingTable() {
               </tr>
             ) : (
               filteredMappings.map((item, index) => {
-                const margin =
-                  Number(item.sellingPrice) - Number(item.providerCost);
+                let margin = item.sellingPrice - item.providerCost;
+                if (margin === 0) {
+                  margin;
+                } else {
+                  item.sellingPrice - item.providerCost / 100;
+                }
 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
@@ -128,14 +136,16 @@ export default function MappingTable() {
                     <td className="px-6 py-4">{item.provider?.name}</td>
 
                     <td className="px-6 py-4 text-green-600">
-                      ₹{item.sellingPrice}
+                      ₹{paisaToRupee(item.sellingPrice)}
                     </td>
 
                     <td className="px-6 py-4 text-red-500">
-                      ₹{item.providerCost}
+                      ₹{paisaToRupee(item.providerCost)}
                     </td>
 
-                    <td className="px-6 py-4 text-blue-600">₹{margin}</td>
+                    <td className="px-6 py-4 text-blue-600">
+                      ₹{margin.toFixed(2)}
+                    </td>
                     <td className="px-6 py-4">
                       <span
                         className={`px-2 py-1 text-xs rounded-full font-semibold ${

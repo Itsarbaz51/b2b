@@ -182,7 +182,7 @@ export class BankDetailService {
 
     if (!records || records.length === 0) return null;
 
-    const safely = await records;
+    const safely = await Helper.serializeUser(records);
     return safely;
   }
 
@@ -250,7 +250,7 @@ export class BankDetailService {
       });
     }
 
-    const safely = await record;
+    const safely = await Helper.serializeUser(record);
     return safely;
   }
 

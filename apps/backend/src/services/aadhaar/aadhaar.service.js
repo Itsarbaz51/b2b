@@ -1,14 +1,13 @@
 import Prisma from "../../db/db.js";
 import WalletEngine from "../../engines/wallet.engine.js";
 import LedgerEngine from "../../engines/ledger.engine.js";
-import CommissionEngine from "../../engines/commission.engine.js";
 import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
 import ApiEntityService from "../apiEntity.service.js";
 import TransactionService from "../transaction.service.js";
 import { getAadhaarPlugin } from "../../plugin_registry/aadhaar/pluginRegistry.js";
 import { ApiError } from "../../utils/ApiError.js";
 import ProviderResolver from "../../resolvers/Provider.resolver.js";
-import Helper from "../../utils/helper.js";
+import SurchargeEngine from "../../engines/surcharge.engine.js";
 
 export default class AadhaarService {
   // STEP 1 — SEND OTP
@@ -40,59 +39,47 @@ export default class AadhaarService {
         throw ApiError.badRequest("Aadhaar service supports only FLAT pricing");
       }
 
-      const providerCost = Number(serviceProviderMapping.providerCost);
-      const sellingPrice = Number(serviceProviderMapping.sellingPrice);
+      const providerCost = BigInt(serviceProviderMapping.providerCost);
 
-      if (providerCost <= 0 || sellingPrice <= 0) {
-        throw ApiError.badRequest("Service pricing not configured");
-      }
+      const surcharge = await SurchargeEngine.calculate(tx, {
+        userId,
+        serviceProviderMappingId: serviceProviderMapping.id,
+        amount: providerCost,
+      });
 
-      if (sellingPrice <= providerCost) {
-        throw ApiError.badRequest("Invalid pricing configuration");
-      }
+      const finalAmount = providerCost + surcharge;
 
-      const margin = sellingPrice - providerCost;
-      const finalPrice = sellingPrice;
+      // HOLD WALLET
+      await WalletEngine.hold(tx, wallet, finalAmount);
 
-      const priceData = {
-        pricingValueType: serviceProviderMapping.pricingValueType,
+      const pricing = {
         providerCost,
-        sellingPrice,
-        margin,
-        finalPrice,
+        surcharge,
+        total: finalAmount,
       };
-
-      if (finalPrice <= priceData.providerCost) {
-        throw ApiError.badRequest("Invalid pricing configuration");
-      }
-
-      await WalletEngine.hold(tx, wallet, finalPrice);
 
       const { transaction, apiEntity } = await TransactionService.create(tx, {
         userId,
         walletId: wallet.id,
         serviceProviderMappingId: serviceProviderMapping.id,
-        amount: finalPrice,
-        pricing: priceData,
+        amount: finalAmount,
+        pricing,
         idempotencyKey,
         requestPayload: payload,
       });
 
-      if (!transaction.pricing?.margin) {
-        throw ApiError.badRequest("Pricing data missing");
-      }
-
-      let providerResponse = {
-        status: true,
-        statusCode: 200,
-        data: {
-          ref_id: "71811161",
-          status: "SUCCESS",
-        },
-        message: "",
-      };
+      let providerResponse;
 
       try {
+        providerResponse = {
+          status: true,
+          statusCode: 200,
+          data: {
+            ref_id: "71558161",
+            status: "SUCCESS",
+          },
+        };
+
         // providerResponse = await plugin.sendOtp({ aadhaarNumber });
 
         await ApiEntityService.updateProviderInit(tx, {
@@ -102,12 +89,11 @@ export default class AadhaarService {
 
         return {
           transactionId: transaction.id,
-          referenceId: providerResponse?.referenceId || "71463359",
+          referenceId: providerResponse?.data?.ref_id,
         };
       } catch (error) {
-        console.log(error);
-        // Release hold if provider fails
-        await WalletEngine.releaseHold(tx, wallet, finalPrice);
+        await WalletEngine.releaseHold(tx, wallet, finalAmount);
+
         await tx.transaction.update({
           where: { id: transaction.id },
           data: { status: "FAILED" },
@@ -121,10 +107,8 @@ export default class AadhaarService {
   //  STEP 2 — VERIFY OTP
   static async verifyOtp(payload, actor) {
     const { transactionId, referenceId, otp } = payload;
-    const userId = actor.id;
 
     return await Prisma.$transaction(async (tx) => {
-      // Fetch Transaction with mapping
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
         include: {
@@ -137,18 +121,12 @@ export default class AadhaarService {
 
       if (!transaction) throw ApiError.notFound("Transaction not found");
 
-      if (transaction.userId !== actor.id) {
-        throw ApiError.forbidden("Unauthorized transaction access");
-      }
-
       if (transaction.status !== "PENDING")
         throw ApiError.badRequest("Invalid transaction state");
 
-      const { serviceProviderMapping } = transaction;
-
       const plugin = getAadhaarPlugin(
-        serviceProviderMapping.provider.code,
-        serviceProviderMapping.config
+        transaction.serviceProviderMapping.provider.code,
+        transaction.serviceProviderMapping.config
       );
 
       const wallet = await WalletEngine.getWallet({
@@ -195,69 +173,62 @@ export default class AadhaarService {
       };
 
       try {
-        // Call Provider Verify
-        // providerResponse = await plugin.verifyOtp({
-        //   referenceId,
-        //   otp,
-        // });
+        providerResponse = {
+          status: true,
+          data: {
+            ref_id: referenceId,
+            status: "VALID",
+          },
+        };
 
-        if (providerResponse?.status === true) {
-          let cleanedPhoto = null;
+        // providerResponse = await plugin.verifyOtp({ referenceId, otp });
 
-          if (providerResponse?.data?.photo_link) {
-            cleanedPhoto = Helper.sanitizeBase64Image(
-              providerResponse.data.photo_link
-            );
-          }
-
-          // Capture Hold
-          await WalletEngine.captureHold(tx, wallet, transaction.amount);
-
-          // Ledger Entry
-          await LedgerEngine.create(tx, {
-            walletId: wallet.id,
-            transactionId,
-            entryType: "DEBIT",
-            referenceType: "TRANSACTION",
-            serviceProviderMappingId: serviceProviderMapping.id,
-            amount: transaction.amount,
-            narration: "Aadhaar Verification Charge",
-            createdBy: userId,
-          });
-
-          await CommissionEngine.distribute(tx, {
-            transactionId: transaction.id,
-            userId: transaction.userId,
-            serviceProviderMappingId: serviceProviderMapping.id,
-            amount: transaction.pricing.margin,
-            createdBy: userId,
-          });
-
-          // Update Transaction + ApiEntity
-          await TransactionService.update(tx, {
-            transactionId: transaction.id,
-            status: providerResponse.data.status,
-            providerReference: referenceId,
-            providerResponse,
-          });
-
-          return {
-            ...providerResponse.data,
-            photo_link: cleanedPhoto,
-          };
-        } else {
-          throw new Error("OTP verification failed");
+        if (!providerResponse?.status) {
+          throw ApiError.badRequest("OTP verification failed");
         }
+
+        // 1️⃣ CAPTURE HOLD
+        await WalletEngine.captureHold(tx, wallet, transaction.amount);
+
+        // 2️⃣ WALLET LEDGER ENTRY
+        await LedgerEngine.create(tx, {
+          walletId: wallet.id,
+          transactionId,
+          entryType: "DEBIT",
+          referenceType: "TRANSACTION",
+          serviceProviderMappingId: transaction.serviceProviderMappingId,
+          amount: transaction.amount,
+          narration: "Aadhaar Verification Charge",
+          createdBy: actor.id,
+        });
+
+        // 3️⃣ SURCHARGE DISTRIBUTION
+        await SurchargeEngine.distribute(tx, {
+          transactionId: transaction.id,
+          userId: transaction.userId,
+          serviceProviderMappingId: transaction.serviceProviderMappingId,
+          amount: transaction.amount, // IMPORTANT
+          createdBy: actor.id,
+        });
+
+        // 4️⃣ UPDATE TRANSACTION
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "SUCCESS",
+          providerReference: referenceId,
+          providerResponse,
+        });
+
+        return providerResponse.data;
       } catch (error) {
-        // Release Hold
+        // RELEASE HOLD
         await WalletEngine.releaseHold(tx, wallet, transaction.amount);
 
-        // Update Transaction + ApiEntity
         await TransactionService.update(tx, {
           transactionId: transaction.id,
           status: "FAILED",
           providerReference: referenceId,
-          providerResponse: error.response || error.message,
+          providerResponse: error.message,
         });
 
         throw error;

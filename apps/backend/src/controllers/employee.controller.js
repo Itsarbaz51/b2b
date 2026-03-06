@@ -23,7 +23,7 @@ class EmployeeController {
       res
     );
 
-    const safeUser = user;
+    const safeUser = Helper.serializeUser(user);
 
     return res.status(201).json(
       ApiResponse.success(
@@ -54,7 +54,7 @@ class EmployeeController {
     );
 
     // Fix: Change 'userreq' to 'user'
-    const safeUser =user; // 'userreq' se change kiya 'user'
+    const safeUser = Helper.serializeUser(user, req, res); // 'userreq' se change kiya 'user'
 
     return res
       .status(200)
@@ -79,7 +79,7 @@ class EmployeeController {
       res
     );
 
-    const safeUser = user
+    const safeUser = Helper.serializeUser(user, req, res);
 
     return res
       .status(200)
@@ -206,7 +206,7 @@ class EmployeeController {
       res
     );
 
-    const safeUser = user;
+    const safeUser = Helper.serializeUser(user);
 
     return res
       .status(200)
@@ -233,7 +233,7 @@ class EmployeeController {
       res
     );
 
-    const safeUser = user;
+    const safeUser = Helper.serializeUser(user);
 
     return res
       .status(200)

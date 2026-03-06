@@ -5,6 +5,7 @@ import { createOrUpdateCommissionSetting } from "../../redux/slices/commissionSl
 import { getAllRoles, getAllRolesByType } from "../../redux/slices/roleSlice";
 import { getAllBusinessUsersByParentId } from "../../redux/slices/userSlice";
 import { getAllServices } from "../../redux/slices/serviceSlice";
+import { rupeesToPaise } from "../../utils/lib";
 
 const scopes = ["ROLE", "USER"];
 const commissionTypes = ["FLAT", "PERCENTAGE"];
@@ -184,7 +185,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     // Value
     if (formData.value === "" || formData.value === null) {
       newErrors.value = "Value is required";
-    } else if (isNaN(formData.value) || Number(formData.value) < 0) {
+    } else if (isNaN(formData.value) || parseFloat(formData.value) < 0) {
       newErrors.value = "Value must be a valid positive number";
     }
 
@@ -226,8 +227,8 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       if (formData.tdsPercent === "" || isNaN(formData.tdsPercent)) {
         newErrors.tdsPercent = "TDS percentage is required";
       } else if (
-        Number(formData.tdsPercent) < 0 ||
-        Number(formData.tdsPercent) > 100
+        bigint(formData.tdsPercent) < 0 ||
+        bigint(formData.tdsPercent) > 100
       ) {
         newErrors.tdsPercent = "TDS percentage must be between 0 and 100";
       }
@@ -238,8 +239,8 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       if (formData.gstPercent === "" || isNaN(formData.gstPercent)) {
         newErrors.gstPercent = "GST percentage is required";
       } else if (
-        Number(formData.gstPercent) < 0 ||
-        Number(formData.gstPercent) > 100
+        bigint(formData.gstPercent) < 0 ||
+        bigint(formData.gstPercent) > 100
       ) {
         newErrors.gstPercent = "GST percentage must be between 0 and 100";
       }
@@ -278,31 +279,27 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         roleId: formData.scope === "ROLE" ? formData.roleId : undefined,
         targetUserId:
           formData.scope === "USER" ? formData.targetUserId : undefined,
+
         serviceId: formData.serviceId,
 
         mode: formData.mode,
         type: formData.type,
-        value: Number(formData.value),
 
-        minAmount: formData.minAmount ? Number(formData.minAmount) : undefined,
-        maxAmount: formData.maxAmount ? Number(formData.maxAmount) : undefined,
+        value: rupeesToPaise(formData.value),
+
+        minAmount: formData.minAmount
+          ? rupeesToPaise(formData.minAmount)
+          : undefined,
+
+        maxAmount: formData.maxAmount
+          ? rupeesToPaise(formData.maxAmount)
+          : undefined,
 
         applyTDS: formData.applyTDS,
-        tdsPercent:
-          formData.applyTDS && formData.tdsPercent
-            ? Number(formData.tdsPercent)
-            : undefined,
+        tdsPercent: formData.applyTDS ? formData.tdsPercent : undefined,
 
         applyGST: formData.applyGST,
-        gstPercent:
-          formData.applyGST && formData.gstPercent
-            ? Number(formData.gstPercent)
-            : undefined,
-
-        effectiveFrom: formatDateToISO(formData.effectiveFrom),
-        effectiveTo: formData.effectiveTo
-          ? formatDateToISO(formData.effectiveTo)
-          : undefined,
+        gstPercent: formData.applyGST ? formData.gstPercent : undefined,
       };
 
       // Add scope-specific field

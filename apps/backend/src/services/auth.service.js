@@ -364,7 +364,7 @@ class AuthServices {
       };
 
       // Serialize and secure sensitive data
-      const serialized = transformedUser;
+      const serialized = Helper.serializeUser(transformedUser);
       const isCurrentUserAdmin =
         currentUser && currentUser.role?.name === "ADMIN";
 
@@ -564,7 +564,7 @@ class AuthServices {
     return {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
-      user: user,
+      user: Helper.serializeUser(user),
     };
   }
 

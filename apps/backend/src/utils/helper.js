@@ -28,6 +28,116 @@ class Helper {
     return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
   }
 
+  static serializeUser(user) {
+    if (!user) return user;
+
+    const serialized = { ...user };
+
+    if (user.wallets) {
+      serialized.wallets = user.wallets.map((wallet) => ({
+        ...wallet,
+        // Convert BigInt balances to rupees
+        balance: this.convertBigIntToRupees(wallet.balance),
+        holdBalance: this.convertBigIntToRupees(wallet.holdBalance),
+        availableBalance: this.convertBigIntToRupees(wallet.availableBalance),
+        dailyLimit: this.convertBigIntToRupees(wallet.dailyLimit),
+        monthlyLimit: this.convertBigIntToRupees(wallet.monthlyLimit),
+        perTransactionLimit: this.convertBigIntToRupees(
+          wallet.perTransactionLimit
+        ),
+      }));
+    }
+
+    if (user.bankInfo?.primaryAccount) {
+      serialized.bankInfo.primaryAccount = {
+        ...user.bankInfo.primaryAccount,
+      };
+    }
+
+    if (user.kycInfo?.latestKyc?.dob) {
+      serialized.kycInfo.latestKyc.dob =
+        user.kycInfo.latestKyc.dob.toISOString();
+    }
+
+    if (user.kycInfo?.latestKyc?.createdAt) {
+      serialized.kycInfo.latestKyc.createdAt =
+        user.kycInfo.latestKyc.createdAt.toISOString();
+    }
+
+    if (user.kycInfo?.latestKyc?.updatedAt) {
+      serialized.kycInfo.latestKyc.updatedAt =
+        user.kycInfo.latestKyc.updatedAt.toISOString();
+    }
+
+    return serialized;
+  }
+
+  static convertBigIntToRupees(value) {
+    if (!value) return "0.00";
+
+    const bigIntValue = BigInt(value);
+    const rupees = bigIntValue / 100n;
+    const paise = bigIntValue % 100n;
+
+    return `${rupees}.${paise.toString().padStart(2, "0")}`;
+  }
+
+  static serializeCommission(data) {
+    if (Array.isArray(data)) {
+      return data.map((item) => this.serializeCommissionItem(item));
+    }
+    return this.serializeCommissionItem(data);
+  }
+
+  static serializeBigInt(obj) {
+    return JSON.parse(
+      JSON.stringify(obj, (_, value) =>
+        typeof value === "bigint" ? value.toString() : value
+      )
+    );
+  }
+
+  static serializeCommissionItem(item) {
+    if (!item) return item;
+
+    const serialized = { ...item };
+
+    const bigIntFields = [
+      "amount",
+      "commissionAmount",
+      "tdsAmount",
+      "gstAmount",
+      "surchargeAmount",
+      "netAmount",
+      "minAmount",
+      "maxAmount",
+      "balance",
+      "holdBalance",
+      "availableBalance",
+    ];
+
+    bigIntFields.forEach((field) => {
+      if (serialized[field] !== undefined && serialized[field] !== null) {
+        serialized[field] = Number(serialized[field]);
+      }
+    });
+
+    // Convert Decimal to Number
+    const decimalFields = [
+      "commissionValue",
+      "tdsPercent",
+      "gstPercent",
+      "surchargeAmount",
+    ];
+    decimalFields.forEach((field) => {
+      if (serialized[field] !== undefined && serialized[field] !== null) {
+        serialized[field] = Number(serialized[field]);
+      }
+    });
+
+    return serialized;
+  }
+
   static async sendEmail({ to, subject, text, html }) {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,

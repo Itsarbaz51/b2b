@@ -21,7 +21,7 @@ class ServiceProviderController {
     else if (type === "mapping") result = await MappingService.create(req.body);
     else throw ApiError.badRequest("Invalid type");
 
-    res.status(201).json(ApiResponse.success(result));
+    res.status(201).json(ApiResponse.success(Helper.serializeUser(result)));
   });
 
   // UPDATE
@@ -45,7 +45,10 @@ class ServiceProviderController {
     }
 
     return res.json(
-      ApiResponse.success(result, `${type} updated successfully`)
+      ApiResponse.success(
+        Helper.serializeUser(result),
+        `${type} updated successfully`
+      )
     );
   });
 
@@ -83,7 +86,7 @@ class ServiceProviderController {
       throw ApiError.badRequest("Invalid type");
     }
 
-    return res.json(ApiResponse.success(result));
+    return res.json(ApiResponse.success(Helper.serializeUser(result)));
   });
 
   // DELETE
@@ -107,7 +110,10 @@ class ServiceProviderController {
     }
 
     return res.json(
-      ApiResponse.success(result, `${type} deleted successfully`)
+      ApiResponse.success(
+        Helper.serializeUser(result),
+        `${type} deleted successfully`
+      )
     );
   });
 }

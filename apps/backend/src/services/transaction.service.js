@@ -33,7 +33,7 @@ export default class TransactionService {
       }
     }
 
-    const txnId = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const txnId = `TXN-${Date.now()}-${crypto.randomUUID().slice(0, 6)}`;
 
     const apiEntity = await ApiEntityService.create(tx, {
       userId,
