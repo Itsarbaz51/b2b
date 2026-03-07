@@ -653,7 +653,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                       : "Enter amount (₹)"
                   }
                   step={formData.type === "PERCENTAGE" ? "0.01" : "1"}
-                  min="0"
                 />
                 {errors.value && (
                   <p className="text-red-500 text-sm mt-1">{errors.value}</p>

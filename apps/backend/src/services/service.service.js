@@ -156,23 +156,29 @@ export class ProviderService {
 }
 
 export class MappingService {
+  // CREATE
   static async create(payload) {
     const {
       serviceId,
       providerId,
+      mode,
+      sellingPrice,
+      providerCost,
       config,
       priority,
       isActive,
-      sellingPrice,
-      providerCost,
     } = payload;
 
-    if (!serviceId || !providerId)
-      throw ApiError.badRequest("serviceId and providerId required");
+    if (!serviceId || !providerId) {
+      throw ApiError.badRequest("serviceId and providerId are required");
+    }
 
     const exists = await Prisma.serviceProviderMapping.findUnique({
       where: {
-        serviceId_providerId: { serviceId, providerId },
+        serviceId_providerId: {
+          serviceId,
+          providerId,
+        },
       },
     });
 
@@ -182,15 +188,24 @@ export class MappingService {
       data: {
         serviceId,
         providerId,
-        sellingPrice,
-        providerCost,
+
+        mode: mode ?? "COMMISSION",
+
+        sellingPrice: sellingPrice ? BigInt(sellingPrice) : null,
+        providerCost: providerCost ? BigInt(providerCost) : null,
+
         config: config ?? null,
         priority: priority ?? 1,
         isActive: isActive ?? true,
       },
+      include: {
+        service: true,
+        provider: true,
+      },
     });
   }
 
+  // UPDATE
   static async update(id, payload) {
     const mapping = await Prisma.serviceProviderMapping.findUnique({
       where: { id },
@@ -201,33 +216,84 @@ export class MappingService {
     return Prisma.serviceProviderMapping.update({
       where: { id },
       data: {
+        mode: payload.mode,
+
+        sellingPrice:
+          payload.sellingPrice !== undefined
+            ? BigInt(payload.sellingPrice)
+            : undefined,
+
+        providerCost:
+          payload.providerCost !== undefined
+            ? BigInt(payload.providerCost)
+            : undefined,
+
         config: payload.config,
-        sellingPrice: payload.sellingPrice,
-        providerCost: payload.providerCost,
         priority: payload.priority,
         isActive: payload.isActive,
+      },
+      include: {
+        service: true,
+        provider: true,
       },
     });
   }
 
-  static async getAll({ page = 1, limit = 10 }) {
+  // GET ALL
+  static async getAll({ page = 1, limit = 10, search, isActive }) {
     const skip = (page - 1) * limit;
+
+    const where = {
+      ...(isActive !== undefined && { isActive }),
+
+      ...(search && {
+        OR: [
+          {
+            service: {
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          },
+          {
+            provider: {
+              name: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          },
+        ],
+      }),
+    };
 
     const [data, total] = await Promise.all([
       Prisma.serviceProviderMapping.findMany({
+        where,
         skip,
         take: limit,
         include: {
           service: true,
           provider: true,
         },
+        orderBy: {
+          priority: "asc",
+        },
       }),
-      Prisma.serviceProviderMapping.count(),
+
+      Prisma.serviceProviderMapping.count({ where }),
     ]);
 
-    return { data, total, page, totalPages: Math.ceil(total / limit) };
+    return {
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
+  // DELETE
   static async delete(id) {
     const mapping = await Prisma.serviceProviderMapping.findUnique({
       where: { id },
@@ -235,6 +301,8 @@ export class MappingService {
 
     if (!mapping) throw ApiError.notFound("Mapping not found");
 
-    return Prisma.serviceProviderMapping.delete({ where: { id } });
+    return Prisma.serviceProviderMapping.delete({
+      where: { id },
+    });
   }
 }

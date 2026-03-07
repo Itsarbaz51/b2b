@@ -243,8 +243,8 @@ model Wallet {
   walletType WalletType @map("wallet_type")
   currency   Currency   @default(INR)
 
-  balance     BigInt 
-  holdBalance BigInt  @map("hold_balance")
+  balance     BigInt
+  holdBalance BigInt @map("hold_balance")
 
   isActive Boolean @default(true) @map("is_active")
   version  Int     @default(1)
@@ -264,9 +264,9 @@ model Wallet {
 model UserLimit {
   userId String @id @map("user_id")
 
-  dailyLimit   BigInt? 
-  monthlyLimit BigInt? 
-  perTxnLimit  BigInt? 
+  dailyLimit   BigInt?
+  monthlyLimit BigInt?
+  perTxnLimit  BigInt?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -320,17 +320,17 @@ model CommissionEarning {
 
   serviceProviderMappingId String @map("service_provider_mapping_id")
 
-  amount BigInt 
+  amount BigInt
 
   mode PricingMode
   type CommissionType
 
-  commissionAmount BigInt  @map("commission_amount")
-  surchargeAmount  BigInt  @map("surcharge_amount")
-  tdsAmount        BigInt  @map("tds_amount")
-  gstAmount        BigInt  @map("gst_amount")
+  commissionAmount BigInt @map("commission_amount")
+  surchargeAmount  BigInt @map("surcharge_amount")
+  tdsAmount        BigInt @map("tds_amount")
+  gstAmount        BigInt @map("gst_amount")
 
-  netAmount BigInt  @map("net_amount")
+  netAmount BigInt @map("net_amount")
 
   metadata Json? @map("meta_data")
 
@@ -390,6 +390,8 @@ model ServiceProviderMapping {
   serviceId  String @map("service_id")
   providerId String @map("provider_id")
 
+  mode             PricingMode      @default(COMMISSION)
+  // COMMISSION | SURCHARGE
   pricingValueType PricingValueType @default(FLAT)
 
   providerCost         BigInt?
@@ -422,8 +424,8 @@ model ProviderSlab {
 
   serviceProviderMappingId String @map("service_provider_mapping_id")
 
-  minAmount BigInt  @map("min_amount")
-  maxAmount BigInt  @map("max_amount")
+  minAmount BigInt @map("min_amount")
+  maxAmount BigInt @map("max_amount")
 
   pricingValueType PricingValueType @default(FLAT) @map("pricing_value_type")
 
@@ -504,8 +506,8 @@ model Transaction {
   idempotencyKey String @unique @map("idempotency_key")
   txnId          String @unique @map("txn_id")
 
-  amount    BigInt 
-  netAmount BigInt  @map("net_amount")
+  amount    BigInt
+  netAmount BigInt @map("net_amount")
 
   status                   String @default("PENDING")
   serviceProviderMappingId String @map("service_provider_mapping_id")
@@ -546,8 +548,8 @@ model LedgerEntry {
   entryType     LedgerEntryType @map("entry_type")
   referenceType String          @map("reference_type")
 
-  amount         BigInt       
-  runningBalance BigInt        @map("running_balance")
+  amount         BigInt
+  runningBalance BigInt       @map("running_balance")
   narration      String       @db.Text
   metadata       Json?
   idempotencyKey String?      @map("idempotency_key")
@@ -570,7 +572,7 @@ model Refund {
   id            String      @id @default(uuid())
   transactionId String      @map("transaction_id")
   initiatedBy   String      @map("initiated_by")
-  amount        BigInt      
+  amount        BigInt
   status        String      @default("PENDING")
   reason        String?
   metadata      Json?       @map("meta_data")

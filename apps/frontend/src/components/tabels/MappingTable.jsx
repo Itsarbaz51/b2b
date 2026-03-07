@@ -6,6 +6,7 @@ import { Search, RefreshCw, Plus, Edit, Trash2 } from "lucide-react";
 
 import EmptyState from "../ui/EmptyState";
 import AddMappingForm from "../forms/AddMappingForm";
+import { paisaToRupee } from "../../utils/lib";
 
 export default function MappingTable() {
   const dispatch = useDispatch();
@@ -33,10 +34,6 @@ export default function MappingTable() {
   const loadProviders = async () => {
     const res = await dispatch(getAllServices({ type: "provider" }));
     setProviderList(res?.data?.data || []);
-  };
-
-  const paisaToRupee = (value) => {
-    return (Number(value || 0) / 100).toFixed(2);
   };
 
   useEffect(() => {
@@ -101,6 +98,7 @@ export default function MappingTable() {
               <th className="px-6 py-3 text-left">#</th>
               <th className="px-6 py-3 text-left">Service</th>
               <th className="px-6 py-3 text-left">Provider</th>
+              <th className="px-6 py-3 text-left">Mode</th>
               <th className="px-6 py-3 text-left">Selling Price</th>
               <th className="px-6 py-3 text-left">Provider Cost</th>
               <th className="px-6 py-3 text-left">Margin</th>
@@ -118,12 +116,10 @@ export default function MappingTable() {
               </tr>
             ) : (
               filteredMappings.map((item, index) => {
-                let margin = item.sellingPrice - item.providerCost;
-                if (margin === 0) {
-                  margin;
-                } else {
-                  item.sellingPrice - item.providerCost / 100;
-                }
+                const sellingPrice = Number(item.sellingPrice || 0);
+                const providerCost = Number(item.providerCost || 0);
+
+                const margin = (sellingPrice - providerCost) / 100;
 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
@@ -134,7 +130,11 @@ export default function MappingTable() {
                     </td>
 
                     <td className="px-6 py-4">{item.provider?.name}</td>
-
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs">
+                        {item.mode}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-green-600">
                       ₹{paisaToRupee(item.sellingPrice)}
                     </td>
@@ -143,7 +143,11 @@ export default function MappingTable() {
                       ₹{paisaToRupee(item.providerCost)}
                     </td>
 
-                    <td className="px-6 py-4 text-blue-600">
+                    <td
+                      className={`px-6 py-4 ${
+                        margin > 0 ? "text-green-600" : "text-red-500"
+                      }`}
+                    >
                       ₹{margin.toFixed(2)}
                     </td>
                     <td className="px-6 py-4">

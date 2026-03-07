@@ -18,7 +18,6 @@ export class CommissionSettingService {
       gstPercent,
       effectiveTo,
     } = data;
-    return console.log(BigInt(value));
 
     if (!mode || !type || value === undefined || value === null) {
       throw ApiError.badRequest("mode, type and value are required");
@@ -263,14 +262,14 @@ export default class CommissionEarningService {
       userId,
       fromUserId = null,
       serviceProviderMappingId,
-      amount,
+      amount = 0n,
       mode,
       type,
       commissionAmount = 0n,
-      surchargeAmount = 0n,
+      surchargeAmount = null,
       tdsAmount = null,
       gstAmount = null,
-      netAmount,
+      netAmount = 0n,
       metadata = null,
       createdBy,
     }
@@ -281,25 +280,38 @@ export default class CommissionEarningService {
 
     return await tx.commissionEarning.create({
       data: {
-        transactionId,
-        userId,
-        fromUserId,
-        serviceProviderMappingId,
+        transaction: {
+          connect: { id: transactionId },
+        },
 
-        amount: BigInt(amount),
+        user: {
+          connect: { id: userId },
+        },
+
+        fromUser: fromUserId ? { connect: { id: fromUserId } } : undefined,
+
+        serviceProviderMapping: {
+          connect: { id: serviceProviderMappingId },
+        },
+
+        createdByUser: {
+          connect: { id: createdBy },
+        },
+
+        amount: BigInt(amount ?? 0),
 
         mode,
         type,
 
-        commissionAmount: BigInt(commissionAmount),
-        surchargeAmount: surchargeAmount ? BigInt(surchargeAmount) : null,
-        tdsAmount: tdsAmount ? BigInt(tdsAmount) : null,
-        gstAmount: gstAmount ? BigInt(gstAmount) : null,
+        commissionAmount: BigInt(commissionAmount ?? 0),
+        surchargeAmount:
+          surchargeAmount !== null ? BigInt(surchargeAmount) : null,
+        tdsAmount: BigInt(tdsAmount ?? 0),
+        gstAmount: BigInt(gstAmount ?? 0),
 
-        netAmount: BigInt(netAmount),
+        netAmount: BigInt(netAmount ?? 0),
 
         metadata,
-        createdBy,
       },
     });
   }

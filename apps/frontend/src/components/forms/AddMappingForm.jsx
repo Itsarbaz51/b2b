@@ -1,7 +1,10 @@
 import { useDispatch } from "react-redux";
 import { createService, updateService } from "../../redux/slices/serviceSlice";
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X } from "lucide-react";
+import { useRef } from "react";
+import Editor from "@monaco-editor/react";
+import { paisaToRupee, rupeesToPaise } from "../../utils/lib";
 
 export default function AddMappingForm({
   services = [],
@@ -14,13 +17,14 @@ export default function AddMappingForm({
 
   const [form, setForm] = useState({
     serviceId: "",
+    mode: "COMMISSION",
     providerId: "",
     sellingPrice: 0,
     providerCost: 0,
     isActive: true,
   });
 
-  const [config, setConfig] = useState({});
+  const [config, setConfig] = useState("{}");
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
   const [error, setError] = useState("");
@@ -30,12 +34,13 @@ export default function AddMappingForm({
       setForm({
         serviceId: editData.serviceId,
         providerId: editData.providerId,
+        mode: editData.mode,
         sellingPrice: paisaToRupee(editData.sellingPrice),
         providerCost: paisaToRupee(editData.providerCost),
         isActive: editData.isActive ?? true,
       });
 
-      setConfig(editData.config || {});
+      setConfig(JSON.stringify(editData.config || {}, null, 2));
     }
   }, [editData]);
 
@@ -43,49 +48,35 @@ export default function AddMappingForm({
   const sellingPrice = Number(form.sellingPrice);
   const margin = sellingPrice - providerCost;
 
-  const rupeeToPaisa = (value) => {
-    return Math.round(parseFloat(value || 0) * 100);
-  };
+  const editorRef = useRef(null);
 
-  const paisaToRupee = (value) => {
-    return (value || 0) / 100;
-  };
-  const handleConfigChange = (key, value) => {
-    setConfig({
-      ...config,
-      [key]: value,
-    });
-  };
-
-  const addConfigField = () => {
-    if (!newKey) return;
-
-    setConfig({
-      ...config,
-      [newKey]: newValue,
-    });
-
-    setNewKey("");
-    setNewValue("");
-  };
-
-  const removeConfigField = (key) => {
-    const updated = { ...config };
-    delete updated[key];
-    setConfig(updated);
-  };
+  function handleEditorDidMount(editor) {
+    editorRef.current = editor;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    let parsedConfig = {};
+
+    try {
+      const rawConfig = editorRef.current.getValue();
+
+      parsedConfig = rawConfig ? JSON.parse(rawConfig) : {};
+    } catch {
+      setError("Invalid JSON in config");
+      return;
+    }
 
     const payload = {
       type: "mapping",
       serviceId: form.serviceId,
       providerId: form.providerId,
-      sellingPrice: rupeeToPaisa(form.sellingPrice),
-      providerCost: rupeeToPaisa(form.providerCost),
+      mode: form.mode,
+      sellingPrice: rupeesToPaise(form.sellingPrice),
+      providerCost: rupeesToPaise(form.providerCost),
       isActive: form.isActive,
-      config,
+      config: parsedConfig,
     };
 
     if (editData) {
@@ -175,24 +166,36 @@ export default function AddMappingForm({
               </div>
 
               <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Selling Price (₹)
-                </label>
+                <label className="text-sm font-semibold mb-2 block">Mode</label>
 
-                <input
-                  type="number"
-                  step="0.01"
+                <select
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.sellingPrice}
-                  onChange={(e) =>
-                    setForm({ ...form, sellingPrice: e.target.value })
-                  }
-                />
-
-                <p className="text-xs text-gray-500 mt-1">
-                  Stored: {(Number(sellingPrice) * 100).toFixed(0)} paisa
-                </p>
+                  value={form.mode}
+                  onChange={(e) => setForm({ ...form, mode: e.target.value })}
+                >
+                  <option value="COMMISSION">Commission</option>
+                  <option value="SURCHARGE">Surcharge</option>
+                </select>
               </div>
+
+              {form.mode === "SURCHARGE" && (
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">
+                    Selling Price (₹)
+                  </label>
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                    value={form.sellingPrice}
+                    onChange={(e) =>
+                      setForm({ ...form, sellingPrice: e.target.value })
+                    }
+                    min={0}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-sm font-semibold mb-2 block">
@@ -207,11 +210,31 @@ export default function AddMappingForm({
                   onChange={(e) =>
                     setForm({ ...form, providerCost: e.target.value })
                   }
+                  min={0}
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
                   Stored: {(Number(providerCost) * 100).toFixed(0)} paisa
                 </p>
+              </div>
+              <div>
+                <label className="text-sm font-semibold mb-2 block">
+                  Status
+                </label>
+
+                <select
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                  value={form.isActive}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      isActive: e.target.value === "true",
+                    })
+                  }
+                >
+                  <option value={true}>Active</option>
+                  <option value={false}>Inactive</option>
+                </select>
               </div>
             </div>
 
@@ -227,79 +250,33 @@ export default function AddMappingForm({
               </span>
             </div>
 
-            <div>
-              <label className="text-sm font-semibold mb-2 block">Status</label>
-
-              <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                value={form.isActive}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    isActive: e.target.value === "true",
-                  })
-                }
-              >
-                <option value={true}>Active</option>
-                <option value={false}>Inactive</option>
-              </select>
-            </div>
-
             {/* CONFIG */}
-            <div className="border border-gray-300 rounded-xl p-4 bg-gray-50">
-              <h3 className="font-semibold mb-4">API Configuration</h3>
-
-              {Object.entries(config).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="grid grid-cols-12 gap-3 mb-3 items-center"
-                >
-                  <div className="col-span-4 text-sm font-medium">{key}</div>
-
-                  <div className="col-span-7">
-                    <input
-                      className="w-full border border-gray-300 px-3 py-2 rounded-lg"
-                      value={value}
-                      onChange={(e) => handleConfigChange(key, e.target.value)}
-                    />
-                  </div>
-
-                  <div className="col-span-1">
-                    <button
-                      type="button"
-                      onClick={() => removeConfigField(key)}
-                      className="text-red-500"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {/* Add config */}
-              <div className="grid grid-cols-12 gap-3 mt-4">
-                <input
-                  placeholder="Config Key"
-                  value={newKey}
-                  onChange={(e) => setNewKey(e.target.value)}
-                  className="col-span-4 border border-gray-300 px-3 py-2 rounded-lg"
-                />
-
-                <input
-                  placeholder="Config Value"
-                  value={newValue}
-                  onChange={(e) => setNewValue(e.target.value)}
-                  className="col-span-7 border  border-gray-300 px-3 py-2 rounded-lg"
-                />
-
-                <button
-                  type="button"
-                  onClick={addConfigField}
-                  className="col-span-1 bg-green-500 text-white rounded-lg flex justify-center items-center"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
+            <div
+              className="border border-gray-700 rounded-xl resize-y overflow-auto"
+              style={{
+                minHeight: "50px",
+                height: "160px",
+                maxHeight: "600px",
+              }}
+            >
+              <Editor
+                height="100%"
+                width="100%"
+                defaultLanguage="json"
+                defaultValue={config}
+                onMount={handleEditorDidMount}
+                theme="vs-dark"
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  automaticLayout: true,
+                  formatOnPaste: true,
+                  formatOnType: true,
+                  scrollBeyondLastLine: false,
+                  wordWrap: "on",
+                  tabSize: 2,
+                }}
+              />
             </div>
 
             <div className="flex justify-end">
