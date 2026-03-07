@@ -99,8 +99,8 @@ export default function MappingTable() {
               <th className="px-6 py-3 text-left">Service</th>
               <th className="px-6 py-3 text-left">Provider</th>
               <th className="px-6 py-3 text-left">Mode</th>
-              <th className="px-6 py-3 text-left">Selling Price</th>
               <th className="px-6 py-3 text-left">Provider Cost</th>
+              <th className="px-6 py-3 text-left">Selling Price</th>
               <th className="px-6 py-3 text-left">Margin</th>
               <th className="px-6 py-3 text-left">Status</th>
               <th className="px-6 py-3 text-center">Actions</th>
@@ -135,20 +135,24 @@ export default function MappingTable() {
                         {item.mode}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-green-600">
-                      ₹{paisaToRupee(item.sellingPrice)}
-                    </td>
 
                     <td className="px-6 py-4 text-red-500">
                       ₹{paisaToRupee(item.providerCost)}
                     </td>
 
+                    <td className="px-6 py-4 text-green-600">
+                      {item.mode === "COMISSION"
+                        ? `₹${paisaToRupee(item.sellingPrice - item.providerCost)}`
+                        : "-"}
+                    </td>
                     <td
                       className={`px-6 py-4 ${
                         margin > 0 ? "text-green-600" : "text-red-500"
                       }`}
                     >
-                      ₹{margin.toFixed(2)}
+                      {item.mode === "COMISSION"
+                        ? `₹${margin.toFixed(2)}`
+                        : "-"}
                     </td>
                     <td className="px-6 py-4">
                       <span

@@ -39,7 +39,7 @@ class KycValidationSchemas {
       firstName: z.string().min(1, "First name is required"),
       lastName: z.string().min(1, "Last name is required"),
       fatherName: z.string().min(1, "Father name is required"),
-      kycType: z.string().min(1, "kyc type is required"),
+      kycType: z.enum(["MANUAL", "API"]),
       dob: z
         .string()
         .refine((val) => !isNaN(Date.parse(val)), "Invalid date format"),

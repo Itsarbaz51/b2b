@@ -22,8 +22,12 @@ export default function AddServiceForm({ editData, onClose, onSuccess }) {
   }, [editData]);
 
   const handleChange = (e) => {
-    const value =
+    let value =
       e.target.name === "isActive" ? e.target.value === "true" : e.target.value;
+
+    if (e.target.name === "code") {
+      value = value.toUpperCase();
+    }
 
     setForm({ ...form, [e.target.name]: value });
 
@@ -155,7 +159,7 @@ export default function AddServiceForm({ editData, onClose, onSuccess }) {
 
               {/* Code */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 ">
                   Service Code *
                 </label>
 
@@ -163,7 +167,7 @@ export default function AddServiceForm({ editData, onClose, onSuccess }) {
                   name="code"
                   value={form.code}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none uppercase ${
                     errors.code
                       ? "border-red-400 bg-red-50"
                       : "border-gray-300 focus:ring-blue-400"

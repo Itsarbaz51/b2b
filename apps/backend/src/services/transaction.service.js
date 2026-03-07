@@ -1,3 +1,4 @@
+import Prisma from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import ApiEntityService from "./apiEntity.service.js";
 
@@ -102,5 +103,19 @@ export default class TransactionService {
     }
 
     return updatedTxn;
+  }
+
+  static async checkDuplicate(idempotencyKey) {
+    if (!idempotencyKey) return;
+
+    const existingTxn = await Prisma.transaction.findUnique({
+      where: { idempotencyKey },
+    });
+
+    if (existingTxn) {
+      throw ApiError.conflict(
+        "Duplicate transaction detected. Please wait for the previous request."
+      );
+    }
   }
 }

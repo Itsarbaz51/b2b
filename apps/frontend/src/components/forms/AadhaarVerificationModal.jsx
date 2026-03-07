@@ -22,6 +22,7 @@ export default function AadhaarVerificationModal({
   const [referenceId, setReferenceId] = useState(null);
   const [transactionId, setTransactionId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [idempotencyKey] = useState(uuidv4());
 
   const handleSendOtp = async () => {
     try {
@@ -48,7 +49,7 @@ export default function AadhaarVerificationModal({
         sendAadhaarOtp({
           aadhaarNumber: cleanAadhaar,
           serviceId,
-          idempotencyKey: `${uuidv4()}`,
+          idempotencyKey: idempotencyKey,
         }),
       );
       console.log(res);

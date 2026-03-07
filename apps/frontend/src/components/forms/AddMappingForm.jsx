@@ -178,7 +178,7 @@ export default function AddMappingForm({
                 </select>
               </div>
 
-              {form.mode === "SURCHARGE" && (
+              {form.mode === "COMMISSION" && (
                 <div>
                   <label className="text-sm font-semibold mb-2 block">
                     Selling Price (₹)
@@ -239,16 +239,18 @@ export default function AddMappingForm({
             </div>
 
             {/* Margin */}
-            <div className="text-sm font-semibold">
-              Margin:
-              <span
-                className={`ml-2 ${
-                  margin >= 0 ? "text-green-600" : "text-red-500"
-                }`}
-              >
-                ₹{margin}
-              </span>
-            </div>
+            {form.mode === "COMMISSION" && (
+              <div className="text-sm font-semibold">
+                Margin:
+                <span
+                  className={`ml-2 ${
+                    margin >= 0 ? "text-green-600" : "text-red-500"
+                  }`}
+                >
+                  ₹{margin}
+                </span>
+              </div>
+            )}
 
             {/* CONFIG */}
             <div

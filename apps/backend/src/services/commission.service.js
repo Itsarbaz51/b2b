@@ -213,43 +213,41 @@ export class CommissionSettingService {
     return Helper.serializeBigInt(settings);
   }
 
-  static async getApplicableRule(tx, userId, serviceProviderMappingId, mode) {
-    const currentUser = await tx.user.findUnique({
-      where: { id: userId },
-      select: { id: true, roleId: true },
-    });
-
-    if (!currentUser) {
-      throw ApiError.notFound("User not found");
+  static async checkUserPricingRule(userId, serviceProviderMappingId) {
+    if (!userId || !serviceProviderMappingId) {
+      throw ApiError.badRequest("userId and serviceProviderMappingId required");
     }
 
-    const normalizedMode = mode.toUpperCase();
+    const user = await Prisma.user.findUnique({
+      where: { id: userId },
+      select: { roleId: true },
+    });
 
-    // 1️⃣ USER RULE
-    let rule = await tx.commissionSetting.findFirst({
+    if (!user) throw ApiError.notFound("User not found");
+
+    let rule = await Prisma.commissionSetting.findFirst({
       where: {
         serviceProviderMappingId,
-        mode: normalizedMode,
         isActive: true,
-        targetUserId: currentUser.id,
+        targetUserId: userId,
       },
     });
 
-    if (rule) return rule;
-
-    // 2️⃣ ROLE RULE
-    rule = await tx.commissionSetting.findFirst({
+    rule = await Prisma.commissionSetting.findFirst({
       where: {
         serviceProviderMappingId,
-        mode: normalizedMode,
         isActive: true,
-        roleId: currentUser.roleId,
+        roleId: user.roleId,
       },
     });
 
-    if (rule) return rule;
+    if (!rule) {
+      throw ApiError.badRequest(
+        "Pricing rule is not configured for this service. Please contact your administrator."
+      );
+    }
 
-    throw ApiError.badRequest(`Pricing rule not configured for user ${userId}`);
+    return rule;
   }
 }
 

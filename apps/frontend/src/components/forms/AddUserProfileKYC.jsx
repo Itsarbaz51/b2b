@@ -35,6 +35,7 @@ import CloseBtn from "../ui/CloseBtn";
 import AadhaarVerificationModal from "./AadhaarVerificationModal";
 import { usePermissions } from "../hooks/usePermissions";
 import { KYCStatusCard } from "../KYCStatusCard";
+import PANVerificationModal from "./PANVerificationModal";
 
 // ---------- Main Form ----------
 export default function AddUserProfileKYC() {
@@ -80,6 +81,7 @@ export default function AddUserProfileKYC() {
   });
 
   const [showAadhaarModal, setShowAadhaarModal] = useState(false);
+  const [showPanModal, setShowPanModal] = useState(false);
   const [kycType, setKycType] = useState("MANUAL");
 
   const [errors, setErrors] = useState({});
@@ -90,6 +92,13 @@ export default function AddUserProfileKYC() {
   const aadhaarServiceId = useMemo(() => {
     const service = permissions.normalizedServices?.find(
       (s) => s.code === "AADHAAR",
+    );
+    return service?.original?.service?.id || null;
+  }, [permissions.normalizedServices]);
+
+  const panServiceId = useMemo(() => {
+    const service = permissions.normalizedServices?.find(
+      (s) => s.code === "PAN",
     );
     return service?.original?.service?.id || null;
   }, [permissions.normalizedServices]);
@@ -779,12 +788,25 @@ export default function AddUserProfileKYC() {
                 />
 
                 <div className="flex justify-end mt-2">
-                  <ButtonField
-                    name="Verify PAN"
-                    type="button"
-                    isOpen={() => console.log("Verify PAN")}
-                    btncss="px-4 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  />
+                  {permissions.hasPanVerification && (
+                    <ButtonField
+                      name="Verify PAN"
+                      type="button"
+                      isOpen={() => {
+                        const pan = formData.panNumber?.trim().toUpperCase();
+                        if (!pan) {
+                          toast.error("Please enter PAN number first");
+                          return;
+                        }
+                        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+                          toast.error("Invalid PAN format (ABCDE1234F)");
+                          return;
+                        }
+                        setShowPanModal(true);
+                      }}
+                      btncss="px-4 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -806,7 +828,20 @@ export default function AddUserProfileKYC() {
                     <ButtonField
                       name="Verify Aadhaar"
                       type="button"
-                      isOpen={() => setShowAadhaarModal(true)}
+                      isOpen={() => {
+                        const pan = formData.panNumber?.trim().toUpperCase();
+                        if (!pan) {
+                          toast.error("Please enter AADHAAR number first");
+                          return;
+                        }
+                        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+                          toast.error(
+                            "Invalid AADHAAR format (1321-4564-7897)",
+                          );
+                          return;
+                        }
+                        setShowAadhaarModal(true);
+                      }}
                       btncss="px-4 py-1 text-sm bg-blue-600 text-white rounded-lg"
                     />
                   )}
@@ -1131,6 +1166,24 @@ export default function AddUserProfileKYC() {
                 photo: true,
               }));
             }
+          }}
+        />
+      )}
+
+      {showPanModal && (
+        <PANVerificationModal
+          panNumber={formData.panNumber}
+          serviceId={panServiceId}
+          onClose={() => setShowPanModal(false)}
+          onSuccess={(data) => {
+            const fullName = data?.name || "";
+            const parts = fullName.split(" ");
+
+            setFormData((prev) => ({
+              ...prev,
+              firstName: parts[0] || "",
+              lastName: parts.slice(1).join(" ") || "",
+            }));
           }}
         />
       )}

@@ -34,7 +34,12 @@ export class PermissionNormalizer {
       if (typeof perm === "string") {
         // Check if it's a service permission
         if (
-          ["RAZORPAY", "BANK_TRANSFER", "AADHAAR_VERIFICATION"].includes(perm)
+          [
+            "RAZORPAY",
+            "BANK_TRANSFER",
+            "AADHAAR_VERIFICATION",
+            "PAN_VERIFICATION",
+          ].includes(perm)
         ) {
           services.push({
             code: perm,

@@ -38,7 +38,10 @@ export const usePermissions = (routePath = null) => {
 
     const hasService = (serviceCode) => {
       return services.some(
-        (service) => service.code === serviceCode && service.canView,
+        (service) =>
+          service.code === serviceCode &&
+          service.canView &&
+          service.original.canProcess,
       );
     };
 
@@ -129,6 +132,7 @@ export const usePermissions = (routePath = null) => {
       hasRazorpay: hasService(PERMISSIONS.RAZORPAY),
       hasBankTransfer: hasService(PERMISSIONS.BANK_TRANSFER),
       hasAadhaarVerification: hasService(PERMISSIONS.AADHAAR_VERIFICATION),
+      hasPanVerification: hasService(PERMISSIONS.PAN_VERIFICATION),
     };
 
     // Feature flags - FIXED: Same logic for both user types

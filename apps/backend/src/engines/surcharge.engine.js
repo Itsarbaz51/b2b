@@ -8,51 +8,41 @@ export default class SurchargeEngine {
     tx,
     { userId, serviceProviderMappingId, amount = 0n }
   ) {
-    const txnAmount = BigInt(amount);
-    let totalSurcharge = 0n;
-
     let currentUser = await tx.user.findUnique({
       where: { id: userId },
-      select: { id: true, roleId: true, parentId: true },
+      select: { id: true, roleId: true },
     });
 
     if (!currentUser) throw ApiError.notFound("User not found");
 
-    while (currentUser) {
-      const rule = await tx.commissionSetting.findFirst({
-        where: {
-          serviceProviderMappingId,
-          mode: "SURCHARGE",
-          isActive: true,
-          OR: [
-            { targetUserId: currentUser.id },
-            { roleId: currentUser.roleId },
-          ],
-        },
-      });
+    let rule = await tx.commissionSetting.findFirst({
+      where: {
+        serviceProviderMappingId,
+        mode: "SURCHARGE",
+        isActive: true,
+        targetUserId: currentUser.id,
+      },
+    });
 
-      if (rule) {
-        let surcharge = 0n;
-        const value = BigInt(Math.floor(Number(rule.value)));
+    rule = await tx.commissionSetting.findFirst({
+      where: {
+        serviceProviderMappingId,
+        mode: "SURCHARGE",
+        isActive: true,
+        roleId: currentUser.roleId,
+      },
+    });
 
-        if (rule.type === "PERCENTAGE") {
-          surcharge = (txnAmount * value) / 100n;
-        } else {
-          surcharge = value;
-        }
+    if (!rule) return 0n;
 
-        totalSurcharge += surcharge;
-      }
+    const value = BigInt(rule.value);
+    const txnAmount = BigInt(amount);
 
-      if (!currentUser.parentId) break;
-
-      currentUser = await tx.user.findUnique({
-        where: { id: currentUser.parentId },
-        select: { id: true, roleId: true, parentId: true },
-      });
+    if (rule.type === "PERCENTAGE") {
+      return (txnAmount * value) / 100n;
     }
 
-    return totalSurcharge;
+    return value;
   }
 
   static async distribute(
