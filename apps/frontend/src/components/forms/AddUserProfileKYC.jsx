@@ -805,6 +805,7 @@ export default function AddUserProfileKYC() {
                         setShowPanModal(true);
                       }}
                       btncss="px-4 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      isDisabled={!formData.panNumber}
                     />
                   )}
                 </div>
@@ -829,20 +830,24 @@ export default function AddUserProfileKYC() {
                       name="Verify Aadhaar"
                       type="button"
                       isOpen={() => {
-                        const pan = formData.panNumber?.trim().toUpperCase();
-                        if (!pan) {
-                          toast.error("Please enter AADHAAR number first");
+                        const aadhaar = formData.aadhaarNumber?.trim();
+                        if (!aadhaar) {
+                          toast.error("Please enter Aadhaar number first");
                           return;
                         }
-                        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+                        // remove dashes
+                        const digits = aadhaar.replace(/\D/g, "");
+
+                        if (!/^\d{12}$/.test(digits)) {
                           toast.error(
-                            "Invalid AADHAAR format (1321-4564-7897)",
+                            "Invalid Aadhaar format (1234-5678-9012)",
                           );
                           return;
                         }
                         setShowAadhaarModal(true);
                       }}
                       btncss="px-4 py-1 text-sm bg-blue-600 text-white rounded-lg"
+                      isDisabled={!formData.aadhaarNumber}
                     />
                   )}
                 </div>

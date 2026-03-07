@@ -23,6 +23,11 @@ export default class PanService {
     const { provider, serviceProviderMapping } =
       await ProviderResolver.resolveProvider(serviceId);
 
+    if (serviceProviderMapping.mode !== "SURCHARGE") {
+      throw ApiError.badRequest(
+        "This PAN service is currently configured as SURCHARGE mode and cannot be used for this operation. Please contact your administrator."
+      );
+    }
     await CommissionSettingService.checkUserPricingRule(
       userId,
       serviceProviderMapping.id

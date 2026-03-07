@@ -46,8 +46,8 @@ export default function PANVerificationModal({
         }),
       );
 
-      if (res.data?.status === "VALID") {
-        toast.success("PAN Verified Successfully");
+      if (res.data?.valid) {
+        toast.success(res?.data?.message);
 
         onSuccess(res.data);
         onClose();

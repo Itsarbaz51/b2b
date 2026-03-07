@@ -59,12 +59,6 @@ export default class SurchargeEngine {
       throw ApiError.badRequest("Surcharge disabled for this service (NONE)");
     }
 
-    if (mapping.mode === "SURCHARGE") {
-      throw ApiError.badRequest(
-        "Service mapping mode cannot be SURCHARGE for this operation"
-      );
-    }
-
     // preload rules (ONLY ONE QUERY)
     const rules = await tx.commissionSetting.findMany({
       where: {

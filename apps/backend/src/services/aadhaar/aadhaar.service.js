@@ -8,6 +8,7 @@ import { getAadhaarPlugin } from "../../plugin_registry/aadhaar/pluginRegistry.j
 import { ApiError } from "../../utils/ApiError.js";
 import ProviderResolver from "../../resolvers/Provider.resolver.js";
 import SurchargeEngine from "../../engines/surcharge.engine.js";
+import { CommissionSettingService } from "../commission.service.js";
 
 export default class AadhaarService {
   // STEP 1 — SEND OTP
@@ -24,6 +25,14 @@ export default class AadhaarService {
 
     const { provider, serviceProviderMapping } =
       await ProviderResolver.resolveProvider(serviceId);
+
+    console.log(serviceProviderMapping.mode);
+
+    if (serviceProviderMapping.mode !== "SURCHARGE") {
+      throw ApiError.badRequest(
+        "This AADHAAR service is currently configured as SURCHARGE mode and cannot be used for this operation. Please contact your administrator."
+      );
+    }
 
     await CommissionSettingService.checkUserPricingRule(
       userId,
@@ -87,7 +96,7 @@ export default class AadhaarService {
           },
         };
 
-        providerResponse = await plugin.sendOtp({ aadhaarNumber });
+        // providerResponse = await plugin.sendOtp({ aadhaarNumber });
 
         await ApiEntityService.updateProviderInit(tx, {
           apiEntityId: apiEntity.id,
@@ -189,7 +198,7 @@ export default class AadhaarService {
           },
         };
 
-        providerResponse = await plugin.verifyOtp({ referenceId, otp });
+        // providerResponse = await plugin.verifyOtp({ referenceId, otp });
 
         if (!providerResponse?.status) {
           throw ApiError.badRequest("OTP verification failed");

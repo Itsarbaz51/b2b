@@ -1,29 +1,29 @@
-import { useSelector } from "react-redux";
+function ButtonField({
+  isOpen,
+  name,
+  icon: Icon,
+  type = "button",
+  isDisabled = false,
+  btncss = "",
+  isLoading = false,
+}) {
+  const baseClass =
+    "flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition";
 
-function ButtonField({ isOpen, name, icon: Icon, type, isDisabled, btncss }) {
-  const loading = useSelector(
-    (state) =>
-      state.auth?.isLoading ||
-      state.kyc?.isLoading ||
-      state.user?.isLoading ||
-      state.bank?.isLoading ||
-      state.wallet?.isLoading ||
-      state.commission?.isLoading
-  );
+  const defaultStyle =
+    "bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-700 text-white hover:from-cyan-600 hover:via-blue-700 hover:to-indigo-900";
+
   return (
     <button
       type={type}
-      disabled={loading}
-      className={`${
-        btncss
-          ? btncss
-          : "px-8 h-fit w-fit  bg-black/90 text-center bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-700 hover:bg-gradient-to-r hover:from-cyan-600 hover:via-blue-700 hover:to-indigo-900 duration-300  text-white py-2 rounded-lg hover:bg-black cursor-pointer transition disabled:bg-gray-400"
-      } flex justify-center items-center px-2 gap-2`}
-      onClick={isOpen}
+      disabled={isDisabled}
+      onClick={!isDisabled ? isOpen : undefined}
+      className={`${baseClass} ${
+        btncss ? btncss : defaultStyle
+      } ${isDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
     >
-      {/* Icon sirf tab dikhe jab pass ho */}
       {Icon && <Icon className="w-4 h-4" />}
-      {loading ? "Loading..." : name}
+      {isLoading ? "Loading..." : name}
     </button>
   );
 }
