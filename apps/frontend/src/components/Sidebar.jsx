@@ -15,28 +15,19 @@ import {
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/slices/authSlice";
-import { usePermissions } from "./hooks/usePermissions";
-
-// Static business roles
-const STATIC_BUSINESS_ROLES = [
-  "ADMIN",
-  "STATE HEAD",
-  "MASTER DISTRIBUTOR",
-  "DISTRIBUTOR",
-  "RETAILER",
-];
+import { BUSINESS_ROLES, PERMISSIONS, SERVICES } from "../utils/constants";
+import { checkPermission } from "../utils/permissionChecker";
 
 const Sidebar = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
 
-  // Use unified permissions hook
-  const permissions = usePermissions();
-
   const handleLogout = () => {
     dispatch(logout());
   };
+
+  const BUSINESS_ROLE_LIST = Object.values(BUSINESS_ROLES);
 
   // Base menu items structure - IMPROVED: Better permission checks
   const baseMenuItems = [
@@ -48,30 +39,15 @@ const Sidebar = () => {
           label: "Dashboard",
           icon: BarChart3,
           path: "/dashboard",
-          permission: "dashboard",
-          staticRoles: STATIC_BUSINESS_ROLES,
-        },
-        {
-          id: "add-fund",
-          label: "Add Fund",
-          icon: BadgeIndianRupee,
-          path: "/request-fund",
-          permission: "fund request",
-          // FIXED: Better show condition
-          show: permissions.showAddFund,
-          staticRoles: [
-            "STATE HEAD",
-            "MASTER DISTRIBUTOR",
-            "DISTRIBUTOR",
-            "RETAILER",
-          ],
+          employeePermission: PERMISSIONS.DASHBOARD,
+          staticRoles: BUSINESS_ROLE_LIST,
         },
         {
           id: "members",
           label: "Members",
           icon: Users,
           path: "/members",
-          permission: "members",
+          employeePermission: PERMISSIONS.MEMBERS,
           staticRoles: [
             "ADMIN",
             "STATE HEAD",
@@ -84,34 +60,43 @@ const Sidebar = () => {
           label: "Commission",
           icon: Percent,
           path: "/commission",
-          permission: "commission",
-          staticRoles: STATIC_BUSINESS_ROLES,
+          employeePermission: PERMISSIONS.COMMISSION,
+          staticRoles: BUSINESS_ROLE_LIST,
         },
         {
           id: "transactions",
           label: "Transactions",
           icon: History,
           path: "/transactions",
-          permission: "transactions",
-          staticRoles: STATIC_BUSINESS_ROLES,
+          employeePermission: PERMISSIONS.TRANSACTIONS,
+          staticRoles: BUSINESS_ROLE_LIST,
         },
-      ].filter((item) => {
-        // FIXED: Better show condition check
-        if (item.show !== undefined) {
-          return item.show === true;
-        }
-        return true;
-      }),
+      ],
     },
     {
       title: "Services",
       items: [
         {
+          id: "add-fund",
+          label: "Add Fund",
+          icon: BadgeIndianRupee,
+          path: "/request-fund",
+          businessUserPermission: SERVICES.FUND_REQUEST.RAZORPAY,
+          employeePermission: PERMISSIONS.FUND_REQUEST,
+          staticRoles: [
+            "STATE HEAD",
+            "MASTER DISTRIBUTOR",
+            "DISTRIBUTOR",
+            "RETAILER",
+          ],
+        },
+        {
           id: "payout",
           label: "Payouts",
           icon: ArrowDownCircle,
           path: "/card-payout",
-          permission: "payout",
+          businessUserPermission: SERVICES.PAYOUT,
+          employeePermission: PERMISSIONS.PAYOUT,
           staticRoles: [
             "STATE HEAD",
             "MASTER DISTRIBUTOR",
@@ -129,9 +114,7 @@ const Sidebar = () => {
           label: "KYC Request",
           icon: Shield,
           path: "/kyc-request",
-          permission: "kyc request",
-          // NEW: Hide if employee doesn't have permission
-          show: permissions.hasKycRequest,
+          employeePermission: PERMISSIONS.KYC_REQUEST,
           staticRoles: [
             "ADMIN",
             "STATE HEAD",
@@ -144,9 +127,7 @@ const Sidebar = () => {
           label: "Employee Management",
           icon: Users,
           path: "/employee-management",
-          permission: "employee management",
-          // NEW: Hide if employee doesn't have permission
-          show: permissions.hasEmployeeManagement,
+          employeePermission: PERMISSIONS.EMPLOYEE_MANAGEMENT,
           staticRoles: ["ADMIN"],
         },
         {
@@ -154,9 +135,7 @@ const Sidebar = () => {
           label: "Reports",
           icon: BarChart3,
           path: "/reports",
-          permission: "reports",
-          // NEW: Hide if employee doesn't have permission
-          show: permissions.hasReports,
+          employeePermission: PERMISSIONS.REPORTS,
           staticRoles: ["ADMIN"],
         },
         {
@@ -164,10 +143,8 @@ const Sidebar = () => {
           label: "Logs",
           icon: FileCode,
           path: "/logs",
-          permission: "logs",
-          // NEW: Hide if employee doesn't have permission
-          show: permissions.hasLogs,
-          staticRoles: STATIC_BUSINESS_ROLES,
+          employeePermission: PERMISSIONS.LOGS,
+          staticRoles: BUSINESS_ROLE_LIST,
         },
       ].filter((item) => {
         // FIXED: Better show condition check
@@ -185,9 +162,8 @@ const Sidebar = () => {
           label: "Settings",
           icon: Settings,
           path: "/settings",
-          permission: "settings",
-          show: permissions.showSettings,
-          staticRoles: STATIC_BUSINESS_ROLES,
+          employeePermission: PERMISSIONS.SETTINGS,
+          staticRoles: BUSINESS_ROLE_LIST,
         },
       ].filter((item) => {
         if (item.show !== undefined) {
@@ -203,28 +179,35 @@ const Sidebar = () => {
   const role = userData.role?.name || userData.role || "USER";
   const roleType = userData.role?.type || "business";
 
-  // Filter menu sections based on user role and permissions - IMPROVED LOGIC
+  // Filter menu sections based on user role and  - IMPROVED LOGIC
   const filteredMenuSections = baseMenuItems
     .map((section) => {
       const filteredItems = section.items.filter((item) => {
-        // For static business roles
-        if (STATIC_BUSINESS_ROLES.includes(role)) {
-          // Pehle show property check karo, phir staticRoles
-          if (item.show !== undefined && item.show === false) {
-            return false;
-          }
-          return item.staticRoles?.includes(role) ?? true;
+        let roleAllowed = true;
+        let permissionAllowed = true;
+
+        // BUSINESS USER ROLE CHECK
+        if (roleType === "business") {
+          roleAllowed = item.staticRoles?.includes(role);
         }
-        // For dynamic employee roles - NEW: At least one permission check
-        else if (roleType === "employee") {
-          // Agar show property hai to ussi se check karo
-          if (item.show !== undefined) {
-            return item.show === true;
-          }
-          // Nahi to direct permission check karo
-          return permissions.hasPermission(item.permission);
+
+        // EMPLOYEE PERMISSION CHECK
+        if (roleType === "employee" && item.employeePermission) {
+          permissionAllowed = checkPermission(
+            userData,
+            item.employeePermission,
+          );
         }
-        return false;
+
+        // BUSINESS SERVICE PERMISSION
+        if (roleType === "business" && item.businessUserPermission) {
+          permissionAllowed = checkPermission(
+            userData,
+            item.businessUserPermission,
+          );
+        }
+
+        return roleAllowed && permissionAllowed;
       });
 
       return {
@@ -280,8 +263,8 @@ const Sidebar = () => {
   const initials = firstName
     ? firstName[0].toUpperCase()
     : username
-    ? username[0].toUpperCase()
-    : "U";
+      ? username[0].toUpperCase()
+      : "U";
 
   // Show loading state if not authenticated
   if (!isAuthenticated) {
@@ -307,7 +290,7 @@ const Sidebar = () => {
 
   // Determine panel type for display
   const getPanelType = () => {
-    if (STATIC_BUSINESS_ROLES.includes(role)) {
+    if (BUSINESS_ROLE_LIST.includes(role)) {
       return `${role} Panel`;
     } else if (roleType === "employee") {
       return `${role} (Employee) Panel`;
@@ -351,14 +334,14 @@ const Sidebar = () => {
                 {firstName && lastName
                   ? `${firstName} ${lastName}`.trim()
                   : firstName
-                  ? firstName
-                  : username || "User"}
+                    ? firstName
+                    : username || "User"}
               </p>
               <p className="text-xs capitalize text-gray-500 truncate">
                 {username || "username"}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {STATIC_BUSINESS_ROLES.includes(role)
+                {BUSINESS_ROLE_LIST.includes(role)
                   ? "Business User"
                   : "Employee"}
               </p>
@@ -366,7 +349,7 @@ const Sidebar = () => {
           </div>
 
           {/* Wallet Section - Only show for business users */}
-          {STATIC_BUSINESS_ROLES.includes(role) && (
+          {BUSINESS_ROLE_LIST.includes(role) && (
             <div className="bg-gray-100 rounded-lg p-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-600">Wallet Balance</span>
@@ -389,17 +372,6 @@ const Sidebar = () => {
             items={section.items}
           />
         ))}
-
-        {/* Empty State for Employees with no permissions */}
-        {roleType === "employee" && filteredMenuSections.length === 0 && (
-          <div className="text-center py-8">
-            <Settings className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">No permissions assigned</p>
-            <p className="text-xs text-gray-400 mt-1">
-              Contact administrator for access
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Logout */}

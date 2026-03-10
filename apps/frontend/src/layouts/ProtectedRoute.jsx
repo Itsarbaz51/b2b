@@ -1,7 +1,7 @@
 import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
-import { usePermissions } from "../components/hooks/usePermissions";
 import { ROUTE_CONFIG } from "../utils/constants";
+import { usePermissions } from "../components/hooks/usePermission";
 
 const ProtectedRoute = ({ children }) => {
   const location = useLocation();
@@ -48,24 +48,14 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Permission check - Business aur Employee dono ke liye
-  if (!permissions.canAccessRoute(currentPath)) {
-    if (
-      permissions.isEmployee &&
-      permissions.normalizedPermissions.length === 0
-    ) {
-      return <Navigate to="/permission-denied" replace />;
-    }
+  if (permissions.isEmployee) {
+    if (!permissions.canAccessRoute(currentPath)) {
+      if (permissions.normalizedPermissions.length === 0) {
+        return <Navigate to="/permission-denied" replace />;
+      }
 
-    if (
-      permissions.isEmployee &&
-      permissions.normalizedPermissions.length > 0
-    ) {
       return <Navigate to="/dashboard" replace />;
     }
-
-    // For business users or fallback
-    return <Navigate to="/dashboard" replace />;
   }
   return children;
 };

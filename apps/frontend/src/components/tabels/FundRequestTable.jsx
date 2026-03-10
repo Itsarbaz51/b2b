@@ -16,7 +16,6 @@ import ButtonField from "../ui/ButtonField";
 import HeaderSection from "../ui/HeaderSection";
 import FundRequestForm from "../forms/AddFundRequest";
 import { useSelector } from "react-redux";
-import { usePermissions } from "../hooks/usePermissions";
 
 // Constants
 const STATUS_TYPES = {
@@ -85,8 +84,8 @@ const useFundRequests = () => {
   const updateRequestStatus = useCallback((requestId, status) => {
     setFundRequests((prev) =>
       prev.map((request) =>
-        request.id === requestId ? { ...request, status } : request
-      )
+        request.id === requestId ? { ...request, status } : request,
+      ),
     );
   }, []);
 
@@ -286,10 +285,6 @@ const FundRequestContent = () => {
   const { fundRequests, addFundRequest, updateRequestStatus } =
     useFundRequests();
 
-  // Use fund permissions hook - FIXED: Now properly using fundTabs
-  const permissions = usePermissions("/request-fund");
-  const fundTabs = permissions.getPageTabs("/request-fund");
-
   const [savedAccounts] = useState([
     {
       id: 1,
@@ -327,7 +322,7 @@ const FundRequestContent = () => {
       (request) =>
         request.id.toLowerCase().includes(lowerSearch) ||
         request.rrn.toLowerCase().includes(lowerSearch) ||
-        request.method.toLowerCase().includes(lowerSearch)
+        request.method.toLowerCase().includes(lowerSearch),
     );
   }, [fundRequests, searchTerm]);
 
@@ -335,10 +330,10 @@ const FundRequestContent = () => {
   const requestStats = useMemo(() => {
     const total = fundRequests.length;
     const pending = fundRequests.filter(
-      (req) => req.status === STATUS_TYPES.PENDING
+      (req) => req.status === STATUS_TYPES.PENDING,
     ).length;
     const approved = fundRequests.filter(
-      (req) => req.status === STATUS_TYPES.APPROVED
+      (req) => req.status === STATUS_TYPES.APPROVED,
     ).length;
 
     return { total, pending, approved };
@@ -477,30 +472,10 @@ const FundRequestContent = () => {
           break;
       }
     },
-    [updateRequestStatus]
+    [updateRequestStatus],
   );
 
   const isAdmin = currentUser?.role?.name === "ADMIN";
-
-  // Show no access message if no payment methods are available for non-admin users
-  if (!isAdmin && fundTabs.length === 0) {
-    return (
-      <div>
-        <HeaderSection
-          title="Fund Request"
-          tagLine="Manage your fund requests"
-          totalCount="0"
-          stats={[
-            { label: "Pending", value: 0 },
-            { label: "Approved", value: 0 },
-          ]}
-        />
-        <div className="mt-8">
-          <PermissionDeniedView />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="">
@@ -529,13 +504,6 @@ const FundRequestContent = () => {
                   ? "Manage and review fund requests from users"
                   : "Add funds to your account using secure payment methods"}
               </p>
-              {/* Show available payment methods info from fundTabs */}
-              {!isAdmin && fundTabs.length > 0 && (
-                <div className="mt-2 text-sm text-gray-500">
-                  Available payment methods:{" "}
-                  {fundTabs.map((tab) => tab.label).join(", ")}
-                </div>
-              )}
             </div>
 
             <SearchFilterBar
@@ -543,7 +511,10 @@ const FundRequestContent = () => {
               onSearchChange={(e) => setSearchTerm(e.target.value)}
               onRefresh={() => window.location.reload()}
               onMethodSelect={handleMethodSelect}
-              fundTabs={fundTabs} // FIXED: Passing fundTabs directly
+              fundTabs={[
+                { id: "razorpay", label: "Razorpay" },
+                { id: "bank-transfer", label: "Bank Transfer" },
+              ]}
             />
           </div>
         </div>
@@ -670,16 +641,7 @@ const FundRequestContent = () => {
   );
 };
 
-// Main Component - FIXED: Proper permission checking
 const FundRequestTable = () => {
-  // Use fund permissions hook at the top level
-  const permissions = usePermissions("/request-fund");
-
-  // Conditionally render based on route accessibility
-  if (!permissions.canAccessRoute("/request-fund")) {
-    return <PermissionDeniedView />;
-  }
-
   return <FundRequestContent />;
 };
 

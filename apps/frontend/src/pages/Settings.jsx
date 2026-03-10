@@ -12,14 +12,12 @@ import CompanyAccounts from "./CompanyAccounts";
 import ManageServices from "./ManageServices";
 import RoleManager from "../components/RoleManager";
 import PageHeader from "../components/ui/PageHeader";
-import { usePermissions } from "../components/hooks/usePermissions";
 import { BUSINESS_ROLES, PERMISSIONS } from "../utils/constants";
 import ApiIntegration from "./ApiIntegration";
+import { checkPermission } from "../utils/permissionChecker";
 
 const Settings = () => {
   const { currentUser = {} } = useSelector((state) => state.auth);
-
-  const permissions = usePermissions("/settings");
 
   // Get user role and type
   const userRole = currentUser?.role?.name || currentUser?.role;
@@ -33,17 +31,15 @@ const Settings = () => {
       id: "general",
       label: "General Settings",
       icon: SettingsIcon,
-      permission: PERMISSIONS.GENERAL_SETTINGS,
       component: <MainSettings />,
       // Show to Admin and employees with permission
       showToRoles: [BUSINESS_ROLES.ADMIN],
-      showToEmployee: true,
+      employeePermission: PERMISSIONS.GENERAL_SETTINGS,
     },
     {
       id: "accounts",
       label: "Company Accounts",
       icon: CreditCard,
-      permission: PERMISSIONS.COMPANY_ACCOUNTS,
       component: <CompanyAccounts />,
       // Show to Admin and employees with permission
       showToRoles: [
@@ -53,61 +49,46 @@ const Settings = () => {
         BUSINESS_ROLES.DISTRIBUTOR,
         BUSINESS_ROLES.RETAILER,
       ],
-      showToEmployee: true,
+      employeePermission: PERMISSIONS.COMPANY_ACCOUNTS,
     },
     {
       id: "services",
       label: "Services",
       icon: UserCog,
-      permission: PERMISSIONS.MANAGE_SERVICES,
       component: <ManageServices />,
       // Show only to Admin and employees with permission
       showToRoles: [BUSINESS_ROLES.ADMIN],
-      showToEmployee: true,
+      employeePermission: PERMISSIONS.MANAGE_SERVICES,
     },
     {
       id: "roles",
       label: "Roles Management",
       icon: UserCog,
-      permission: PERMISSIONS.ROLE_MANAGEMENT,
       component: <RoleManager />,
       // Show only to Admin and employees with permission
       showToRoles: [BUSINESS_ROLES.ADMIN],
-      showToEmployee: true,
+      employeePermission: PERMISSIONS.ROLE_MANAGEMENT,
     },
     {
       id: "api-integration",
       label: "API Integration",
       icon: Cpu,
-      permission: PERMISSIONS.API_INTEGRATION,
       component: <ApiIntegration />,
       // Show only to Admin and employees with permission
       showToRoles: [BUSINESS_ROLES.ADMIN],
-      showToEmployee: true,
     },
   ];
 
-  // Filter tabs based on user role and permissions - UPDATED LOGIC
   const visibleTabs = allTabs.filter((tab) => {
-    // Employee users - check specific permissions
+    // EMPLOYEE PERMISSION CHECK
     if (isEmployee) {
-      return permissions.hasPermission(tab.permission);
+      if (!tab.employeePermission) return false;
+      return checkPermission(currentUser, tab.employeePermission);
     }
 
-    // Business users - check role-based rules
+    // BUSINESS ROLE CHECK
     if (isBusinessUser) {
-      // 1. Agar specific roles ke liye show karna hai
-      if (tab.showToRoles && tab.showToRoles.includes(userRole)) {
-        return true;
-      }
-
-      // 2. Agar employee ke liye show karna hai (business users ke liye nahi)
-      if (tab.showToEmployee) {
-        return false;
-      }
-
-      // 3. Default: Agar koi specific rule nahi hai toh hide karo
-      return false;
+      return tab.showToRoles?.includes(userRole);
     }
 
     return false;
@@ -136,20 +117,25 @@ const Settings = () => {
       return <NoAccess />;
     }
 
-    // Check if user has permission for this tab
-    if (isEmployee) {
-      if (!permissions.hasPermission(activeTabConfig.permission)) {
-        return <NoAccess />;
-      }
-    }
-
-    // For business users, check if they should have access to this tab
+    // BUSINESS ROLE CHECK
     if (isBusinessUser) {
       const shouldHaveAccess =
         activeTabConfig.showToRoles &&
         activeTabConfig.showToRoles.includes(userRole);
 
       if (!shouldHaveAccess) {
+        return <NoAccess />;
+      }
+    }
+
+    // EMPLOYEE PERMISSION CHECK
+    if (isEmployee && activeTabConfig.employeePermission) {
+      const hasPermission = checkPermission(
+        currentUser,
+        activeTabConfig.employeePermission,
+      );
+
+      if (!hasPermission) {
         return <NoAccess />;
       }
     }

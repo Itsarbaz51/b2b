@@ -1,14 +1,5 @@
-// src/core/permissions/constants.js
-export const PERMISSION_TYPES = {
-  PAGE: "page",
-  SERVICE: "service",
-  SETTINGS_TAB: "settings_tab",
-  FEATURE: "feature",
-};
-
-// All Available Permissions
 export const PERMISSIONS = {
-  // Page Access
+  // page
   DASHBOARD: "dashboard",
   MEMBERS: "members",
   COMMISSION: "commission",
@@ -20,12 +11,6 @@ export const PERMISSIONS = {
   LOGS: "logs",
   SETTINGS: "settings",
   FUND_REQUEST: "fund request",
-
-  // Services
-  RAZORPAY: "RAZORPAY",
-  BANK_TRANSFER: "BANK_TRANSFER",
-  AADHAAR_VERIFICATION: "AADHAAR",
-  PAN_VERIFICATION: "PAN",
 
   // Settings Tabs
   GENERAL_SETTINGS: "General Settings",
@@ -41,10 +26,14 @@ export const PERMISSIONS = {
   DELETE: "delete",
 };
 
-// User Role Types
-export const USER_TYPES = {
-  BUSINESS: "business",
-  EMPLOYEE: "employee",
+export const SERVICES = {
+  FUND_REQUEST: {
+    RAZORPAY: "RAZORPAY",
+    BANK_TRANSFER: "BANK_TRANSFER",
+  },
+  PAN: "PAN",
+  AADHAAR: "AADHAAR",
+  PAYOUT: "PAYOUT",
 };
 
 // Static Business Roles
@@ -56,7 +45,6 @@ export const BUSINESS_ROLES = {
   RETAILER: "RETAILER",
 };
 
-// for usePermissionHook
 // Route Configuration
 export const ROUTE_CONFIG = {
   PUBLIC: [
@@ -69,59 +57,4 @@ export const ROUTE_CONFIG = {
     "/permission-denied",
     "/logout",
   ],
-
-  // Route to Permission Mapping
-  ROUTE_PERMISSION_MAP: {
-    "/dashboard": PERMISSIONS.DASHBOARD,
-    "/members": PERMISSIONS.MEMBERS,
-    "/commission": PERMISSIONS.COMMISSION,
-    "/transactions": PERMISSIONS.TRANSACTIONS,
-    "/card-payout": PERMISSIONS.PAYOUT,
-    "/kyc-request": PERMISSIONS.KYC_REQUEST,
-    "/employee-management": PERMISSIONS.EMPLOYEE_MANAGEMENT,
-    "/reports": PERMISSIONS.REPORTS,
-    "/logs": PERMISSIONS.LOGS,
-    "/settings": PERMISSIONS.SETTINGS,
-    "/request-fund": PERMISSIONS.FUND_REQUEST,
-  },
-
-  // Page Tabs Configuration
-  PAGE_TABS: {
-    "/settings": [
-      {
-        id: "general",
-        label: "General Settings",
-        permission: PERMISSIONS.GENERAL_SETTINGS,
-      },
-      {
-        id: "accounts",
-        label: "Company Accounts",
-        permission: PERMISSIONS.COMPANY_ACCOUNTS,
-      },
-      {
-        id: "services",
-        label: "Services",
-        permission: PERMISSIONS.MANAGE_SERVICES,
-      },
-      {
-        id: "roles",
-        label: "Roles Management",
-        permission: PERMISSIONS.ROLE_MANAGEMENT,
-      },
-      {
-        id: "api-integration",
-        label: "API Integration",
-        permission: PERMISSIONS.API_INTEGRATION,
-      },
-    ],
-
-    "/request-fund": [
-      { id: "razorpay", label: "Razorpay", permission: PERMISSIONS.RAZORPAY },
-      {
-        id: "bank-transfer",
-        label: "Bank Transfer",
-        permission: PERMISSIONS.BANK_TRANSFER,
-      },
-    ],
-  },
 };

@@ -33,7 +33,6 @@ import { DropdownField } from "../ui/DropdownField";
 import ButtonField from "../ui/ButtonField";
 import CloseBtn from "../ui/CloseBtn";
 import AadhaarVerificationModal from "./AadhaarVerificationModal";
-import { usePermissions } from "../hooks/usePermissions";
 import { KYCStatusCard } from "../KYCStatusCard";
 import PANVerificationModal from "./PANVerificationModal";
 
@@ -89,7 +88,7 @@ export default function AddUserProfileKYC() {
   const isApiKyc = kycType === "API";
 
   const { currentUser } = useSelector((state) => state.auth);
-  const permissions = usePermissions();
+  let permissions;
 
   const aadhaarServiceId = useMemo(() => {
     const service = permissions.normalizedServices?.find(
