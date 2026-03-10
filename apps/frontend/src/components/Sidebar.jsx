@@ -59,7 +59,7 @@ const Sidebar = () => {
           id: "commission",
           label: "Commission",
           icon: Percent,
-          path: "/commission",
+          path: "/commission-management",
           employeePermission: PERMISSIONS.COMMISSION,
           staticRoles: BUSINESS_ROLE_LIST,
         },

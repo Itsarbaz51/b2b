@@ -39,21 +39,11 @@ commissionRoutes.post(
 );
 
 // Commission Earning Routes (ADMIN only)
-commissionRoutes.post(
-  "/earn",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize(["employee", "ADMIN"]),
-
-  validateRequest(CommissionValidationSchemas.createCommissionEarningSchema),
-  CommissionEarningController.create
-);
-
 commissionRoutes.get(
   "/earnings",
   AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize(["employee", "ADMIN"]),
-
-  CommissionEarningController.getAll
+  AuthMiddleware.authorize(["employee", "business"]),
+  CommissionEarningController.getEarnings
 );
 
 export default commissionRoutes;

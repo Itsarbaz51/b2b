@@ -3,7 +3,7 @@ export const protectedRoute = [
   "/payout",
   "/transactions",
   "/users",
-  "/commission",
+  "/commission-management",
   "/reports",
   "/kyc",
   "/members",
@@ -66,7 +66,7 @@ export const navbarTitleConfig = {
     tagLine: "Manage your platform users",
     icon: Users,
   },
-  "/commission": {
+  "/commission-management": {
     title: "Commission Settings",
     tagLine: "Configure your commission rates",
     icon: Percent,

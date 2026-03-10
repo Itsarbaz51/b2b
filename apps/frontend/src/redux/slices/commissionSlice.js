@@ -61,6 +61,17 @@ const commissionSlice = createSlice({
     clearCommissionSuccess: (state) => {
       state.success = null;
     },
+    setCommissionEarningsData: (state, action) => {
+      const { commissionEarnings, total, page, limit, totalPages } =
+        action.payload;
+
+      if (commissionEarnings) state.commissionEarnings = commissionEarnings;
+
+      if (total !== undefined) state.pagination.total = total;
+      if (page !== undefined) state.pagination.page = page;
+      if (limit !== undefined) state.pagination.limit = limit;
+      if (totalPages !== undefined) state.pagination.totalPages = totalPages;
+    },
     resetCommission: (state) => {
       state.commissionSettings = [];
       state.commissionEarnings = [];
@@ -78,6 +89,7 @@ export const {
   setCommissionSettings,
   setCommissionEarnings,
   setCommissionData,
+  setCommissionEarningsData,
   updatePagination,
   clearCommissionError,
   clearCommissionSuccess,
@@ -101,7 +113,7 @@ export const getCommissionSettingsByCreatedBy =
           page: data.data?.page || data.page || 1,
           limit: data.data?.limit || data.limit || 10,
           totalPages: data.data?.totalPages || data.totalPages || 0,
-        })
+        }),
       );
 
       dispatch(commissionSuccess(data));
@@ -131,6 +143,37 @@ export const createOrUpdateCommissionSetting =
       const errMsg = error?.response?.data?.message || error?.message;
       dispatch(commissionFail(errMsg));
       toast.error(errMsg);
+      throw error;
+    }
+  };
+
+// Get commission earnings (Admin / Employee / My Earnings)
+export const getCommissionEarnings =
+  (filters = {}) =>
+  async (dispatch) => {
+    try {
+      dispatch(commissionRequest());
+
+      const { data } = await axios.get(`/commissions/earnings`, {
+        params: filters,
+      });
+
+      dispatch(
+        setCommissionEarningsData({
+          commissionEarnings: data.data?.earnings || data.data || data,
+          total: data.data?.total || 0,
+          page: data.data?.page || 1,
+          limit: data.data?.limit || 10,
+          totalPages: data.data?.totalPages || 0,
+        }),
+      );
+
+      dispatch(commissionSuccess(data));
+
+      return data;
+    } catch (error) {
+      const errMsg = error?.response?.data?.message || error?.message;
+      dispatch(commissionFail(errMsg));
       throw error;
     }
   };

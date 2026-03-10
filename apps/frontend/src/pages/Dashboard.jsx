@@ -265,7 +265,7 @@ const Dashboard = ({
             </button>
 
             <button
-              onClick={() => navigate("/commission")}
+              onClick={() => navigate("/commission-management")}
               className="group flex items-center justify-center p-6 bg-gradient-to-br from-violet-50 to-purple-50 hover:from-violet-100 hover:to-purple-100 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border border-violet-100"
             >
               <div className="flex items-center">

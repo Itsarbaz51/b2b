@@ -21,11 +21,10 @@ import Dashboard from "../pages/Dashboard";
 import TransactionHistory from "../pages/TransactionsPage.jsx";
 import Reports from "../pages/Reports";
 import Settings from "../pages/Settings.jsx";
-import CommissionManagement from "../pages/CommissionManagement";
 import CardPayout from "../pages/services/CardPayout";
 import UserProfilePage from "../pages/UserProfilePage.jsx";
 import UnauthorizedPage from "../pages/UnauthorizedPage.jsx";
-import RequestKYC from "../pages/RequestKYC.jsx";
+import RequestKYC from "../pages/KYCRequest.jsx";
 import Logs from "../pages/Logs.jsx";
 import VerifyResetPassword from "../pages/VerifyResetPassword.jsx";
 import AddUserProfileKYC from "../components/forms/AddUserProfileKYC.jsx";
@@ -36,6 +35,8 @@ import WalletTable from "../components/tabels/Wallet";
 import FundRequestTable from "../components/tabels/FundRequestTable.jsx";
 import NoPermissionsPage from "../pages/NoPermissionsPage.jsx";
 import ProtectedRoute from "../layouts/ProtectedRoute.jsx";
+import Commission from "../pages/CommissionSetting.jsx";
+import CommissionManagement from "../pages/CommissionManagement.jsx";
 
 export const createRouter = () => {
   return createBrowserRouter(
@@ -62,7 +63,10 @@ export const createRouter = () => {
         >
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="transactions" element={<TransactionHistory />} />
-          <Route path="commission" element={<CommissionManagement />} />
+          <Route
+            path="commission-management"
+            element={<CommissionManagement />}
+          />
           <Route path="reports" element={<Reports />} />
           <Route path="request-fund" element={<FundRequestTable />} />
           <Route path="kyc-request" element={<RequestKYC />} />
@@ -107,7 +111,7 @@ export const createRouter = () => {
 
         {/* ---------------- 404 / FALLBACK ---------------- */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </>
-    )
+      </>,
+    ),
   );
 };

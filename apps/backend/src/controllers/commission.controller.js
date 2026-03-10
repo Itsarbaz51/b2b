@@ -4,7 +4,6 @@ import CommissionEarningService, {
   CommissionSettingService,
 } from "../services/commission.service.js";
 import { ApiError } from "../utils/ApiError.js";
-import Helper from "../utils/helper.js";
 
 export class CommissionSettingController {
   static createOrUpdate = asyncHandler(async (req, res) => {
@@ -66,42 +65,16 @@ export class CommissionSettingController {
 }
 
 export class CommissionEarningController {
-  static create = asyncHandler(async (req, res) => {
-    const createdBy = req.user?.id;
-    if (!createdBy) throw ApiError.unauthorized("Unauthorized");
+  static getEarnings = asyncHandler(async (req, res) => {
+    const filters = { ...req.query };
 
-    const data = {
-      ...req.body,
-      createdBy,
-    };
+    const role = req.user?.role;
+    const roleType = req.user?.roleType;
 
-    const earning =
-      await CommissionEarningService.createCommissionEarning(data);
-
-    return res
-      .status(201)
-      .json(
-        ApiResponse.success(
-          earning,
-          "Commission earning recorded successfully",
-          201
-        )
-      );
-  });
-
-  static getAll = asyncHandler(async (req, res) => {
-    const { userId, fromUserId, serviceId, transactionId, startDate, endDate } =
-      req.query;
-
-    const filters = {};
-
-    if (typeof userId === "string") filters.userId = userId;
-    if (typeof fromUserId === "string") filters.fromUserId = fromUserId;
-    if (typeof serviceId === "string") filters.serviceId = serviceId;
-    if (typeof transactionId === "string")
-      filters.transactionId = transactionId;
-    if (typeof startDate === "string") filters.startDate = startDate;
-    if (typeof endDate === "string") filters.endDate = endDate;
+    // Normal user → only own
+    if (role !== "ADMIN" && roleType !== "employee") {
+      filters.userId = req.user.id;
+    }
 
     const earnings =
       await CommissionEarningService.getCommissionEarnings(filters);
@@ -111,38 +84,7 @@ export class CommissionEarningController {
       .json(
         ApiResponse.success(
           earnings,
-          "Commission earnings fetched successfully",
-          200
-        )
-      );
-  });
-
-  static getSummary = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
-    if (!userId) throw ApiError.unauthorized("Unauthorized");
-
-    const { startDate, endDate } = req.query;
-
-    const period =
-      startDate && endDate
-        ? {
-            startDate: startDate,
-            endDate: endDate,
-          }
-        : undefined;
-
-    const summary = await CommissionEarningService.getCommissionSummary(
-      userId,
-      period
-    );
-
-    return res
-      .status(200)
-      .json(
-        ApiResponse.success(
-          summary,
-          "Commission summary fetched successfully",
-          200
+          "Commission earnings fetched successfully"
         )
       );
   });

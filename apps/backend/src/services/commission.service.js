@@ -314,46 +314,108 @@ export default class CommissionEarningService {
     });
   }
 
-  //  GET BY TRANSACTION
-  static async getByTransaction(transactionId) {
-    if (!transactionId) throw ApiError.badRequest("TransactionId required");
+  static async getCommissionEarnings(filters = {}) {
+    const { userId, fromUserId, serviceId, transactionId, startDate, endDate } =
+      filters;
+
+    const where = {};
+
+    if (userId) where.userId = userId;
+    if (fromUserId) where.fromUserId = fromUserId;
+    if (transactionId) where.transactionId = transactionId;
+
+    if (serviceId) {
+      where.serviceProviderMapping = {
+        serviceId,
+      };
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
 
     return await Prisma.commissionEarning.findMany({
-      where: { transactionId },
+      where,
       include: {
         user: true,
         fromUser: true,
-        serviceProviderMapping: true,
         transaction: true,
+        serviceProviderMapping: {
+          include: {
+            service: true,
+          },
+        },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
   }
 
-  //  GET USER EARNINGS
-  static async getUserEarnings(userId) {
-    if (!userId) throw ApiError.badRequest("UserId required");
+  static async getCommissionSummary(userId, period) {
+    const where = { userId };
 
-    return await Prisma.commissionEarning.findMany({
-      where: { userId },
-      include: {
-        transaction: true,
-        serviceProviderMapping: true,
+    if (period?.startDate && period?.endDate) {
+      where.createdAt = {
+        gte: new Date(period.startDate),
+        lte: new Date(period.endDate),
+      };
+    }
+
+    const totalCommission = await Prisma.commissionEarning.aggregate({
+      where,
+      _sum: {
+        netAmount: true,
       },
-      orderBy: { createdAt: "desc" },
-    });
-  }
-
-  //  TOTAL USER EARNING
-  static async getTotalUserEarning(userId) {
-    if (!userId) throw ApiError.badRequest("UserId required");
-
-    const result = await Prisma.commissionEarning.aggregate({
-      where: { userId },
-      _sum: { netAmount: true },
+      _count: {
+        id: true,
+      },
     });
 
-    return result._sum.netAmount ?? 0n;
+    // today commission
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const todayCommission = await Prisma.commissionEarning.aggregate({
+      where: {
+        userId,
+        createdAt: {
+          gte: startOfToday,
+        },
+      },
+      _sum: {
+        netAmount: true,
+      },
+    });
+
+    // monthly commission
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const monthlyCommission = await Prisma.commissionEarning.aggregate({
+      where: {
+        userId,
+        createdAt: {
+          gte: startOfMonth,
+        },
+      },
+      _sum: {
+        netAmount: true,
+      },
+    });
+
+    return {
+      totalCommission: totalCommission._sum.netAmount ?? 0n,
+      transactionCount: totalCommission._count.id ?? 0,
+
+      todayCommission: todayCommission._sum.netAmount ?? 0n,
+
+      monthlyCommission: monthlyCommission._sum.netAmount ?? 0n,
+    };
   }
 
   //  REVERSE COMMISSION (Refund Case)
