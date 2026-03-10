@@ -46,16 +46,14 @@ export default function PANVerificationModal({
         }),
       );
 
-      if (res.data?.valid) {
-        toast.success(res?.data?.message);
-
+      if (res?.success) {
         onSuccess(res.data);
         onClose();
       } else {
-        toast.error("PAN verification failed");
+        toast.error(res?.message || "Verification failed");
       }
-    } catch (err) {
-      toast.error("PAN verification failed");
+    } catch (error) {
+      toast.error(error?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }

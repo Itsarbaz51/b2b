@@ -311,49 +311,24 @@ class KycServices {
     let currentUserId = req.user.id;
 
     if (payload.kycType === "API") {
-      const panTxn = await Prisma.transaction.findFirst({
-        where: {
-          userId: currentUserId,
-          status: "SUCCESS",
-          serviceProviderMapping: {
-            service: {
-              code: "PAN",
-            },
+      const [panTxn, aadhaarTxn] = await Promise.all([
+        Prisma.transaction.findFirst({
+          where: {
+            userId: currentUserId,
+            status: "SUCCESS",
+            serviceProviderMapping: { service: { code: "PAN" } },
           },
-        },
-        include: {
-          serviceProviderMapping: {
-            include: {
-              service: true,
-            },
+          orderBy: { completedAt: "desc" },
+        }),
+        Prisma.transaction.findFirst({
+          where: {
+            userId: currentUserId,
+            status: "SUCCESS",
+            serviceProviderMapping: { service: { code: "AADHAAR" } },
           },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-
-      const aadhaarTxn = await Prisma.transaction.findFirst({
-        where: {
-          userId: currentUserId,
-          status: "SUCCESS",
-          serviceProviderMapping: {
-            service: {
-              code: "AADHAAR_VERIFY",
-            },
-          },
-        },
-        include: {
-          serviceProviderMapping: {
-            include: {
-              service: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+          orderBy: { completedAt: "desc" },
+        }),
+      ]);
 
       const panName = panTxn?.providerResponse?.name?.trim();
       const aadhaarName = aadhaarTxn?.providerResponse?.name?.trim();

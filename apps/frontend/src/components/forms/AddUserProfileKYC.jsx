@@ -86,6 +86,8 @@ export default function AddUserProfileKYC() {
 
   const [errors, setErrors] = useState({});
 
+  const isApiKyc = kycType === "API";
+
   const { currentUser } = useSelector((state) => state.auth);
   const permissions = usePermissions();
 
@@ -408,6 +410,31 @@ export default function AddUserProfileKYC() {
     const newErrors = {};
 
     if (step === 1) {
+      // PAN required
+      if (!formData.panNumber) {
+        newErrors.panNumber = "Required";
+      } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+        newErrors.panNumber = "Invalid PAN format";
+      }
+
+      // Aadhaar required
+      if (!formData.aadhaarNumber) {
+        newErrors.aadhaarNumber = "Required";
+      } else if (!/^\d{4}-\d{4}-\d{4}$/.test(formData.aadhaarNumber)) {
+        newErrors.aadhaarNumber = "Invalid Aadhaar format";
+      }
+
+      // Optional: API verification check
+      if (
+        permissions.hasPanVerification &&
+        permissions.hasAadhaarVerification &&
+        kycType === "MANUAL"
+      ) {
+        toast.info("You can verify PAN / Aadhaar for auto KYC");
+      }
+    }
+
+    if (step === 2) {
       ["firstName", "lastName", "fatherName", "dob", "gender"].forEach(
         (f) => !formData[f] && (newErrors[f] = "Required"),
       );
@@ -436,33 +463,6 @@ export default function AddUserProfileKYC() {
         ) {
           newErrors.dob = "You must be at least 18 years old";
         }
-      }
-    }
-
-    if (step === 2) {
-      // PAN required
-      if (!formData.panNumber) newErrors.panNumber = "Required";
-      else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber))
-        newErrors.panNumber = "Invalid PAN format";
-      else if (/^([A-Z])\1{4}[0-9]{4}[A-Z]$/.test(formData.panNumber))
-        newErrors.panNumber =
-          "Invalid PAN: repetitive pattern not allowed (e.g., AAAAA9999A)";
-      else if (["AAAAA9999A", "ABCDE1234F"].includes(formData.panNumber))
-        newErrors.panNumber = "Invalid PAN number";
-
-      // Aadhaar required
-      if (!formData.aadhaarNumber) newErrors.aadhaarNumber = "Required";
-      else if (!/^\d{4}-\d{4}-\d{4}$/.test(formData.aadhaarNumber))
-        newErrors.aadhaarNumber = "Aadhaar must be in format 1234-5678-9012";
-      else {
-        const digitsOnly = formData.aadhaarNumber.replace(/\D/g, "");
-        if (/^(\d)\1+$/.test(digitsOnly))
-          newErrors.aadhaarNumber = "Invalid Aadhaar: all digits same";
-        else if (/123456|234567|345678|456789|987654|876543/.test(digitsOnly))
-          newErrors.aadhaarNumber =
-            "Invalid Aadhaar: sequential digits not allowed";
-        else if (["123456789012", "000000000000"].includes(digitsOnly))
-          newErrors.aadhaarNumber = "Invalid Aadhaar number";
       }
     }
 
@@ -858,6 +858,12 @@ export default function AddUserProfileKYC() {
           {/* Step 2 */}
           {currentStep === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {isApiKyc && (
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded mb-4 text-sm">
+                  Personal details are auto-filled from Aadhaar verification and
+                  cannot be edited.
+                </div>
+              )}
               <InputField
                 label="First Name"
                 name="firstName"
@@ -866,6 +872,7 @@ export default function AddUserProfileKYC() {
                 onChange={handleInputChange}
                 error={errors.firstName}
                 placeholder="Enter first name"
+                disabled={isApiKyc}
               />
               <InputField
                 label="Last Name"
@@ -875,6 +882,7 @@ export default function AddUserProfileKYC() {
                 onChange={handleInputChange}
                 error={errors.lastName}
                 placeholder="Enter last name"
+                disabled={isApiKyc}
               />
               <InputField
                 label="Father's Name"
@@ -884,6 +892,7 @@ export default function AddUserProfileKYC() {
                 onChange={handleInputChange}
                 error={errors.fatherName}
                 placeholder="Enter father's name"
+                disabled={isApiKyc}
               />
               <InputField
                 label="Date of Birth"
@@ -893,6 +902,7 @@ export default function AddUserProfileKYC() {
                 value={formData.dob}
                 onChange={handleInputChange}
                 error={errors.dob}
+                disabled={isApiKyc}
               />
               <div className="md:col-span-2 flex gap-4 items-center">
                 {["MALE", "FEMALE", "OTHER"].map((g) => (
@@ -907,6 +917,7 @@ export default function AddUserProfileKYC() {
                       checked={formData.gender === g}
                       onChange={handleInputChange}
                       className="w-4 h-4 text-cyan-600 focus:ring-cyan-500"
+                      disabled={isApiKyc}
                     />
                     <span className="text-gray-700">
                       {g.charAt(0) + g.slice(1).toLowerCase()}
@@ -920,6 +931,12 @@ export default function AddUserProfileKYC() {
           {/* Step 3 */}
           {currentStep === 3 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {isApiKyc && (
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded mb-4 text-sm">
+                  Personal details are auto-filled from Aadhaar verification and
+                  cannot be edited.
+                </div>
+              )}
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Address <span className="text-red-500">*</span>
@@ -930,6 +947,7 @@ export default function AddUserProfileKYC() {
                   onChange={handleInputChange}
                   placeholder="Enter full address"
                   rows="3"
+                  disabled={isApiKyc}
                   className={`w-full px-4 py-3 bg-gray-50 border-2 ${
                     errors.address ? "border-red-500" : "border-gray-200"
                   } rounded-lg focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200`}
@@ -950,6 +968,7 @@ export default function AddUserProfileKYC() {
                 error={errors.pinCode}
                 placeholder="Enter PIN code"
                 maxLength={6}
+                disabled={isApiKyc}
               />
               <DropdownField
                 label="State"
@@ -960,6 +979,7 @@ export default function AddUserProfileKYC() {
                 options={stateList}
                 error={errors.stateId}
                 placeholder="Select state"
+                disabled={isApiKyc}
               />
               <DropdownField
                 label="City"
@@ -972,7 +992,7 @@ export default function AddUserProfileKYC() {
                 placeholder={
                   formData.stateId ? "Select city" : "First select state"
                 }
-                disabled={!formData.stateId}
+                disabled={!formData.stateId || isApiKyc}
               />
             </div>
           )}

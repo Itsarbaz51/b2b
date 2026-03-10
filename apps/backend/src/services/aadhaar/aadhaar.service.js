@@ -91,7 +91,7 @@ export default class AadhaarService {
           status: true,
           statusCode: 200,
           data: {
-            ref_id: "71598161",
+            ref_id: "71708161",
             status: "SUCCESS",
           },
         };
@@ -190,14 +190,6 @@ export default class AadhaarService {
       // let providerResponse;
 
       try {
-        providerResponse = {
-          status: true,
-          data: {
-            ref_id: referenceId,
-            status: "VALID",
-          },
-        };
-
         // providerResponse = await plugin.verifyOtp({ referenceId, otp });
 
         if (!providerResponse?.status) {

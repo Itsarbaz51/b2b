@@ -52,7 +52,6 @@ export default function AadhaarVerificationModal({
           idempotencyKey: idempotencyKey,
         }),
       );
-      console.log(res);
 
       if (res.data?.referenceId) {
         setReferenceId(res.data.referenceId);
