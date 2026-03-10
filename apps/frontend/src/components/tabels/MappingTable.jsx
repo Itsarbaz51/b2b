@@ -1,8 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Fragment } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllServices } from "../../redux/slices/serviceSlice";
+import AddProviderSlabForm from "../forms/AddProviderSlabForm";
+import ProviderSlabTable from "../tabels/ProviderSlabTable";
 
-import { Search, RefreshCw, Plus, Edit, Trash2 } from "lucide-react";
+import { Search, RefreshCw, Plus } from "lucide-react";
 
 import EmptyState from "../ui/EmptyState";
 import AddMappingForm from "../forms/AddMappingForm";
@@ -19,6 +21,9 @@ export default function MappingTable() {
 
   const [serviceList, setServiceList] = useState([]);
   const [providerList, setProviderList] = useState([]);
+  const [showSlabModal, setShowSlabModal] = useState(false);
+  const [selectedMapping, setSelectedMapping] = useState(null);
+  const [openSlabId, setOpenSlabId] = useState(null);
 
   const data = mappings || [];
 
@@ -99,9 +104,12 @@ export default function MappingTable() {
               <th className="px-6 py-3 text-left">Service</th>
               <th className="px-6 py-3 text-left">Provider</th>
               <th className="px-6 py-3 text-left">Mode</th>
+              <th className="px-6 py-3 text-left">Pricing Type</th>
+              <th className="px-6 py-3 text-left">Commission Level</th>
               <th className="px-6 py-3 text-left">Provider Cost</th>
               <th className="px-6 py-3 text-left">Selling Price</th>
               <th className="px-6 py-3 text-left">Margin</th>
+              <th className="px-6 py-3 text-left">Slab</th>
               <th className="px-6 py-3 text-left">Status</th>
               <th className="px-6 py-3 text-center">Actions</th>
             </tr>
@@ -118,67 +126,107 @@ export default function MappingTable() {
               filteredMappings.map((item, index) => {
                 const sellingPrice = Number(item.sellingPrice || 0);
                 const providerCost = Number(item.providerCost || 0);
-
                 const margin = (sellingPrice - providerCost) / 100;
 
                 return (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">{index + 1}</td>
+                  <Fragment key={item.id}>
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">{index + 1}</td>
 
-                    <td className="px-6 py-4 font-semibold">
-                      {item.service?.name}
-                    </td>
+                      <td className="px-6 py-4 font-semibold">
+                        {item.service?.name}
+                      </td>
 
-                    <td className="px-6 py-4">{item.provider?.name}</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs">
-                        {item.mode}
-                      </span>
-                    </td>
+                      <td className="px-6 py-4">{item.provider?.name}</td>
 
-                    <td className="px-6 py-4 text-red-500">
-                      ₹{paisaToRupee(item.providerCost)}
-                    </td>
+                      <td className="px-6 py-4">{item.mode}</td>
 
-                    <td className="px-6 py-4 text-green-600">
-                      {item.mode === "COMISSION"
-                        ? `₹${paisaToRupee(item.sellingPrice - item.providerCost)}`
-                        : "-"}
-                    </td>
-                    <td
-                      className={`px-6 py-4 ${
-                        margin > 0 ? "text-green-600" : "text-red-500"
-                      }`}
-                    >
-                      {item.mode === "COMISSION"
-                        ? `₹${margin.toFixed(2)}`
-                        : "-"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full font-semibold ${
-                          item.isActive
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
+                      <td className="px-6 py-4">{item.pricingValueType}</td>
+
+                      <td className="px-6 py-4">{item.commissionStartLevel}</td>
+
+                      <td className="px-6 py-4 text-red-500">
+                        ₹{paisaToRupee(item.providerCost)}
+                      </td>
+
+                      <td className="px-6 py-4 text-green-600">
+                        ₹{paisaToRupee(item.sellingPrice)}
+                      </td>
+
+                      <td className="px-6 py-4">₹{margin.toFixed(2)}</td>
+
+                      <td className="px-6 py-4">
+                        {item.supportsSlab ? "Yes" : "No"}
+                      </td>
+
+                      <td className="px-6 py-4">
                         {item.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
+                      </td>
 
-                    <td className="px-6 py-4 flex justify-center gap-3">
-                      <button
-                        onClick={() => {
-                          setEditData(item);
-                          setShowModal(true);
-                        }}
-                        className="text-blue-600 flex items-center gap-1"
-                      >
-                        <Edit size={16} />
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
+                      <td className="px-6 py-4 flex gap-3">
+                        <button
+                          onClick={() =>
+                            setOpenSlabId(
+                              openSlabId === item.id ? null : item.id,
+                            )
+                          }
+                          className="text-indigo-600"
+                        >
+                          {openSlabId === item.id ? "Hide Slabs" : "View Slabs"}
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setEditData(item);
+                            setShowModal(true);
+                          }}
+                          className="text-blue-600"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+
+                    {openSlabId === item.id && (
+                      <tr>
+                        <td
+                          colSpan="12"
+                          className="bg-gray-50 px-12 py-6 border-t border-gray-200"
+                        >
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-semibold text-gray-700">
+                              Provider Slabs
+                            </h3>
+
+                            <button
+                              onClick={() => {
+                                setSelectedMapping(item);
+                                setShowSlabModal(true);
+                              }}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                            >
+                              Add Slab
+                            </button>
+                          </div>
+
+                          {item.providerSlabs?.length > 0 ? (
+                            <ProviderSlabTable
+                              slabs={item.providerSlabs}
+                              onEdit={(slab) => {
+                                setSelectedMapping(item);
+                                setEditData(slab);
+                                setShowSlabModal(true);
+                              }}
+                            />
+                          ) : (
+                            <div className="text-gray-500 text-sm">
+                              No slabs configured
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })
             )}
@@ -198,6 +246,24 @@ export default function MappingTable() {
           }}
           onSuccess={loadMappings}
         />
+      )}
+
+      {showSlabModal && selectedMapping && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-125">
+            <h2 className="text-xl font-semibold mb-4">Add Slab</h2>
+
+            <AddProviderSlabForm
+              mappingId={selectedMapping.id}
+              editData={editData}
+              onClose={() => {
+                setShowSlabModal(false);
+                setEditData(null);
+              }}
+              onSuccess={loadMappings}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

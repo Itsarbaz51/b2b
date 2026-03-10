@@ -400,8 +400,9 @@ model ServiceProviderMapping {
 
   config Json?
 
-  priority Int     @default(1)
-  isActive Boolean @default(true) @map("is_active")
+  priority     Int     @default(1)
+  isActive     Boolean @default(true) @map("is_active")
+  supportsSlab Boolean @default(false) @map("support_slab")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
@@ -427,10 +428,11 @@ model ProviderSlab {
   minAmount BigInt @map("min_amount")
   maxAmount BigInt @map("max_amount")
 
+  mode             PricingMode      @default(COMMISSION)
   pricingValueType PricingValueType @default(FLAT) @map("pricing_value_type")
 
-  providerCost BigInt @map("provider_cost")
-  sellingPrice BigInt @map("selling_price")
+  providerCost BigInt? @map("provider_cost")
+  sellingPrice BigInt? @map("selling_price")
 
   createdAt DateTime @default(now()) @map("created_at")
 

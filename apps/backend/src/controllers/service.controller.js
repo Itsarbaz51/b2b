@@ -1,6 +1,7 @@
 import {
   MappingService,
   ProviderService,
+  ProviderSlabService,
   ServiceService,
 } from "../services/service.service.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -13,15 +14,34 @@ class ServiceProviderController {
   static create = asyncHandler(async (req, res) => {
     const { type } = req.body;
 
+    if (!type) throw ApiError.badRequest("Type is required");
+
     let result;
 
-    if (type === "service") result = await ServiceService.create(req.body);
-    else if (type === "provider")
-      result = await ProviderService.create(req.body);
-    else if (type === "mapping") result = await MappingService.create(req.body);
-    else throw ApiError.badRequest("Invalid type");
+    switch (type) {
+      case "service":
+        result = await ServiceService.create(req.body);
+        break;
 
-    res.status(201).json(ApiResponse.success(Helper.serializeBigInt(result)));
+      case "provider":
+        result = await ProviderService.create(req.body);
+        break;
+
+      case "mapping":
+        result = await MappingService.create(req.body);
+        break;
+
+      case "slab":
+        result = await ProviderSlabService.create(req.body);
+        break;
+
+      default:
+        throw ApiError.badRequest("Invalid type");
+    }
+
+    return res
+      .status(201)
+      .json(ApiResponse.success(Helper.serializeBigInt(result)));
   });
 
   // UPDATE
@@ -34,14 +54,25 @@ class ServiceProviderController {
 
     let result;
 
-    if (type === "service") {
-      result = await ServiceService.update(id, req.body);
-    } else if (type === "provider") {
-      result = await ProviderService.update(id, req.body);
-    } else if (type === "mapping") {
-      result = await MappingService.update(id, req.body);
-    } else {
-      throw ApiError.badRequest("Invalid type");
+    switch (type) {
+      case "service":
+        result = await ServiceService.update(id, req.body);
+        break;
+
+      case "provider":
+        result = await ProviderService.update(id, req.body);
+        break;
+
+      case "mapping":
+        result = await MappingService.update(id, req.body);
+        break;
+
+      case "slab":
+        result = await ProviderSlabService.update(id, req.body);
+        break;
+
+      default:
+        throw ApiError.badRequest("Invalid type");
     }
 
     return res.json(
@@ -56,9 +87,6 @@ class ServiceProviderController {
   static getAll = asyncHandler(async (req, res) => {
     const { type, page, limit, search, isActive } = req.body;
 
-    console.log(type);
-    console.log(isActive);
-
     if (!type) throw ApiError.badRequest("Type is required");
 
     const pagination = {
@@ -66,24 +94,38 @@ class ServiceProviderController {
       limit: Number(limit) || 10,
     };
 
+    const activeFilter =
+      isActive !== undefined ? isActive === "true" : undefined;
+
     let result;
 
-    if (type === "service") {
-      result = await ServiceService.getAll({
-        ...pagination,
-        search,
-        isActive: isActive !== undefined ? isActive === true : undefined,
-      });
-    } else if (type === "provider") {
-      result = await ProviderService.getAll({
-        ...pagination,
-        search,
-        isActive: isActive !== undefined ? isActive === true : undefined,
-      });
-    } else if (type === "mapping") {
-      result = await MappingService.getAll(pagination);
-    } else {
-      throw ApiError.badRequest("Invalid type");
+    switch (type) {
+      case "service":
+        result = await ServiceService.getAll({
+          ...pagination,
+          search,
+          isActive: activeFilter,
+        });
+        break;
+
+      case "provider":
+        result = await ProviderService.getAll({
+          ...pagination,
+          search,
+          isActive: activeFilter,
+        });
+        break;
+
+      case "mapping":
+        result = await MappingService.getAll({
+          ...pagination,
+          search,
+          isActive: activeFilter,
+        });
+        break;
+
+      default:
+        throw ApiError.badRequest("Invalid type");
     }
 
     return res.json(ApiResponse.success(Helper.serializeBigInt(result)));
@@ -99,14 +141,25 @@ class ServiceProviderController {
 
     let result;
 
-    if (type === "service") {
-      result = await ServiceService.delete(id);
-    } else if (type === "provider") {
-      result = await ProviderService.delete(id);
-    } else if (type === "mapping") {
-      result = await MappingService.delete(id);
-    } else {
-      throw ApiError.badRequest("Invalid type");
+    switch (type) {
+      case "service":
+        result = await ServiceService.delete(id);
+        break;
+
+      case "provider":
+        result = await ProviderService.delete(id);
+        break;
+
+      case "mapping":
+        result = await MappingService.delete(id);
+        break;
+
+      case "slab":
+        result = await ProviderSlabService.delete(id);
+        break;
+
+      default:
+        throw ApiError.badRequest("Invalid type");
     }
 
     return res.json(

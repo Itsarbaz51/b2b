@@ -17,7 +17,10 @@ export default function AddMappingForm({
 
   const [form, setForm] = useState({
     serviceId: "",
-    mode: "COMMISSION",
+    mode: "",
+    pricingValueType: "",
+    commissionStartLevel: "",
+    supportsSlab: false,
     providerId: "",
     sellingPrice: 0,
     providerCost: 0,
@@ -25,8 +28,6 @@ export default function AddMappingForm({
   });
 
   const [config, setConfig] = useState("{}");
-  const [newKey, setNewKey] = useState("");
-  const [newValue, setNewValue] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -35,6 +36,9 @@ export default function AddMappingForm({
         serviceId: editData.serviceId,
         providerId: editData.providerId,
         mode: editData.mode,
+        pricingValueType: editData.pricingValueType,
+        commissionStartLevel: editData.commissionStartLevel,
+        supportsSlab: editData.supportsSlab || false,
         sellingPrice: paisaToRupee(editData.sellingPrice),
         providerCost: paisaToRupee(editData.providerCost),
         isActive: editData.isActive ?? true,
@@ -60,7 +64,7 @@ export default function AddMappingForm({
     let parsedConfig = {};
 
     try {
-      const rawConfig = editorRef.current.getValue();
+      const rawConfig = editorRef.current?.getValue();
 
       parsedConfig = rawConfig ? JSON.parse(rawConfig) : {};
     } catch {
@@ -73,8 +77,11 @@ export default function AddMappingForm({
       serviceId: form.serviceId,
       providerId: form.providerId,
       mode: form.mode,
-      sellingPrice: rupeesToPaise(form.sellingPrice),
-      providerCost: rupeesToPaise(form.providerCost),
+      pricingValueType: form.pricingValueType,
+      commissionStartLevel: form.commissionStartLevel,
+      supportsSlab: form.supportsSlab,
+      sellingPrice: rupeesToPaise(Number(form.sellingPrice || 0)),
+      providerCost: rupeesToPaise(Number(form.providerCost || 0)),
       isActive: form.isActive,
       config: parsedConfig,
     };
@@ -85,7 +92,7 @@ export default function AddMappingForm({
       await dispatch(createService(payload));
     }
 
-    if (onSuccess) onSuccess();
+    onSuccess?.();
     onClose();
   };
 
@@ -173,8 +180,45 @@ export default function AddMappingForm({
                   value={form.mode}
                   onChange={(e) => setForm({ ...form, mode: e.target.value })}
                 >
+                  <option>Select Mode</option>
+
                   <option value="COMMISSION">Commission</option>
                   <option value="SURCHARGE">Surcharge</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold mb-2 block">
+                  Pricing Type
+                </label>
+
+                <select
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                  value={form.pricingValueType}
+                  onChange={(e) =>
+                    setForm({ ...form, pricingValueType: e.target.value })
+                  }
+                >
+                  <option value="FLAT">Flat</option>
+                  <option value="PERCENTAGE">Percentage</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold mb-2 block">
+                  Commission Start Level
+                </label>
+
+                <select
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                  value={form.commissionStartLevel}
+                  onChange={(e) =>
+                    setForm({ ...form, commissionStartLevel: e.target.value })
+                  }
+                >
+                  <option value="NONE">None</option>
+                  <option value="ADMIN_ONLY">Admin</option>
+                  <option value="HIERARCHY">Hierarchy</option>
                 </select>
               </div>
 
@@ -236,6 +280,19 @@ export default function AddMappingForm({
                   <option value={false}>Inactive</option>
                 </select>
               </div>
+              <div className="flex items-center mt-6">
+                <input
+                  type="checkbox"
+                  checked={form.supportsSlab}
+                  onChange={(e) =>
+                    setForm({ ...form, supportsSlab: e.target.checked })
+                  }
+                />
+
+                <span className="ml-2 text-sm font-semibold">
+                  Supports Slab
+                </span>
+              </div>
             </div>
 
             {/* Margin */}
@@ -265,7 +322,8 @@ export default function AddMappingForm({
                 height="100%"
                 width="100%"
                 defaultLanguage="json"
-                defaultValue={config}
+                value={config}
+                onChange={(value) => setConfig(value)}
                 onMount={handleEditorDidMount}
                 theme="vs-dark"
                 options={{
