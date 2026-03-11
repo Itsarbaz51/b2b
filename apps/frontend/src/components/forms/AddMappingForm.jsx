@@ -19,7 +19,7 @@ export default function AddMappingForm({
     serviceId: "",
     mode: "",
     pricingValueType: "",
-    commissionStartLevel: "",
+    commissionStartLevel: "NONE",
     supportsSlab: false,
     providerId: "",
     sellingPrice: 0,

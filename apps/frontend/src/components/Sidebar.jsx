@@ -81,7 +81,7 @@ const Sidebar = () => {
           label: "Add Fund",
           icon: BadgeIndianRupee,
           path: "/request-fund",
-          businessUserPermission: SERVICES.FUND_REQUEST.RAZORPAY,
+          businessUserPermission: SERVICES.FUND_REQUEST,
           employeePermission: PERMISSIONS.FUND_REQUEST,
           staticRoles: [
             "STATE HEAD",

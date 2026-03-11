@@ -95,7 +95,7 @@ class ServiceProviderController {
     };
 
     const activeFilter =
-      isActive !== undefined ? isActive === "true" : undefined;
+      isActive !== undefined ? isActive === true : undefined;
 
     let result;
 

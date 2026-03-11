@@ -2,19 +2,30 @@ import Prisma from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 
 export default class ProviderResolver {
-  static async resolveProvider(serviceId) {
+  static async resolveProvider(serviceId, providerCode = null) {
     if (!serviceId) throw ApiError.badRequest("ServiceId required");
+
+    const whereMapping = {
+      isActive: true,
+    };
+
+    if (providerCode) {
+      whereMapping.provider = {
+        code: providerCode,
+        isActive: true,
+      };
+    }
 
     const service = await Prisma.service.findUnique({
       where: { id: serviceId },
       include: {
         mappings: {
-          where: { isActive: true },
+          where: whereMapping,
           include: {
             provider: true,
           },
           orderBy: {
-            priority: "asc",
+            priority: "desc",
           },
         },
       },

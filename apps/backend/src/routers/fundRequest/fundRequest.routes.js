@@ -7,102 +7,73 @@ import upload from "../../middlewares/multer.middleware.js";
 
 const fundRequestRoutes = Router();
 
-// Fund request routes
+//  CREATE FUND REQUEST
 
-// List fund requests (Business users - hierarchy access)
-fundRequestRoutes.post(
-  "/list",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeBusinessRoles([
-    "ADMIN",
-    "STATE HEAD",
-    "MASTER DISTRIBUTOR",
-    "DISTRIBUTOR",
-    "RETAILER",
-  ]),
-  validateRequest(FundRequestValidationSchemas.ListFundRequests),
-  FundRequestController.index
-);
-
-// Get fund request by ID (Business users - hierarchy access)
-fundRequestRoutes.get(
-  "/:id",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeBusinessRoles([
-    "ADMIN",
-    "STATE HEAD",
-    "MASTER DISTRIBUTOR",
-    "DISTRIBUTOR",
-    "RETAILER",
-  ]),
-  FundRequestController.show
-);
-
-// Create fund request (Business users only)
 fundRequestRoutes.post(
   "/create",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorizeRoleTypes(["business"]),
   upload.fields([{ name: "paymentImage", maxCount: 1 }]),
   validateRequest(FundRequestValidationSchemas.CreateFundRequest),
-  FundRequestController.store
+  FundRequestController.create
 );
 
-// Update fund request (ADMIN only)
-fundRequestRoutes.put(
-  "/:id/update",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeBusinessRoles(["ADMIN"]),
-  validateRequest(FundRequestValidationSchemas.UpdateFundRequest),
-  FundRequestController.update
-);
+// //  VERIFY RAZORPAY PAYMENT
 
-// Verify payment (ADMIN only)
-fundRequestRoutes.post(
-  "/verify-payment",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeBusinessRoles(["ADMIN"]),
-  validateRequest(FundRequestValidationSchemas.VerifyPayment),
-  FundRequestController.verification
-);
+// fundRequestRoutes.post(
+//   "/verify",
+//   AuthMiddleware.isAuthenticated,
+//   AuthMiddleware.authorizeRoleTypes(["business"]),
+//   validateRequest(FundRequestValidationSchemas.VerifyPayment),
+//   FundRequestController.verifyPayment
+// );
 
-// Create Razorpay order (Business users only)
-fundRequestRoutes.post(
-  "/create-order",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeRoleTypes(["business"]),
-  validateRequest(FundRequestValidationSchemas.CreateOrder),
-  FundRequestController.createRazorpayOrder
-);
+// //  LIST FUND REQUESTS
 
-// Get wallet balance (Business users only)
-fundRequestRoutes.get(
-  "/wallet/balance",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeRoleTypes(["business"]),
-  FundRequestController.getWalletBalance
-);
+// fundRequestRoutes.get(
+//   "/",
+//   AuthMiddleware.isAuthenticated,
+//   AuthMiddleware.authorizeBusinessRoles([
+//     "ADMIN",
+//     "STATE HEAD",
+//     "MASTER DISTRIBUTOR",
+//     "DISTRIBUTOR",
+//     "RETAILER",
+//   ]),
+//   FundRequestController.list
+// );
 
-// Get fund request stats (Business users - hierarchy access)
-fundRequestRoutes.get(
-  "/stats/summary",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeBusinessRoles([
-    "ADMIN",
-    "STATE HEAD",
-    "MASTER DISTRIBUTOR",
-    "DISTRIBUTOR",
-    "RETAILER",
-  ]),
-  FundRequestController.getStats
-);
+// //  GET SINGLE FUND REQUEST
 
-// Delete fund request (ADMIN only)
-fundRequestRoutes.delete(
-  "/:id",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeBusinessRoles(["ADMIN"]),
-  FundRequestController.destroy
-);
+// fundRequestRoutes.get(
+//   "/:id",
+//   AuthMiddleware.isAuthenticated,
+//   AuthMiddleware.authorizeBusinessRoles([
+//     "ADMIN",
+//     "STATE HEAD",
+//     "MASTER DISTRIBUTOR",
+//     "DISTRIBUTOR",
+//     "RETAILER",
+//   ]),
+//   FundRequestController.show
+// );
+
+// //  ADMIN APPROVE FUND REQUEST
+
+// fundRequestRoutes.patch(
+//   "/approve/:transactionId",
+//   AuthMiddleware.isAuthenticated,
+//   AuthMiddleware.authorizeBusinessRoles(["ADMIN"]),
+//   FundRequestController.approve
+// );
+
+// //  ADMIN REJECT FUND REQUEST
+
+// fundRequestRoutes.patch(
+//   "/reject/:transactionId",
+//   AuthMiddleware.isAuthenticated,
+//   AuthMiddleware.authorizeBusinessRoles(["ADMIN"]),
+//   FundRequestController.reject
+// );
 
 export default fundRequestRoutes;

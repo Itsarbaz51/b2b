@@ -27,10 +27,7 @@ export const PERMISSIONS = {
 };
 
 export const SERVICES = {
-  FUND_REQUEST: {
-    RAZORPAY: "RAZORPAY",
-    BANK_TRANSFER: "BANK_TRANSFER",
-  },
+  FUND_REQUEST: "FUND_REQUEST",
   PAN: "PAN",
   AADHAAR: "AADHAAR",
   PAYOUT: "PAYOUT",
