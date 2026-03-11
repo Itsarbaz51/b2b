@@ -24,7 +24,9 @@ class BulkpeAadhaarPlugin extends AadhaarPluginInterface {
       });
 
       if (!response.data.status) {
-        throw ApiError.badRequest(data.message || "Failed to send OTP");
+        throw ApiError.badRequest(
+          response.data.message || "Failed to send OTP"
+        );
       }
 
       return {
@@ -52,9 +54,7 @@ class BulkpeAadhaarPlugin extends AadhaarPluginInterface {
 
       return response;
     } catch (err) {
-      throw ApiError.internal(
-        err.response?.data?.message || "Aadhaar verification failed"
-      );
+      throw ApiError.internal(err.response?.data?.message || err.message);
     }
   }
 }
