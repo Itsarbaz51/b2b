@@ -11,7 +11,9 @@ import {
   getCommissionEarnings,
   clearCommissionError,
   clearCommissionSuccess,
+  getCommissionSummary,
 } from "../redux/slices/commissionSlice";
+import { paisaToRupee } from "../utils/lib";
 
 const CommissionEarning = () => {
   const [search, setSearch] = useState("");
@@ -33,34 +35,33 @@ const CommissionEarning = () => {
       totalPages: 0,
     },
   } = useSelector((state) => state.commission);
-
-  const currentPage = pagination.page;
-  const totalPages = pagination.totalPages;
-  const limit = pagination.limit;
+  const { commissionSummary } = useSelector((state) => state.commission);
+  const { page, limit, totalPages } = pagination;
 
   // Load earnings
   const loadEarnings = useCallback(
-    async (searchTerm = "", forceRefresh = false, isSearch = false) => {
+    async (pageNumber = page, forceRefresh = false) => {
       try {
         const params = {
-          page: isSearch ? 1 : currentPage,
+          page: pageNumber,
           limit,
-          search: searchTerm,
         };
 
-        if (forceRefresh) {
-          params.timestamp = Date.now();
-        }
+        if (forceRefresh) params.timestamp = Date.now();
 
         await dispatch(getCommissionEarnings(params));
-      } catch (error) {
-        console.error("Failed to load earnings:", error);
+      } catch (err) {
+        console.error("Failed to load earnings:", err);
       }
     },
-    [dispatch, currentPage, limit],
+    [dispatch, page, limit],
   );
 
-  // Toast handling
+  useEffect(() => {
+    dispatch(getCommissionSummary());
+  }, [dispatch]);
+
+  // Toast
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -79,51 +80,22 @@ const CommissionEarning = () => {
       initialLoadRef.current = true;
       loadEarnings();
     }
-  }, []);
+  }, [loadEarnings]);
 
-  // Search debounce
+  // Refresh
   useEffect(() => {
-    if (!initialLoadRef.current) return;
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+    if (refreshTrigger > 0) {
+      loadEarnings(page, true);
     }
+  }, [refreshTrigger, loadEarnings, page]);
 
-    searchTimeoutRef.current = setTimeout(() => {
-      loadEarnings(search, true, true);
-    }, 500);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [search, loadEarnings]);
-
-  // Refresh trigger
-  useEffect(() => {
-    if (refreshTrigger > 0 && initialLoadRef.current) {
-      loadEarnings(search, true);
-    }
-  }, [refreshTrigger, loadEarnings, search]);
-
-  const handleManualRefresh = useCallback(() => {
+  const handleManualRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
-  }, []);
+  };
 
-  const handlePageChange = useCallback(
-    (page) => {
-      dispatch(
-        getCommissionEarnings({
-          page,
-          limit,
-          search,
-          timestamp: Date.now(),
-        }),
-      );
-    },
-    [dispatch, limit, search],
-  );
+  const handlePageChange = (newPage) => {
+    loadEarnings(newPage);
+  };
 
   return (
     <div>
@@ -131,7 +103,35 @@ const CommissionEarning = () => {
         title="Commission Earnings"
         tagLine="View and monitor all commission earnings"
       />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-5 rounded-xl shadow border border-gray-300">
+          <p className="text-gray-500 text-sm">Total Commission</p>
+          <h3 className="text-2xl font-bold text-green-600">
+            ₹{paisaToRupee(commissionSummary?.totalCommission)}
+          </h3>
+        </div>
 
+        <div className="bg-white p-5 rounded-xl shadow border border-gray-300">
+          <p className="text-gray-500 text-sm">Today Commission</p>
+          <h3 className="text-2xl font-bold text-blue-600">
+            ₹{paisaToRupee(commissionSummary?.todayCommission)}
+          </h3>
+        </div>
+
+        <div className="bg-white p-5 rounded-xl shadow border border-gray-300">
+          <p className="text-gray-500 text-sm">Monthly Commission</p>
+          <h3 className="text-2xl font-bold text-purple-600">
+            ₹{paisaToRupee(commissionSummary?.monthlyCommission)}
+          </h3>
+        </div>
+
+        <div className="bg-white p-5 rounded-xl shadow border border-gray-300">
+          <p className="text-gray-500 text-sm">Transactions</p>
+          <h3 className="text-2xl font-bold text-gray-800">
+            {commissionSummary?.totalTransactions}
+          </h3>
+        </div>
+      </div>
       {/* Search + Refresh */}
       <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-300 mb-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -145,7 +145,7 @@ const CommissionEarning = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Search */}
+            {/* Search UI (future use) */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
 
@@ -177,18 +177,18 @@ const CommissionEarning = () => {
         </div>
       </div>
 
-      {/* Earnings Table */}
+      {/* Table */}
       <CommissionEarningTable
         earnings={commissionEarnings}
         isLoading={isLoading}
         search={search}
-        currentPage={currentPage}
+        currentPage={page}
         limit={limit}
       />
 
       {/* Pagination */}
       <Pagination
-        currentPage={currentPage}
+        currentPage={page}
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />

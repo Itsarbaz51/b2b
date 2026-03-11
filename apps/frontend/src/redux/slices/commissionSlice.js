@@ -5,6 +5,12 @@ import { toast } from "react-toastify";
 const initialState = {
   commissionSettings: [],
   commissionEarnings: [],
+  commissionSummary: {
+    totalCommission: 0,
+    todayCommission: 0,
+    monthlyCommission: 0,
+    totalTransactions: 0,
+  },
   isLoading: false,
   error: null,
   success: null,
@@ -72,6 +78,9 @@ const commissionSlice = createSlice({
       if (limit !== undefined) state.pagination.limit = limit;
       if (totalPages !== undefined) state.pagination.totalPages = totalPages;
     },
+    setCommissionSummary: (state, action) => {
+      state.commissionSummary = action.payload || {};
+    },
     resetCommission: (state) => {
       state.commissionSettings = [];
       state.commissionEarnings = [];
@@ -90,6 +99,7 @@ export const {
   setCommissionEarnings,
   setCommissionData,
   setCommissionEarningsData,
+  setCommissionSummary,
   updatePagination,
   clearCommissionError,
   clearCommissionSuccess,
@@ -160,22 +170,38 @@ export const getCommissionEarnings =
 
       dispatch(
         setCommissionEarningsData({
-          commissionEarnings: data.data?.earnings || data.data || data,
-          total: data.data?.total || 0,
-          page: data.data?.page || 1,
-          limit: data.data?.limit || 10,
-          totalPages: data.data?.totalPages || 0,
+          commissionEarnings: data.data.earnings,
+          page: data.data.pagination.page,
+          limit: data.data.pagination.limit,
+          total: data.data.pagination.total,
+          totalPages: data.data.pagination.totalPages,
         }),
       );
 
-      dispatch(commissionSuccess(data));
-
-      return data;
+      dispatch(commissionSuccess(data.message));
     } catch (error) {
       const errMsg = error?.response?.data?.message || error?.message;
       dispatch(commissionFail(errMsg));
-      throw error;
     }
   };
+
+export const getCommissionSummary = () => async (dispatch) => {
+  try {
+    dispatch(commissionRequest());
+
+    const { data } = await axios.get(`/commissions/earnings/summary`);
+
+    dispatch(setCommissionSummary(data.data));
+
+    dispatch(commissionSuccess(data.message));
+
+    return data;
+  } catch (error) {
+    const errMsg = error?.response?.data?.message || error?.message;
+
+    dispatch(commissionFail(errMsg));
+    throw error;
+  }
+};
 
 export default commissionSlice.reducer;

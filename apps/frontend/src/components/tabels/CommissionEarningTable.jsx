@@ -1,3 +1,4 @@
+import { paisaToRupee } from "../../utils/lib";
 import EmptyState from "../ui/EmptyState";
 
 const CommissionEarningTable = ({
@@ -130,17 +131,17 @@ const CommissionEarningTable = ({
 
                 {/* Amount */}
                 <td className="px-6 py-5 text-sm font-semibold">
-                  ₹{earning.amount}
+                  ₹{paisaToRupee(earning.amount)}
                 </td>
 
                 {/* Commission */}
                 <td className="px-6 py-5 text-sm font-semibold text-green-600">
-                  ₹{earning.commissionAmount}
+                  ₹{paisaToRupee(earning.commissionAmount)}
                 </td>
 
                 {/* Net */}
                 <td className="px-6 py-5 text-sm font-semibold text-indigo-600">
-                  ₹{earning.netAmount}
+                  ₹{paisaToRupee(earning.netAmount)}
                 </td>
 
                 {/* Date */}

@@ -88,4 +88,17 @@ export class CommissionEarningController {
         )
       );
   });
+
+  static getSummary = asyncHandler(async (req, res) => {
+    const roleName = req.user?.role;
+    const roleType = req.user?.roleType;
+
+    // Admin + Employee → all data
+    const userId =
+      roleName === "ADMIN" || roleType === "employee" ? null : req.user.id;
+
+    const summary = await CommissionEarningService.getCommissionSummary(userId);
+
+    return res.json(ApiResponse.success(summary, "Commission summary fetched"));
+  });
 }

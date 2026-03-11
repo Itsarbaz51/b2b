@@ -315,8 +315,16 @@ export default class CommissionEarningService {
   }
 
   static async getCommissionEarnings(filters = {}) {
-    const { userId, fromUserId, serviceId, transactionId, startDate, endDate } =
-      filters;
+    const {
+      userId,
+      fromUserId,
+      serviceId,
+      transactionId,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
+    } = filters;
 
     const where = {};
 
@@ -337,8 +345,15 @@ export default class CommissionEarningService {
       if (endDate) where.createdAt.lte = new Date(endDate);
     }
 
+    const skip = (page - 1) * limit;
+
+    // total count
+    const total = await Prisma.commissionEarning.count({ where });
+
     const earningData = await Prisma.commissionEarning.findMany({
       where,
+      skip,
+      take: Number(limit),
       orderBy: {
         createdAt: "desc",
       },
@@ -389,70 +404,65 @@ export default class CommissionEarningService {
       },
     });
 
-    return Helper.serializeBigInt(earningData);
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      earnings: Helper.serializeBigInt(earningData),
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages,
+      },
+    };
   }
 
-  static async getCommissionSummary(userId, period) {
-    const where = { userId };
+  static async getCommissionSummary(userId = null) {
+    const where = {};
 
-    if (period?.startDate && period?.endDate) {
-      where.createdAt = {
-        gte: new Date(period.startDate),
-        lte: new Date(period.endDate),
-      };
-    }
+    if (userId) where.userId = userId;
 
-    const totalCommission = await Prisma.commissionEarning.aggregate({
-      where,
-      _sum: {
-        netAmount: true,
-      },
-      _count: {
-        id: true,
-      },
-    });
-
-    // today commission
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const todayCommission = await Prisma.commissionEarning.aggregate({
-      where: {
-        userId,
-        createdAt: {
-          gte: startOfToday,
-        },
-      },
-      _sum: {
-        netAmount: true,
-      },
-    });
-
-    // monthly commission
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const monthlyCommission = await Prisma.commissionEarning.aggregate({
-      where: {
-        userId,
-        createdAt: {
-          gte: startOfMonth,
-        },
-      },
-      _sum: {
-        netAmount: true,
-      },
-    });
+    const [totalCommission, todayCommission, monthCommission, totalTxn] =
+      await Promise.all([
+        Prisma.commissionEarning.aggregate({
+          where,
+          _sum: { netAmount: true },
+        }),
 
-    return {
+        Prisma.commissionEarning.aggregate({
+          where: {
+            ...where,
+            createdAt: { gte: startOfToday },
+          },
+          _sum: { netAmount: true },
+        }),
+
+        Prisma.commissionEarning.aggregate({
+          where: {
+            ...where,
+            createdAt: { gte: startOfMonth },
+          },
+          _sum: { netAmount: true },
+        }),
+
+        Prisma.commissionEarning.count({ where }),
+      ]);
+
+    const summary = {
       totalCommission: totalCommission._sum.netAmount ?? 0n,
-      transactionCount: totalCommission._count.id ?? 0,
-
       todayCommission: todayCommission._sum.netAmount ?? 0n,
-
-      monthlyCommission: monthlyCommission._sum.netAmount ?? 0n,
+      monthlyCommission: monthCommission._sum.netAmount ?? 0n,
+      totalTransactions: totalTxn,
     };
+
+    return Helper.serializeBigInt(summary);
   }
 
   //  REVERSE COMMISSION (Refund Case)

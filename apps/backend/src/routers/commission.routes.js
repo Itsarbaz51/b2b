@@ -46,4 +46,10 @@ commissionRoutes.get(
   CommissionEarningController.getEarnings
 );
 
+commissionRoutes.get(
+  "/earnings/summary",
+  AuthMiddleware.isAuthenticated,
+  CommissionEarningController.getSummary
+);
+
 export default commissionRoutes;

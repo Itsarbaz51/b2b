@@ -1,6 +1,7 @@
 import { Edit, X, MoreVertical } from "lucide-react";
 import EmptyState from "../ui/EmptyState";
 import { useSelector } from "react-redux";
+import { paisaToRupee } from "../../utils/lib";
 
 const CommissionSettingTable = ({
   commissions = [],
@@ -178,8 +179,8 @@ const CommissionSettingTable = ({
                 <td className="px-6 py-5">
                   <div className="text-sm font-semibold">
                     {commission.type === "PERCENTAGE"
-                      ? `${commission.value}%`
-                      : `₹${commission.value}`}
+                      ? `${paisaToRupee(commission.value)}%`
+                      : `₹${paisaToRupee(commission.value)}`}
                   </div>
                 </td>
 
