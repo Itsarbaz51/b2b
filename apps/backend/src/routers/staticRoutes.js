@@ -17,6 +17,7 @@ import fundRequestRoutes from "./fundRequest/fundRequest.routes.js";
 import employeeRoutes from "./employee.routes.js";
 import aadhaarRoutes from "./aadhaar/aadhaar.routes.js";
 import panRoutes from "./pan/pan.routes.js";
+import transactionRoutes from "./transaction.routes.js";
 
 export function StaticRoutes(app) {
   app.use("/api/v1/addresses", addressRoutes);
@@ -38,4 +39,5 @@ export function StaticRoutes(app) {
   app.use("/api/v1/pan", panRoutes);
   // app.use("api/v1/wallets", walletRoutes);
   app.use("/api/v1/fund-req", fundRequestRoutes);
+  app.use("/api/v1/txn", transactionRoutes);
 }

@@ -74,9 +74,14 @@ export class UserPermissionController {
   });
 
   static getByUser = asyncHandler(async (req, res) => {
-    const { userId } = req.params;
-
-    if (!userId) throw ApiError.badRequest("User id is required");
+    const userId =
+      (req.params.userId && req.user.role === "ADMIN") ||
+      req.user.roleType == "employee"
+        ? req.params.userId
+        : req.user.id;
+    if (!userId) {
+      throw ApiError.badRequest("User id is required");
+    }
 
     const data = await UserPermissionService.getUserPermissions(userId);
 

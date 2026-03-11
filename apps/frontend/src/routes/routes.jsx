@@ -35,7 +35,6 @@ import WalletTable from "../components/tabels/Wallet";
 import FundRequestTable from "../components/tabels/FundRequestTable.jsx";
 import NoPermissionsPage from "../pages/NoPermissionsPage.jsx";
 import ProtectedRoute from "../layouts/ProtectedRoute.jsx";
-import Commission from "../pages/CommissionSetting.jsx";
 import CommissionManagement from "../pages/CommissionManagement.jsx";
 
 export const createRouter = () => {

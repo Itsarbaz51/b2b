@@ -257,8 +257,8 @@ export class RolePermissionService {
 
 export class UserPermissionService {
   static async createOrUpdateUserPermission(data, req = null, res = null) {
-    const { userId, serviceIds, ...permissions } = data;
-    let currentUserId = req.user.id;
+    const { userId, permissions = [] } = data;
+    const currentUserId = req?.user?.id;
 
     const user = await Prisma.user.findUnique({
       where: { id: userId },
@@ -266,121 +266,32 @@ export class UserPermissionService {
     });
 
     if (!user) {
-      await AuditLogService.createAuditLog({
-        userId: currentUserId,
-        action: "USER_PERMISSION_CREATE_UPDATE_FAILED",
-        entityType: "USER_PERMISSION",
-        ipAddress: req ? Helper.getClientIP(req) : null,
-        metadata: {
-          ...(req && res ? Helper.generateCommonMetadata(req, res) : {}),
-          reason: "USER_NOT_FOUND",
-          roleName: req.user.role,
-          targetUserId: userId,
-          attemptedBy: currentUserId,
-        },
-      });
       throw ApiError.notFound("User not found");
     }
 
-    // Agar serviceIds empty hai to user ke saare existing permissions delete karo
-    if (!serviceIds || serviceIds.length === 0) {
-      const deletedCount = await Prisma.userPermission.count({
-        where: { userId },
-      });
-
+    if (!permissions.length) {
       await Prisma.userPermission.deleteMany({
         where: { userId },
-      });
-
-      // Audit log for clearing all permissions
-      await AuditLogService.createAuditLog({
-        userId: currentUserId,
-        action: "USER_PERMISSIONS_CLEARED",
-        entityType: "USER",
-        entityId: userId,
-        ipAddress: req ? Helper.getClientIP(req) : null,
-        metadata: {
-          ...(req && res ? Helper.generateCommonMetadata(req, res) : {}),
-          userName: `${user.firstName} ${user.lastName}`,
-          userRole: user.role.name,
-          roleName: req.user.role,
-          deletedPermissionsCount: deletedCount,
-          clearedBy: currentUserId,
-        },
       });
 
       return [];
     }
 
-    // Process each service individually
     const results = [];
     const createdPermissions = [];
     const updatedPermissions = [];
-    const removedPermissions = [];
 
-    // Pehle existing permissions mein se jo services nahi hain serviceIds mein, unko delete karo
-    const existingPermissions = await Prisma.userPermission.findMany({
-      where: { userId },
-      include: { service: { select: { name: true } } },
-    });
+    for (const perm of permissions) {
+      const { serviceId, canView = false, canProcess = false } = perm;
 
-    const existingServiceIds = existingPermissions.map(
-      (perm) => perm.serviceId
-    );
-    const servicesToRemove = existingServiceIds.filter(
-      (serviceId) => !serviceIds.includes(serviceId)
-    );
-
-    // Remove permissions for services that are not in the new serviceIds
-    if (servicesToRemove.length > 0) {
-      const removedPerms = await Prisma.userPermission.findMany({
-        where: {
-          userId,
-          serviceId: { in: servicesToRemove },
-        },
-        include: { service: { select: { name: true } } },
-      });
-
-      await Prisma.userPermission.deleteMany({
-        where: {
-          userId,
-          serviceId: { in: servicesToRemove },
-        },
-      });
-
-      removedPermissions.push(
-        ...removedPerms.map((p) => ({
-          serviceId: p.serviceId,
-          serviceName: p.service.name,
-        }))
-      );
-    }
-
-    // Ab create/update karo remaining services ke liye
-    for (const serviceId of serviceIds) {
       const service = await Prisma.service.findUnique({
         where: { id: serviceId },
       });
 
       if (!service) {
-        await AuditLogService.createAuditLog({
-          userId: currentUserId,
-          action: "USER_PERMISSION_CREATE_UPDATE_FAILED",
-          entityType: "USER_PERMISSION",
-          ipAddress: req ? Helper.getClientIP(req) : null,
-          metadata: {
-            ...(req && res ? Helper.generateCommonMetadata(req, res) : {}),
-            reason: "SERVICE_NOT_FOUND",
-            targetUserId: userId,
-            roleName: req.user.role,
-            serviceId: serviceId,
-            attemptedBy: currentUserId,
-          },
-        });
         throw ApiError.notFound(`Service not found: ${serviceId}`);
       }
 
-      // Check if permission already exists
       const existing = await Prisma.userPermission.findUnique({
         where: {
           userId_serviceId: {
@@ -395,39 +306,41 @@ export class UserPermissionService {
       if (existing) {
         result = await Prisma.userPermission.update({
           where: {
-            userId_serviceId: {
-              userId,
-              serviceId,
-            },
+            userId_serviceId: { userId, serviceId },
           },
           data: {
-            ...permissions,
+            canView,
+            canProcess,
           },
         });
+
         updatedPermissions.push({
           serviceId,
           serviceName: service.name,
-          permissions: permissions,
+          canView,
+          canProcess,
         });
       } else {
         result = await Prisma.userPermission.create({
           data: {
             userId,
             serviceId,
-            ...permissions,
+            canView,
+            canProcess,
           },
         });
+
         createdPermissions.push({
           serviceId,
           serviceName: service.name,
-          permissions: permissions,
+          canView,
+          canProcess,
         });
       }
 
       results.push(result);
     }
 
-    // Audit log for successful operation
     await AuditLogService.createAuditLog({
       userId: currentUserId,
       action: "USER_PERMISSIONS_UPDATED",
@@ -435,15 +348,10 @@ export class UserPermissionService {
       entityId: userId,
       ipAddress: req ? Helper.getClientIP(req) : null,
       metadata: {
-        ...(req && res ? Helper.generateCommonMetadata(req, res) : {}),
         userName: `${user.firstName} ${user.lastName}`,
         userRole: user.role.name,
-        totalServices: serviceIds.length,
-        createdPermissions: createdPermissions,
-        roleName: req.user.role,
-        updatedPermissions: updatedPermissions,
-        removedPermissions: removedPermissions,
-        permissionDetails: permissions,
+        createdPermissions,
+        updatedPermissions,
         updatedBy: currentUserId,
       },
     });
@@ -451,45 +359,45 @@ export class UserPermissionService {
     return results;
   }
 
-  static async getUserPermissions(userId) {
-    if (!userId) {
-      throw ApiError.badRequest("User ID is required");
-    }
+  // static async getUserPermissions(userId) {
+  //   if (!userId) {
+  //     throw ApiError.badRequest("User ID is required");
+  //   }
 
-    const permissions = await Prisma.userPermission.findMany({
-      where: {
-        userId,
-      },
-      select: {
-        id: true,
-        canView: true,
-        canProcess: true,
-        service: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            isActive: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
+  //   const permissions = await Prisma.userPermission.findMany({
+  //     where: {
+  //       userId,
+  //     },
+  //     select: {
+  //       id: true,
+  //       canView: true,
+  //       canProcess: true,
+  //       service: {
+  //         select: {
+  //           id: true,
+  //           code: true,
+  //           name: true,
+  //           isActive: true,
+  //         },
+  //       },
+  //       user: {
+  //         select: {
+  //           id: true,
+  //           username: true,
+  //           email: true,
+  //           firstName: true,
+  //           lastName: true,
+  //         },
+  //       },
+  //     },
+  //   });
 
-    if (!permissions.length) {
-      return;
-    }
+  //   if (!permissions.length) {
+  //     return;
+  //   }
 
-    return permissions;
-  }
+  //   return permissions;
+  // }
 
   static async deleteUserPermission(userId, serviceId, req = null, res = null) {
     let currentUserId = req.user.id;
@@ -580,5 +488,77 @@ export class UserPermissionService {
     });
 
     return deleted;
+  }
+
+  static async getUserPermissions(userId) {
+    if (!userId) {
+      throw ApiError.badRequest("User ID is required");
+    }
+
+    const user = await Prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        roleId: true,
+      },
+    });
+
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+
+    // role permissions
+    const rolePermissions = await Prisma.rolePermission.findMany({
+      where: { roleId: user.roleId },
+      include: {
+        service: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    // user permissions
+    const userPermissions = await Prisma.userPermission.findMany({
+      where: { userId },
+      include: {
+        service: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    // convert role permissions into map
+    const permissionMap = {};
+
+    rolePermissions.forEach((perm) => {
+      permissionMap[perm.serviceId] = {
+        service: perm.service,
+        canView: perm.canView,
+        canProcess: perm.canProcess,
+        source: "ROLE",
+      };
+    });
+
+    // override with user permissions
+    userPermissions.forEach((perm) => {
+      permissionMap[perm.serviceId] = {
+        service: perm.service,
+        canView: perm.canView,
+        canProcess: perm.canProcess,
+        source: "USER",
+      };
+    });
+
+    return Object.values(permissionMap);
   }
 }

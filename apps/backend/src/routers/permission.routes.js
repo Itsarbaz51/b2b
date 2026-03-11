@@ -43,6 +43,12 @@ permissionRoutes.post(
 );
 
 permissionRoutes.get(
+  "/user-permission",
+  AuthMiddleware.isAuthenticated,
+  UserPermissionController.getByUser
+);
+
+permissionRoutes.get(
   "/user-permission/:userId",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["ADMIN", "employee"]),

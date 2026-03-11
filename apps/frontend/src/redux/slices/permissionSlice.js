@@ -52,7 +52,7 @@ const permissionSlice = createSlice({
         state.permissions.push(action.payload);
       } else {
         const index = state.permissions.findIndex(
-          (p) => p.id === action.payload?.id
+          (p) => p.id === action.payload?.id,
         );
         if (index !== -1) state.permissions[index] = action.payload;
       }
@@ -66,7 +66,7 @@ const permissionSlice = createSlice({
     },
     removePermissionFromList: (state, action) => {
       state.permissions = state.permissions.filter(
-        (p) => p.id !== action.payload
+        (p) => p.id !== action.payload,
       );
     },
   },
@@ -91,7 +91,12 @@ export const {
 export const getPermissionById = (userId) => async (dispatch) => {
   try {
     dispatch(permissionRequest());
-    const { data } = await axios.get(`permissions/user-permission/${userId}`);
+    const url = userId
+      ? `/permissions/user-permission/${userId}`
+      : `/permissions/user-permission`;
+
+    const { data } = await axios.get(url);
+
     dispatch(setCurrentPermission(data.data));
     dispatch(permissionSuccess(data));
     return data;
@@ -111,7 +116,7 @@ export const upsertPermission = (permissionData) => async (dispatch) => {
     dispatch(permissionRequest());
     const { data } = await axios.post(
       `permissions/user-upsert`,
-      permissionData
+      permissionData,
     );
     dispatch(addPermission(data.data));
     dispatch(permissionSuccess(data));
@@ -153,7 +158,7 @@ export const upsertRolePermission = (permissionData) => async (dispatch) => {
     dispatch(permissionRequest());
     const { data } = await axios.post(
       `permissions/role-upsert`,
-      permissionData
+      permissionData,
     );
     dispatch(addPermission(data.data));
     dispatch(permissionSuccess(data));

@@ -13,6 +13,7 @@ import permissionReducer from "./slices/permissionSlice.js";
 import loginLogsReducer from "./slices/logsSlice.js";
 import settingReducer from "./slices/settingSlice.js";
 import aadhaarReducer from "./slices/aadhaarSlice.js";
+import transactionReducer from "./slices/transactionSlice.js";
 
 const store = configureStore({
   reducer: {
@@ -30,6 +31,7 @@ const store = configureStore({
     logs: loginLogsReducer,
     setting: settingReducer,
     aadhaar: aadhaarReducer,
+    transaction: transactionReducer,
   },
 });
 

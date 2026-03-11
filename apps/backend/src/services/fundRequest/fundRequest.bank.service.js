@@ -61,6 +61,7 @@ export default class BankFundRequestService {
           walletId: wallet.id,
           serviceProviderMappingId: serviceProviderMapping.id,
           amount: providerResponse.amount,
+          providerReference: payload.rrn,
           requestPayload: payload,
           pricing,
           idempotencyKey: payload.idempotencyKey,

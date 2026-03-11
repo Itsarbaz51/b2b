@@ -247,7 +247,7 @@ const MembersTable = () => {
 
     const finalData = {
       userId: permissionUser?.id,
-      ...permissionData,
+      permissions: permissionData.permissions,
     };
 
     dispatch(upsertPermission(finalData))

@@ -15,11 +15,14 @@ class PermissionValidationSchemas {
   static get createOrUpdateUserPermission() {
     return z.object({
       userId: z.string().uuid("Invalid user ID"),
-      serviceIds: z.array(z.string().uuid("Invalid service ID")),
-      canView: z.boolean().default(false),
-      canEdit: z.boolean().default(false),
-      canSetCommission: z.boolean().default(false),
-      canProcess: z.boolean().default(false),
+
+      permissions: z.array(
+        z.object({
+          serviceId: z.string().uuid("Invalid service ID"),
+          canView: z.boolean().default(false),
+          canProcess: z.boolean().default(false),
+        })
+      ),
     });
   }
 

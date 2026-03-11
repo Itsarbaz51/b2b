@@ -378,6 +378,12 @@ class Helper {
 
     return cleaned;
   }
+
+  static generateTxnId(prefix = "TXN") {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(1000 + Math.random() * 9000);
+    return `${prefix}-${timestamp}${random}`;
+  }
 }
 
 export default Helper;
