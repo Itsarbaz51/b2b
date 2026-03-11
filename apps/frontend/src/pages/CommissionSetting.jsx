@@ -7,13 +7,13 @@ import AddCommissionModal from "../components/forms/AddCommissionModal";
 import HeaderSection from "../components/ui/HeaderSection";
 import ButtonField from "../components/ui/ButtonField";
 import Pagination from "../components/ui/Pagination";
-import CommissionTable from "../components/tabels/CommissionTable"; // New import
 
 import {
   getCommissionSettingsByCreatedBy,
   clearCommissionError,
   clearCommissionSuccess,
 } from "../redux/slices/commissionSlice";
+import CommissionSettingTable from "../components/tabels/CommissionSettingTable";
 
 const CommissionSetting = () => {
   const [search, setSearch] = useState("");
@@ -242,7 +242,7 @@ const CommissionSetting = () => {
       </div>
 
       {/* Commission Table Component */}
-      <CommissionTable
+      <CommissionSettingTable
         commissions={filteredCommissions}
         isLoading={isLoading}
         search={search}

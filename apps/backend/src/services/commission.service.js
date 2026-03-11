@@ -337,22 +337,59 @@ export default class CommissionEarningService {
       if (endDate) where.createdAt.lte = new Date(endDate);
     }
 
-    return await Prisma.commissionEarning.findMany({
+    const earningData = await Prisma.commissionEarning.findMany({
       where,
-      include: {
-        user: true,
-        fromUser: true,
-        transaction: true,
-        serviceProviderMapping: {
-          include: {
-            service: true,
-          },
-        },
-      },
       orderBy: {
         createdAt: "desc",
       },
+      select: {
+        id: true,
+        amount: true,
+        commissionAmount: true,
+        surchargeAmount: true,
+        netAmount: true,
+        mode: true,
+        type: true,
+        createdAt: true,
+
+        transaction: {
+          select: {
+            txnId: true,
+            amount: true,
+            status: true,
+          },
+        },
+
+        user: {
+          select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+
+        fromUser: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+
+        serviceProviderMapping: {
+          select: {
+            service: {
+              select: {
+                name: true,
+                code: true,
+              },
+            },
+          },
+        },
+      },
     });
+
+    return Helper.serializeBigInt(earningData);
   }
 
   static async getCommissionSummary(userId, period) {

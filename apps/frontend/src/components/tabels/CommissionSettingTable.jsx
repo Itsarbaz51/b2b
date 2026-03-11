@@ -2,7 +2,7 @@ import { Edit, X, MoreVertical } from "lucide-react";
 import EmptyState from "../ui/EmptyState";
 import { useSelector } from "react-redux";
 
-const CommissionTable = ({
+const CommissionSettingTable = ({
   commissions = [],
   isLoading = false,
   search = "",
@@ -249,4 +249,4 @@ const CommissionTable = ({
   );
 };
 
-export default CommissionTable;
+export default CommissionSettingTable;
