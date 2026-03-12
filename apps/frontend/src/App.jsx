@@ -6,6 +6,7 @@ import store from "./redux/store.js";
 import { ToastContainer } from "react-toastify";
 import { verifyAuth } from "./redux/slices/authSlice";
 import { InputSelect } from "./components/ui/Input_select.jsx";
+import { ToastProvider } from "./context/ToastContext.jsx";
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -30,16 +31,18 @@ const AppContent = () => {
 
 const App = () => (
   <Provider store={store}>
-    <ToastContainer
-      position="top-right"
-      autoClose={3000}
-      hideProgressBar={false}
-      newestOnTop={true}
-      closeOnClick
-      pauseOnHover
-    />
-    <AppContent />
-    <InputSelect />
+    <ToastProvider>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        pauseOnHover
+      />
+      <AppContent />
+      <InputSelect />
+    </ToastProvider>
   </Provider>
 );
 
