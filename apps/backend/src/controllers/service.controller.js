@@ -94,8 +94,7 @@ class ServiceProviderController {
       limit: Number(limit) || 10,
     };
 
-    const activeFilter =
-      isActive !== undefined ? isActive === true : undefined;
+    const activeFilter = isActive !== undefined ? isActive === true : undefined;
 
     let result;
 
@@ -167,6 +166,14 @@ class ServiceProviderController {
         Helper.serializeBigInt(result),
         `${type} deleted successfully`
       )
+    );
+  });
+
+  static getServices = asyncHandler(async (req, res) => {
+    const result = await ServiceService.getServicesByUser(req.user, req.query);
+
+    return res.json(
+      ApiResponse.success(Helper.serializeBigInt(result), `successfully get`)
     );
   });
 }

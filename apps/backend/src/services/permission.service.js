@@ -359,45 +359,45 @@ export class UserPermissionService {
     return results;
   }
 
-  // static async getUserPermissions(userId) {
-  //   if (!userId) {
-  //     throw ApiError.badRequest("User ID is required");
-  //   }
+  static async getUserPermissions(userId) {
+    if (!userId) {
+      throw ApiError.badRequest("User ID is required");
+    }
 
-  //   const permissions = await Prisma.userPermission.findMany({
-  //     where: {
-  //       userId,
-  //     },
-  //     select: {
-  //       id: true,
-  //       canView: true,
-  //       canProcess: true,
-  //       service: {
-  //         select: {
-  //           id: true,
-  //           code: true,
-  //           name: true,
-  //           isActive: true,
-  //         },
-  //       },
-  //       user: {
-  //         select: {
-  //           id: true,
-  //           username: true,
-  //           email: true,
-  //           firstName: true,
-  //           lastName: true,
-  //         },
-  //       },
-  //     },
-  //   });
+    const permissions = await Prisma.userPermission.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        id: true,
+        canView: true,
+        canProcess: true,
+        service: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            isActive: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
 
-  //   if (!permissions.length) {
-  //     return;
-  //   }
+    if (!permissions.length) {
+      return;
+    }
 
-  //   return permissions;
-  // }
+    return permissions;
+  }
 
   static async deleteUserPermission(userId, serviceId, req = null, res = null) {
     let currentUserId = req.user.id;
@@ -490,75 +490,75 @@ export class UserPermissionService {
     return deleted;
   }
 
-  static async getUserPermissions(userId) {
-    if (!userId) {
-      throw ApiError.badRequest("User ID is required");
-    }
+  // static async getUserPermissions(userId) {
+  //   if (!userId) {
+  //     throw ApiError.badRequest("User ID is required");
+  //   }
 
-    const user = await Prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        roleId: true,
-      },
-    });
+  //   const user = await Prisma.user.findUnique({
+  //     where: { id: userId },
+  //     select: {
+  //       id: true,
+  //       roleId: true,
+  //     },
+  //   });
 
-    if (!user) {
-      throw ApiError.notFound("User not found");
-    }
+  //   if (!user) {
+  //     throw ApiError.notFound("User not found");
+  //   }
 
-    // role permissions
-    const rolePermissions = await Prisma.rolePermission.findMany({
-      where: { roleId: user.roleId },
-      include: {
-        service: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            isActive: true,
-          },
-        },
-      },
-    });
+  //   // role permissions
+  //   const rolePermissions = await Prisma.rolePermission.findMany({
+  //     where: { roleId: user.roleId },
+  //     include: {
+  //       service: {
+  //         select: {
+  //           id: true,
+  //           code: true,
+  //           name: true,
+  //           isActive: true,
+  //         },
+  //       },
+  //     },
+  //   });
 
-    // user permissions
-    const userPermissions = await Prisma.userPermission.findMany({
-      where: { userId },
-      include: {
-        service: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            isActive: true,
-          },
-        },
-      },
-    });
+  //   // user permissions
+  //   const userPermissions = await Prisma.userPermission.findMany({
+  //     where: { userId },
+  //     include: {
+  //       service: {
+  //         select: {
+  //           id: true,
+  //           code: true,
+  //           name: true,
+  //           isActive: true,
+  //         },
+  //       },
+  //     },
+  //   });
 
-    // convert role permissions into map
-    const permissionMap = {};
+  //   // convert role permissions into map
+  //   const permissionMap = {};
 
-    rolePermissions.forEach((perm) => {
-      permissionMap[perm.serviceId] = {
-        service: perm.service,
-        canView: perm.canView,
-        canProcess: perm.canProcess,
-        source: "ROLE",
-      };
-    });
+  //   rolePermissions.forEach((perm) => {
+  //     permissionMap[perm.serviceId] = {
+  //       service: perm.service,
+  //       canView: perm.canView,
+  //       canProcess: perm.canProcess,
+  //       source: "ROLE",
+  //     };
+  //   });
 
-    // override with user permissions
-    userPermissions.forEach((perm) => {
-      permissionMap[perm.serviceId] = {
-        service: perm.service,
-        canView: perm.canView,
-        canProcess: perm.canProcess,
-        source: "USER",
-      };
-    });
+  //   // override with user permissions
+  //   userPermissions.forEach((perm) => {
+  //     permissionMap[perm.serviceId] = {
+  //       service: perm.service,
+  //       canView: perm.canView,
+  //       canProcess: perm.canProcess,
+  //       source: "USER",
+  //     };
+  //   });
 
-    return Object.values(permissionMap);
-  }
+  //   return Object.values(permissionMap);
+  // }
 }

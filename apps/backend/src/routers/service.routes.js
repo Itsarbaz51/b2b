@@ -35,4 +35,11 @@ serviceRoutes.delete(
   ServiceProviderController.delete
 );
 
+serviceRoutes.get(
+  "/",
+  AuthMiddleware.isAuthenticated,
+  AuthMiddleware.authorize(["ADMIN", "business", "employee"]),
+  ServiceProviderController.getServices
+);
+
 export default serviceRoutes;

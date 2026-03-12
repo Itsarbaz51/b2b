@@ -56,6 +56,11 @@ const serviceSlice = createSlice({
       state.isLoading = false;
     },
 
+    setCurrentItem: (state, action) => {
+      state.currentItem = action.payload;
+      state.isLoading = false;
+    },
+
     addItem: (state, action) => {
       const { type, data } = action.payload;
 
@@ -101,6 +106,7 @@ export const {
   setServices,
   setProviders,
   setMappings,
+  setCurrentItem,
   addItem,
   updateItem,
   removeItem,
@@ -173,3 +179,21 @@ export const updateService = (id, payload) => async (dispatch) => {
     throw error;
   }
 };
+
+export const getServices =
+  (params = {}) =>
+  async (dispatch) => {
+    try {
+      dispatch(serviceRequest());
+
+      const { data } = await axios.get("/services", {
+        params,
+      });
+      dispatch(setCurrentItem(data.data));
+      return data;
+    } catch (error) {
+      const errMsg = error?.response?.data?.message || error.message;
+      dispatch(serviceFail(errMsg));
+      throw error;
+    }
+  };

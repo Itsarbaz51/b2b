@@ -93,7 +93,6 @@ export const {
 export const getTransactions =
   (filters = {}) =>
   async (dispatch) => {
-    console.log(filters);
     try {
       dispatch(transactionRequest());
 

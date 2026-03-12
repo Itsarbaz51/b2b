@@ -10,6 +10,7 @@ export class TransactionController {
         type: req.query.type,
         search: req.query.search,
         date: req.query.date,
+        role: req.user.role == "ADMIN" ? "ADMIN" : req.user.roleType,
       });
 
       res.status(200).json({

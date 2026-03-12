@@ -130,88 +130,173 @@ export default class TransactionService {
     type,
     search,
     date,
+    role,
   }) {
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;
-
     const skip = (pageNumber - 1) * limitNumber;
+    const isAdmin = role === "ADMIN" || role === "employee";
+    const filters = [];
 
-    const where = {};
+    const selectFields = {
+      id: true,
+      txnId: true,
+      amount: true,
+      netAmount: true,
+      status: true,
+      initiatedAt: true,
+      completedAt: true,
 
-    /* STATUS FILTER */
-
-    if (status) {
-      where.status = status.toUpperCase();
-    }
-
-    /* SERVICE TYPE FILTER */
-
-    if (type && type !== "ALL") {
-      where.serviceProviderMapping = {
-        serviceProvider: {
-          code: type,
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
         },
-      };
-    }
+      },
 
-    /* SEARCH FILTER */
-
-    if (search) {
-      where.OR = [
-        {
-          txnId: {
-            contains: search,
+      serviceProviderMapping: {
+        select: {
+          service: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
           },
-        },
-        {
-          user: {
-            name: {
-              contains: search,
+          provider: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
             },
           },
         },
-      ];
+      },
+    };
+
+    if (isAdmin) {
+      selectFields.idempotencyKey = true;
+      selectFields.pricing = true;
+      selectFields.providerReference = true;
+      selectFields.providerResponse = true;
+      selectFields.apiEntityId = true;
+    }
+
+    /* STATUS FILTER */
+    if (status) {
+      filters.push({
+        status: status.toUpperCase(),
+      });
+    }
+
+    /* SERVICE TYPE FILTER */
+    if (type && type !== "ALL") {
+      filters.push({
+        serviceProviderMapping: {
+          is: {
+            service: {
+              code: type.toUpperCase(),
+            },
+          },
+        },
+      });
+    }
+
+    /* SEARCH FILTER */
+    if (search) {
+      filters.push({
+        OR: [
+          {
+            txnId: {
+              contains: search,
+            },
+          },
+          {
+            user: {
+              OR: [
+                {
+                  firstName: {
+                    contains: search,
+                  },
+                },
+                {
+                  lastName: {
+                    contains: search,
+                  },
+                },
+                {
+                  phoneNumber: {
+                    contains: search,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
     }
 
     /* DATE FILTER */
+    if (date && date !== "all") {
+      const now = new Date();
+      let start;
+      let end;
 
-    if (date === "today") {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
+      if (date === "today") {
+        start = new Date();
+        start.setHours(0, 0, 0, 0);
 
-      where.initiatedAt = {
-        gte: start,
-      };
+        end = new Date();
+        end.setHours(23, 59, 59, 999);
+      }
+
+      if (date === "yesterday") {
+        start = new Date();
+        start.setDate(start.getDate() - 1);
+        start.setHours(0, 0, 0, 0);
+
+        end = new Date();
+        end.setDate(end.getDate() - 1);
+        end.setHours(23, 59, 59, 999);
+      }
+
+      if (date === "week") {
+        start = new Date();
+        start.setDate(now.getDate() - now.getDay());
+        start.setHours(0, 0, 0, 0);
+
+        end = new Date();
+        end.setHours(23, 59, 59, 999);
+      }
+
+      if (date === "month") {
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        end = new Date();
+        end.setHours(23, 59, 59, 999);
+      }
+
+      if (start && end) {
+        filters.push({
+          initiatedAt: {
+            gte: start,
+            lte: end,
+          },
+        });
+      }
     }
+
+    const where = filters.length ? { AND: filters } : {};
 
     const [transactions, total] = await Promise.all([
       Prisma.transaction.findMany({
         where,
-
         skip,
-
         take: limitNumber,
-
-        orderBy: {
-          initiatedAt: "desc",
-        },
-
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              phoneNumber: true,
-            },
-          },
-
-          serviceProviderMapping: {
-            include: {
-              provider: true,
-            },
-          },
-        },
+        orderBy: { initiatedAt: "desc" },
+        select: selectFields,
       }),
 
       Prisma.transaction.count({ where }),

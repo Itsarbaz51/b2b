@@ -78,6 +78,114 @@ export class ServiceService {
 
     return Prisma.service.delete({ where: { id } });
   }
+
+  static async getServicesByUser(
+    user,
+    { page = 1, limit = 10, search, isActive }
+  ) {
+    if (!user?.id) {
+      throw ApiError.badRequest("User required");
+    }
+
+    const role = user?.role;
+    const roleType = user?.roleType;
+
+    const skip = (page - 1) * limit;
+
+    // ADMIN / EMPLOYEE → ALL SERVICES
+    if (role === "ADMIN" || roleType === "employee") {
+      const where = {
+        ...(isActive !== undefined && { isActive }),
+        ...(search && {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { code: { contains: search, mode: "insensitive" } },
+          ],
+        }),
+      };
+
+      const [data, total] = await Promise.all([
+        Prisma.service.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+        }),
+        Prisma.service.count({ where }),
+      ]);
+
+      return { data, total, page, totalPages: Math.ceil(total / limit) };
+    }
+
+    // ROLE PERMISSIONS
+    const rolePermissions = await Prisma.rolePermission.findMany({
+      where: { roleId: user.roleId },
+      include: {
+        service: true,
+      },
+    });
+
+    // USER PERMISSIONS
+    const userPermissions = await Prisma.userPermission.findMany({
+      where: { userId: user.id },
+      include: {
+        service: true,
+      },
+    });
+
+    const serviceMap = {};
+
+    // role services
+    rolePermissions.forEach((perm) => {
+      if (!perm.service) return;
+
+      serviceMap[perm.serviceId] = {
+        ...perm.service,
+        source: "ROLE",
+        canView: perm.canView,
+        canProcess: perm.canProcess,
+      };
+    });
+
+    // user override
+    userPermissions.forEach((perm) => {
+      if (!perm.service) return;
+
+      serviceMap[perm.serviceId] = {
+        ...perm.service,
+        source: "USER",
+        canView: perm.canView,
+        canProcess: perm.canProcess,
+      };
+    });
+
+    let services = Object.values(serviceMap);
+
+    // search filter
+    if (search) {
+      services = services.filter(
+        (s) =>
+          s.name.toLowerCase().includes(search.toLowerCase()) ||
+          s.code.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // active filter
+    if (isActive !== undefined) {
+      services = services.filter((s) => s.isActive === isActive);
+    }
+
+    const total = services.length;
+
+    const paginated = services.slice(skip, skip + limit);
+
+    return {
+      data: paginated,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 }
 
 export class ProviderService {

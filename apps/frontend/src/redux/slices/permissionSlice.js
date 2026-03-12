@@ -91,12 +91,7 @@ export const {
 export const getPermissionById = (userId) => async (dispatch) => {
   try {
     dispatch(permissionRequest());
-    const url = userId
-      ? `/permissions/user-permission/${userId}`
-      : `/permissions/user-permission`;
-
-    const { data } = await axios.get(url);
-
+    const { data } = await axios.get(`permissions/user-permission/${userId}`);
     dispatch(setCurrentPermission(data.data));
     dispatch(permissionSuccess(data));
     return data;
