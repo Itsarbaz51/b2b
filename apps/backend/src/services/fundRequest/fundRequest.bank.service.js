@@ -5,7 +5,8 @@ import WalletEngine from "../../engines/wallet.engine.js";
 import TransactionService from "../transaction.service.js";
 import ApiEntityService from "../apiEntity.service.js";
 import S3Service from "../../utils/S3Service.js";
-import Helper from "../../utils/Helper.js";
+import Helper from "../../utils/helper.js";
+import LedgerEngine from "../../engines/ledger.engine.js";
 
 export default class BankFundRequestService {
   static async create(payload, actor, serviceProviderMapping, provider) {
@@ -91,5 +92,135 @@ export default class BankFundRequestService {
         await Helper.deleteOldImage(payload.paymentImage.path);
       }
     }
+  }
+
+  static async verifyRequest(payload, actor) {
+    const { transactionId, action, reason } = payload;
+
+    if (!["APPROVE", "REJECT"].includes(action)) {
+      throw ApiError.badRequest("Invalid action");
+    }
+
+    return await Prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: { apiEntity: true },
+      });
+
+      if (!transaction) {
+        throw ApiError.notFound("Transaction not found");
+      }
+
+      const wallet = await WalletEngine.getWallet({
+        tx,
+        userId: transaction.userId,
+        walletType: "PRIMARY",
+      });
+
+      // ===============================
+      // APPROVE
+      // ===============================
+
+      if (action === "APPROVE") {
+        // PENDING → SUCCESS
+
+        if (transaction.status === "PENDING") {
+          await WalletEngine.credit(tx, wallet, transaction.amount);
+
+          await LedgerEngine.create(tx, {
+            walletId: wallet.id,
+            transactionId: transaction.id,
+            entryType: "CREDIT",
+            referenceType: "TRANSACTION",
+            serviceProviderMappingId: transaction.serviceProviderMappingId,
+            amount: transaction.amount,
+            narration: "Bank Fund Request Approved",
+            createdBy: actor.id,
+          });
+        }
+
+        // FAILED → SUCCESS (correction)
+        if (transaction.status === "FAILED") {
+          await WalletEngine.credit(tx, wallet, transaction.amount);
+
+          await LedgerEngine.create(tx, {
+            walletId: wallet.id,
+            transactionId: transaction.id,
+            entryType: "CREDIT",
+            referenceType: "TRANSACTION",
+            serviceProviderMappingId: transaction.serviceProviderMappingId,
+            amount: transaction.amount,
+            narration: "Bank Fund Request Approved (Correction)",
+            createdBy: actor.id,
+          });
+        }
+
+        if (transaction.status === "SUCCESS") {
+          throw ApiError.badRequest("Transaction already approved");
+        }
+
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "SUCCESS",
+        });
+
+        await ApiEntityService.markSuccess(tx, {
+          apiEntityId: transaction.apiEntityId,
+          providerResponse: {
+            approvedBy: actor.id,
+          },
+        });
+
+        return { status: "SUCCESS" };
+      }
+
+      // ===============================
+      // REJECT
+      // ===============================
+
+      if (action === "REJECT") {
+        if (!reason) {
+          throw ApiError.badRequest("Reject reason required");
+        }
+
+        // SUCCESS → FAILED (reverse wallet)
+        if (transaction.status === "SUCCESS") {
+          await WalletEngine.debit(tx, wallet, transaction.amount);
+
+          await LedgerEngine.create(tx, {
+            walletId: wallet.id,
+            transactionId: transaction.id,
+            entryType: "DEBIT",
+            referenceType: "TRANSACTION",
+            serviceProviderMappingId: transaction.serviceProviderMappingId,
+            amount: transaction.amount,
+            narration: "Bank Fund Request Reversed",
+            createdBy: actor.id,
+          });
+        }
+
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "FAILED",
+          providerResponse: {
+            rejectedBy: actor.id,
+            reason,
+          },
+        });
+
+        await ApiEntityService.markFailed(tx, {
+          apiEntityId: transaction.apiEntityId,
+          errorData: {
+            rejectedBy: actor.id,
+            reason,
+          },
+        });
+
+        return {
+          status: "FAILED",
+          reason,
+        };
+      }
+    });
   }
 }

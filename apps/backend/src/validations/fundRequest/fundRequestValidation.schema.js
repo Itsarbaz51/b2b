@@ -36,6 +36,19 @@ const CreateFundRequest = z
     }
   );
 
-export default {
-  CreateFundRequest,
-};
+const FundRequestValidationSchemas = z
+  .object({
+    action: z.enum(["APPROVE", "REJECT"]),
+    reason: z.string().trim().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.action === "REJECT" && !data.reason) {
+      ctx.addIssue({
+        path: ["reason"],
+        code: z.ZodIssueCode.custom,
+        message: "Reason is required when rejecting",
+      });
+    }
+  });
+
+export { CreateFundRequest, FundRequestValidationSchemas };

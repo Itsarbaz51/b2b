@@ -2,6 +2,7 @@ import ProviderResolver from "../../resolvers/Provider.resolver.js";
 import BankFundRequestService from "./fundRequest.bank.service.js";
 import RazorpayFundRequestService from "./fundRequest.razorpay.service.js";
 import { ApiError } from "../../utils/ApiError.js";
+import Prisma from "../../db/db.js";
 
 export default class FundRequestService {
   static async create(payload, actor) {
@@ -26,6 +27,31 @@ export default class FundRequestService {
           serviceProviderMapping,
           providerData
         );
+
+      default:
+        throw ApiError.badRequest("Unsupported provider");
+    }
+  }
+
+  static async verify(payload, actor) {
+    const transaction = await Prisma.transaction.findUnique({
+      where: { id: payload.transactionId },
+      include: {
+        serviceProviderMapping: {
+          include: { provider: true },
+        },
+      },
+    });
+
+    if (!transaction) {
+      throw ApiError.notFound("Transaction not found");
+    }
+
+    const providerCode = transaction.serviceProviderMapping.provider.code;
+
+    switch (providerCode) {
+      case "BANK_TRANSFER":
+        return BankFundRequestService.verifyRequest(payload, actor);
 
       default:
         throw ApiError.badRequest("Unsupported provider");

@@ -6,16 +6,29 @@ import RazorpayFundForm from "../components/forms/RazorpayFundForm";
 import AddBankTransferFundForm from "../components/forms/AddBankTransferFundForm";
 import FundRequestTable from "../components/tabels/FundRequestTable";
 
-import { createFundRequest } from "../redux/slices/fundSlice";
+import {
+  createFundRequest,
+  verifyFundRequest,
+} from "../redux/slices/fundSlice";
+const rejectReasons = [
+  "Invalid RRN",
+  "Amount mismatch",
+  "Fake payment screenshot",
+  "Duplicate payment",
+  "Bank transaction not found",
+];
 import { getTransactions } from "../redux/slices/transactionSlice";
 
 import { rupeesToPaise } from "../utils/lib";
 import PageHeader from "../components/ui/PageHeader";
 import StateCard from "../components/ui/StateCard";
+import ConfirmCard from "../components/ui/ConfirmCard";
 
 const FundRequestPage = () => {
   const dispatch = useDispatch();
+  const [confirmAction, setConfirmAction] = useState(null);
   const { transactions = [], isLoading } = useSelector((s) => s.transaction);
+  const currentUser = useSelector((s) => s.auth.currentUser);
 
   const [method, setMethod] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -23,7 +36,16 @@ const FundRequestPage = () => {
 
   const resetForm = () => setMethod(null);
 
-  // fetch fund requests
+  const isAdmin =
+    currentUser?.role?.name === "ADMIN" ||
+    currentUser?.role?.type === "employee";
+
+  /*
+  --------------------------------
+  FETCH FUND REQUESTS
+  --------------------------------
+  */
+
   const fetchRequests = () => {
     dispatch(
       getTransactions({
@@ -36,13 +58,6 @@ const FundRequestPage = () => {
     fetchRequests();
   }, []);
 
-  const currentUser = useSelector((s) => s.auth.currentUser);
-
-  const isAdmin =
-    currentUser?.role?.name === "ADMIN" ||
-    currentUser?.role?.type === "employee";
-
-  // stats
   const stats = useMemo(() => {
     const pending = transactions.filter((t) => t.status === "PENDING").length;
     const success = transactions.filter((t) => t.status === "SUCCESS").length;
@@ -54,7 +69,6 @@ const FundRequestPage = () => {
     };
   }, [transactions]);
 
-  // bank transfer submit
   const handleBankSubmit = async (data) => {
     try {
       setProcessing(true);
@@ -77,29 +91,37 @@ const FundRequestPage = () => {
     }
   };
 
+  const handleConfirmSubmit = async (reason) => {
+    try {
+      const { action, request } = confirmAction;
+
+      await dispatch(verifyFundRequest(request.id, action, reason));
+
+      fetchRequests();
+      setConfirmAction(null);
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
   const handleRazorpaySubmit = async (data) => {
     console.log("RAZORPAY", data);
   };
 
   const handleAction = (type, request) => {
-    console.log("Action:", type);
-    console.log("Request:", request);
+    if (type === "approve") {
+      setConfirmAction({
+        action: "APPROVE",
+        request,
+      });
+    }
 
-    switch (type) {
-      case "view":
-        console.log("View fund request", request.txnId);
-        break;
-
-      case "approve":
-        console.log("Approve fund request", request.txnId);
-        break;
-
-      case "reject":
-        console.log("Reject fund request", request.txnId);
-        break;
-
-      default:
-        console.log("Unknown action");
+    if (type === "reject") {
+      setConfirmAction({
+        action: "REJECT",
+        request,
+      });
     }
   };
 
@@ -115,7 +137,6 @@ const FundRequestPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader
         breadcrumb={["Dashboard", "Fund Requests"]}
         title="Fund Request"
@@ -151,7 +172,7 @@ const FundRequestPage = () => {
           <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search Txn ID "
+            placeholder="Search Txn ID"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg"
@@ -206,6 +227,16 @@ const FundRequestPage = () => {
           onSubmit={handleBankSubmit}
           resetForm={resetForm}
           isProcessing={processing}
+        />
+      )}
+
+      {confirmAction && (
+        <ConfirmCard
+          actionType={confirmAction.action}
+          user={confirmAction.request}
+          predefinedReasons={rejectReasons}
+          isClose={() => setConfirmAction(null)}
+          isSubmit={handleConfirmSubmit}
         />
       )}
     </div>

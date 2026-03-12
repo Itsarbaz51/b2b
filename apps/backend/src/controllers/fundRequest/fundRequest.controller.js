@@ -13,6 +13,18 @@ class FundRequestController {
 
     return res.json(ApiResponse.success(result, "Fund request created"));
   });
+
+  static verify = asyncHandler(async (req, res) => {
+    const payload = {
+      transactionId: req.params.transactionId,
+      action: req.body.action,
+      reason: req.body.reason,
+    };
+
+    const result = await FundRequestService.verify(payload, req.user);
+
+    return res.json(ApiResponse.success(result, `${payload?.action} success`));
+  });
 }
 
 export default FundRequestController;

@@ -124,11 +124,6 @@ const FundRequestTable = ({ requests = [], isAdmin, handleAction }) => {
                     <ActionMenu
                       items={[
                         {
-                          icon: Eye,
-                          label: "View Details",
-                          onClick: () => handleAction("view", request),
-                        },
-                        {
                           icon: CheckCircle,
                           label: "Approve",
                           onClick: () => handleAction("approve", request),

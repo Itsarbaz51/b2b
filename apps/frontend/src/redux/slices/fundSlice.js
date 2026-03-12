@@ -121,56 +121,29 @@ export const createFundRequest = (payload) => async (dispatch) => {
 
 /*
 --------------------------------
-APPROVE FUND REQUEST
+VERIFY FUND REQUEST
 --------------------------------
 */
 
-export const approveFundRequest = (id) => async (dispatch) => {
-  try {
-    dispatch(fundRequest());
+export const verifyFundRequest =
+  (id, action, reason = null) =>
+  async (dispatch) => {
+    try {
+      dispatch(fundRequest());
+      const { data } = await axios.patch(`/fund-req/verify/${id}`, {
+        action,
+        reason,
+      });
+      dispatch(fundSuccess(data));
+      toast.success(data.message);
+      return data;
+    } catch (error) {
+      const errMsg = error?.response?.data?.message || error?.message;
+      dispatch(fundFail(errMsg));
+      toast.error(errMsg);
 
-    const { data } = await axios.patch(`/fund-request/${id}/approve`);
-
-    dispatch(fundSuccess(data));
-
-    toast.success(data.message);
-
-    return data;
-  } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
-
-    dispatch(fundFail(errMsg));
-    toast.error(errMsg);
-
-    throw error;
-  }
-};
-
-/*
---------------------------------
-REJECT FUND REQUEST
---------------------------------
-*/
-
-export const rejectFundRequest = (id) => async (dispatch) => {
-  try {
-    dispatch(fundRequest());
-
-    const { data } = await axios.patch(`/fund-request/${id}/reject`);
-
-    dispatch(fundSuccess(data));
-
-    toast.success(data.message);
-
-    return data;
-  } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
-
-    dispatch(fundFail(errMsg));
-    toast.error(errMsg);
-
-    throw error;
-  }
-};
+      throw error;
+    }
+  };
 
 export default fundSlice.reducer;
