@@ -22,7 +22,7 @@ export default class BankFundRequestService {
         }
       }
 
-      if (serviceProviderMapping.mode !== "NONE") {
+      if (serviceProviderMapping.commissionStartLevel !== "NONE") {
         throw ApiError.badRequest(
           "This Bank Transfer service only supports NONE mode. Surcharge and hierarchy commission must be disabled."
         );

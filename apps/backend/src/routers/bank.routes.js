@@ -24,6 +24,12 @@ bankRoutes.get(
   AuthMiddleware.authorize(["business", "employee"]),
   AddBankController.getAllMyBanks
 );
+bankRoutes.get(
+  "/admin-primary-bank",
+  AuthMiddleware.isAuthenticated,
+  AuthMiddleware.authorize(["business", "employee"]),
+  AddBankController.getAdminBank
+);
 
 // Show specific bank (Business users only)
 bankRoutes.get(

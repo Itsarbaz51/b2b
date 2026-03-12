@@ -186,6 +186,38 @@ export class BankDetailService {
     return safely;
   }
 
+  static async getAdminPrimaryBank() {
+    const admin = await Prisma.user.findFirst({
+      where: {
+        role: {
+          name: "ADMIN",
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!admin) throw new Error("Admin not found");
+
+    const bank = await Prisma.bankDetail.findFirst({
+      where: {
+        userId: admin.id,
+        isPrimary: true,
+        status: "VERIFIED",
+      },
+      select: {
+        id: true,
+        bankName: true,
+        accountHolder: true,
+        accountNumber: true,
+        ifscCode: true,
+      },
+    });
+
+    return bank;
+  }
+
   static async show(id, userId, req = null, res) {
     const user = await Prisma.user.findFirst({
       where: {

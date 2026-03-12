@@ -102,7 +102,7 @@ export const updateBank = (payload) => async (dispatch) => {
     dispatch(bankRequest());
     const { data } = await axios.put(
       `/banks/bank-update/${payload.id}`,
-      payload.data
+      payload.data,
     );
     dispatch(bankActionSuccess(data));
     return data;
@@ -173,6 +173,18 @@ export const deleteBank = (bankId) => async (dispatch) => {
     dispatch(bankRequest());
     const { data } = await axios.delete(`/banks/bank-delete/${bankId}`);
     dispatch(bankActionSuccess(data));
+  } catch (error) {
+    const errMsg = error?.response?.data?.message || error?.message;
+    dispatch(bankFail(errMsg));
+  }
+};
+
+export const getAdminPrimaryBank = () => async (dispatch) => {
+  try {
+    dispatch(bankRequest());
+    const { data } = await axios.get(`/banks/admin-primary-bank`);
+    dispatch(bankDetailSuccess(data));
+    return data;
   } catch (error) {
     const errMsg = error?.response?.data?.message || error?.message;
     dispatch(bankFail(errMsg));

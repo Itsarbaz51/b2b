@@ -32,10 +32,10 @@ import AddUserProfileKYC from "../components/forms/AddUserProfileKYC.jsx";
 import EmployeeTable from "../components/tabels/EmployeeTable";
 import MembersTable from "../components/tabels/MembersTable";
 import WalletTable from "../components/tabels/Wallet";
-import FundRequestTable from "../components/tabels/FundRequestTable.jsx";
 import NoPermissionsPage from "../pages/NoPermissionsPage.jsx";
 import ProtectedRoute from "../layouts/ProtectedRoute.jsx";
 import CommissionManagement from "../pages/CommissionManagement.jsx";
+import FundRequestPage from "../pages/FundRequestPage.jsx";
 
 export const createRouter = () => {
   return createBrowserRouter(
@@ -67,7 +67,7 @@ export const createRouter = () => {
             element={<CommissionManagement />}
           />
           <Route path="reports" element={<Reports />} />
-          <Route path="request-fund" element={<FundRequestTable />} />
+          <Route path="request-fund" element={<FundRequestPage />} />
           <Route path="kyc-request" element={<RequestKYC />} />
           <Route path="members" element={<MembersTable />} />
           <Route path="settings" element={<Settings />} />

@@ -55,6 +55,20 @@ export class AddBankController {
       );
   });
 
+  static getAdminBank = asyncHandler(async (req, res) => {
+    const bank = await BankDetailService.getAdminPrimaryBank();
+
+    return res
+      .status(200)
+      .json(
+        ApiResponse.success(
+          bank,
+          "Admin primary bank fetched successfully",
+          200
+        )
+      );
+  });
+
   static show = asyncHandler(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) throw ApiError.internal("User ID not found in request");

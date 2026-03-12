@@ -86,44 +86,6 @@ export const {
 
 /*
 --------------------------------
-GET FUND REQUESTS
---------------------------------
-*/
-
-export const getFundRequests =
-  (filters = {}) =>
-  async (dispatch) => {
-    try {
-      dispatch(fundRequest());
-
-      const { data } = await axios.get(`/fund-requests`, {
-        params: filters,
-      });
-
-      dispatch(
-        setFundRequests({
-          fundRequests: data.data?.fundRequests || data.data || [],
-          page: data.data?.pagination?.page || 1,
-          limit: data.data?.pagination?.limit || 10,
-          total: data.data?.pagination?.total || 0,
-          totalPages: data.data?.pagination?.totalPages || 0,
-        }),
-      );
-
-      dispatch(fundSuccess(data));
-
-      return data;
-    } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
-
-      dispatch(fundFail(errMsg));
-
-      throw error;
-    }
-  };
-
-/*
---------------------------------
 CREATE FUND REQUEST
 --------------------------------
 */
@@ -138,7 +100,7 @@ export const createFundRequest = (payload) => async (dispatch) => {
       formData.append(key, payload[key]);
     });
 
-    const { data } = await axios.post(`/fund-request`, formData);
+    const { data } = await axios.post(`/fund-req/create`, formData);
 
     dispatch(fundSuccess(data));
 

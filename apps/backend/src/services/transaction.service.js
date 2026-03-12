@@ -146,6 +146,7 @@ export default class TransactionService {
       status: true,
       initiatedAt: true,
       completedAt: true,
+      providerReference: true,
 
       user: {
         select: {

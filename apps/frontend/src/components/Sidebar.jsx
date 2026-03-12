@@ -84,6 +84,7 @@ const Sidebar = () => {
           businessUserPermission: SERVICES.FUND_REQUEST,
           employeePermission: PERMISSIONS.FUND_REQUEST,
           staticRoles: [
+            "ADMIN",
             "STATE HEAD",
             "MASTER DISTRIBUTOR",
             "DISTRIBUTOR",

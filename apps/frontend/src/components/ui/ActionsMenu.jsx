@@ -12,6 +12,7 @@ import {
 
 const ActionsMenu = ({
   user,
+  variant = "user",
   onView,
   onEditProfile,
   onEdit,
