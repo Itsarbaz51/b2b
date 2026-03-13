@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 
 import PageHeader from "../components/ui/PageHeader";
 import EmptyState from "../components/ui/EmptyState";
-import { RoleList } from "../pages/RoleList";
+import { RoleList } from "../components/tabels/RoleList";
 import { RoleFormModal } from "./forms/RoleForm";
 import AddEmployeePermissions from "./forms/AddEmployeePermissions";
 
@@ -23,7 +23,7 @@ import {
 } from "../redux/slices/permissionSlice";
 
 import { getAllServices } from "../redux/slices/serviceSlice";
-import AddPermission from "./forms/AddPermission";
+import AddUserPermission from "./forms/AddUserPermission";
 
 export default function RoleManager() {
   const dispatch = useDispatch();
@@ -38,6 +38,7 @@ export default function RoleManager() {
   } = rolesState;
 
   const services = useSelector((state) => state.service?.services) || [];
+
   const { currentPermission } = useSelector((state) => state.permission);
 
   const [editRole, setEditRole] = useState(null);
@@ -93,17 +94,11 @@ export default function RoleManager() {
   }, [error, dispatch]);
 
   /* -------------------- PERMISSION LOGIC -------------------- */
-
   useEffect(() => {
-    if (
-      currentPermission &&
-      permissionRole &&
-      (currentPermission.roleId === permissionRole.id ||
-        currentPermission.userId === permissionRole.id)
-    ) {
+    if (currentPermission && permissionRole) {
       setExistingPermissions(currentPermission);
     } else {
-      setExistingPermissions(null);
+      setExistingPermissions([]);
     }
   }, [currentPermission, permissionRole]);
 
@@ -296,17 +291,20 @@ export default function RoleManager() {
         editData={editRole}
         isLoading={isLoading}
       />
-      <AddPermission
-        mode="role"
-        onSubmit={handlePermissionSubmit}
-        onCancel={() => setShowPermissionModal(false)}
-        selectedUser={permissionRole}
-        services={services}
-        existingPermissions={existingPermissions}
-      />
-      {/* PERMISSION MODAL */}
 
-      {showPermissionModal && permissionRole && (
+      {/* PERMISSION MODAL */}
+      {showPermissionModal && permissionRole && activeTab === "business" && (
+        <AddUserPermission
+          mode="role"
+          onSubmit={handlePermissionSubmit}
+          onCancel={() => setShowPermissionModal(false)}
+          selectedUser={permissionRole}
+          services={services}
+          existingPermissions={existingPermissions}
+        />
+      )}
+
+      {showPermissionModal && permissionRole && activeTab === "employee" && (
         <AddEmployeePermissions
           mode="role"
           selectedUser={permissionRole}

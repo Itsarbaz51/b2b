@@ -84,6 +84,21 @@ class RoleServices {
               rolePermissions: true,
             },
           },
+          rolePermissions: {
+            select: {
+              id: true,
+              canView: true,
+              canProcess: true,
+              service: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  isActive: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -108,6 +123,7 @@ class RoleServices {
         updatedAt: role.updatedAt,
         userCount: role._count.users,
         permissionCount: role._count.rolePermissions,
+        permission: role.rolePermissions,
       }));
 
       return {

@@ -3,12 +3,15 @@ import { z } from "zod";
 class PermissionValidationSchemas {
   static get createOrUpdateRolePermission() {
     return z.object({
-      roleId: z.string().uuid("Invalid role ID"),
-      serviceIds: z.array(z.string().uuid("Invalid service ID")),
-      canView: z.boolean().default(false),
-      canEdit: z.boolean().default(false),
-      canSetCommission: z.boolean().default(false),
-      canProcess: z.boolean().default(false),
+      roleId: z.string().uuid("Invalid user ID"),
+
+      permissions: z.array(
+        z.object({
+          serviceId: z.string().uuid("Invalid service ID"),
+          canView: z.boolean().default(false),
+          canProcess: z.boolean().default(false),
+        })
+      ),
     });
   }
 

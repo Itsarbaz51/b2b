@@ -36,7 +36,7 @@ import ActionsMenu from "../ui/ActionsMenu";
 import UserProfileView from "../../pages/view/UserProfileView";
 import EditCredentialsModal from "../forms/EditCredentialsModal";
 import EditProfileImageModal from "../forms/EditProfileImageModal";
-import AddPermission from "../forms/AddPermission";
+import AddUserPermission from "../forms/AddUserPermission";
 import {
   getPermissionById,
   upsertPermission,
@@ -904,7 +904,7 @@ const UsersTable = () => {
       {/* Permission Modal */}
 
       {showPermissionModal && permissionUser && (
-        <AddPermission
+        <AddUserPermission
           mode={permissionMode}
           onSubmit={handlePermissionSubmit}
           onCancel={handleClosePermissionModal}

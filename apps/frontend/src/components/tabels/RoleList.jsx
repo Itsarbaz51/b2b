@@ -1,5 +1,5 @@
 import { Trash2, Edit2, Users, Shield, TrendingUp } from "lucide-react";
-import EmptyState from "../components/ui/EmptyState";
+import EmptyState from "../ui/EmptyState";
 
 export function RoleList({
   roles,
@@ -30,6 +30,9 @@ export function RoleList({
 
             <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase">
               Description
+            </th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase">
+              Permissions
             </th>
 
             <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase">
@@ -89,6 +92,35 @@ export function RoleList({
               <td className="px-6 py-4">
                 <div className="text-sm text-gray-600 max-w-md">
                   {role.description}
+                </div>
+              </td>
+
+              <td className="px-6 py-4">
+                <div className="flex flex-wrap gap-2">
+                  {role?.permission?.length ? (
+                    <>
+                      {role.permission.slice(0, 3).map((perm) => (
+                        <span
+                          key={perm.id}
+                          className="px-2 py-1 text-xs rounded bg-blue-50 text-blue-700 border border-blue-200"
+                        >
+                          {perm.service?.name}
+                          {perm.canView && " 👁"}
+                          {perm.canProcess && " ⚙"}
+                        </span>
+                      ))}
+
+                      {role.permission.length > 3 && (
+                        <span className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600 border border-gray-200">
+                          +{role.permission.length - 3} more
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-400">
+                      No Permissions
+                    </span>
+                  )}
                 </div>
               </td>
 

@@ -3,7 +3,7 @@ import { InputField } from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
 import CloseBtn from "../ui/CloseBtn";
 
-const AddPermission = ({
+const AddUserPermission = ({
   mode, // "user" | "role"
   onSubmit,
   onCancel,
@@ -209,11 +209,14 @@ const AddPermission = ({
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">
-              {currentMode === "add"
-                ? "Add User Permission"
-                : "Edit User Permission"}
+              {mode === "role"
+                ? currentMode === "add"
+                  ? "Add Role Permission"
+                  : "Edit Role Permission"
+                : currentMode === "add"
+                  ? "Add User Permission"
+                  : "Edit User Permission"}
             </h3>
-
             <CloseBtn isClose={onCancel} />
           </div>
 
@@ -224,10 +227,16 @@ const AddPermission = ({
 
             <div className="p-3 bg-gray-50 border border-gray-300 rounded">
               <div className="font-medium">
-                {selectedUser?.firstName} {selectedUser?.lastName}
+                {selectedUser?.firstName || selectedUser?.name}{" "}
+                {selectedUser?.lastName || ""}
               </div>
 
-              <div className="text-xs text-gray-500">{selectedUser?.email}</div>
+              <div className="text-xs text-gray-500">
+                {selectedUser?.email ||
+                  selectedUser?.description ||
+                  selectedUser?.type ||
+                  ""}
+              </div>
             </div>
 
             {/* SERVICE SEARCH */}
@@ -329,4 +338,4 @@ const AddPermission = ({
   );
 };
 
-export default AddPermission;
+export default AddUserPermission;
