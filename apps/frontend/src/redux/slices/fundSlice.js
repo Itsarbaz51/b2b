@@ -126,19 +126,23 @@ VERIFY FUND REQUEST
 */
 
 export const verifyFundRequest =
-  (id, action, reason = null) =>
+  (id, action, payload = {}) =>
   async (dispatch) => {
     try {
       dispatch(fundRequest());
+
       const { data } = await axios.patch(`/fund-req/verify/${id}`, {
         action,
-        reason,
+        ...payload,
       });
+
       dispatch(fundSuccess(data));
       toast.success(data.message);
+
       return data;
     } catch (error) {
       const errMsg = error?.response?.data?.message || error?.message;
+
       dispatch(fundFail(errMsg));
       toast.error(errMsg);
 

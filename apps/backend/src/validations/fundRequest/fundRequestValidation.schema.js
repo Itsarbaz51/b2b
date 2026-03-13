@@ -38,16 +38,52 @@ const CreateFundRequest = z
 
 const FundRequestValidationSchemas = z
   .object({
-    action: z.enum(["APPROVE", "REJECT"]),
+    action: z.enum(["APPROVE", "REJECT", "VERIFY"]),
     reason: z.string().trim().optional(),
+
+    razorpay_payment_id: z.string().optional(),
+    razorpay_order_id: z.string().optional(),
+    razorpay_signature: z.string().optional(),
   })
+
   .superRefine((data, ctx) => {
-    if (data.action === "REJECT" && !data.reason) {
+    // BANK TRANSFER → REJECT reason required
+    if (
+      data.action === "REJECT" &&
+      (!data.reason || data.reason.trim() === "")
+    ) {
       ctx.addIssue({
         path: ["reason"],
         code: z.ZodIssueCode.custom,
         message: "Reason is required when rejecting",
       });
+    }
+
+    // RAZORPAY → VERIFY fields required
+    if (data.action === "VERIFY") {
+      if (!data.razorpay_payment_id) {
+        ctx.addIssue({
+          path: ["razorpay_payment_id"],
+          code: z.ZodIssueCode.custom,
+          message: "razorpay_payment_id required",
+        });
+      }
+
+      if (!data.razorpay_order_id) {
+        ctx.addIssue({
+          path: ["razorpay_order_id"],
+          code: z.ZodIssueCode.custom,
+          message: "razorpay_order_id required",
+        });
+      }
+
+      if (!data.razorpay_signature) {
+        ctx.addIssue({
+          path: ["razorpay_signature"],
+          code: z.ZodIssueCode.custom,
+          message: "razorpay_signature required",
+        });
+      }
     }
   });
 

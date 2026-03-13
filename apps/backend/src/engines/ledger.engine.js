@@ -39,12 +39,12 @@ export default class LedgerEngine {
 
     // Calculate running balance
     const balanceAfter =
-      entryType === "CREDIT" ? wallet.balance + amt : wallet.balance;
+      entryType === "CREDIT" ? wallet.balance + amt : wallet.balance - amt;
 
-    // 🚨 Optional Safety Check
-    if (entryType === "DEBIT" && wallet.balance < amt) {
-      throw ApiError.badRequest("Insufficient wallet balance");
-    }
+    // // 🚨 Optional Safety Check
+    // if (entryType === "DEBIT" && wallet.balance < amt) {
+    //   throw ApiError.badRequest("Insufficient wallet balance");
+    // }
 
     return await tx.ledgerEntry.create({
       data: {

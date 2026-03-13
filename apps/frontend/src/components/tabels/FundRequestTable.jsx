@@ -1,16 +1,6 @@
-import { CreditCard } from "lucide-react";
-import ActionButtons from "../ui/ActionsMenu";
+import { CreditCard, Eye, CheckCircle, XCircle } from "lucide-react";
 import { paisaToRupee } from "../../utils/lib";
 import ActionMenu from "../ui/ActionMenu";
-import { Eye, CheckCircle, XCircle } from "lucide-react";
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
 
 const getStatusStyle = (status) => {
   switch (status) {
@@ -81,65 +71,73 @@ const FundRequestTable = ({ requests = [], isAdmin, handleAction }) => {
           </thead>
 
           <tbody className="bg-white divide-y divide-gray-200">
-            {requests.map((request) => (
-              <tr key={request.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                  {request.txnId}
-                </td>
+            {requests.map((request) => {
+              const isRazorpay =
+                request?.serviceProviderMapping?.provider?.code === "RAZORPAY";
 
-                <td className="px-6 py-4 text-sm text-gray-700">
-                  {request?.serviceProviderMapping?.service?.code?.replace(
-                    "_",
-                    " ",
-                  )}
-                </td>
-
-                <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                  ₹{paisaToRupee(request.amount)}
-                </td>
-
-                <td className="px-6 py-4 text-sm text-gray-700 font-mono">
-                  {request.providerReference || "-"}
-                </td>
-
-                <td className="px-6 py-4 text-sm text-gray-700">
-                  {formatDate(request.initiatedAt)}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-700">
-                  {request.completedAt ? formatDate(request.completedAt) : "-"}
-                </td>
-
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusStyle(
-                      request.status,
-                    )}`}
-                  >
-                    {request.status}
-                  </span>
-                </td>
-
-                {isAdmin && (
-                  <td className="px-6 py-4 relative">
-                    <ActionMenu
-                      items={[
-                        {
-                          icon: CheckCircle,
-                          label: "Approve",
-                          onClick: () => handleAction("approve", request),
-                        },
-                        {
-                          icon: XCircle,
-                          label: "Reject",
-                          onClick: () => handleAction("reject", request),
-                          danger: true,
-                        },
-                      ]}
-                    />
+              return (
+                <tr key={request.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    {request.txnId}
                   </td>
-                )}
-              </tr>
-            ))}
+
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {request?.serviceProviderMapping?.service?.code?.replace(
+                      "_",
+                      " ",
+                    )}
+                  </td>
+
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                    ₹{paisaToRupee(request.amount)}
+                  </td>
+
+                  <td className="px-6 py-4 text-sm text-gray-700 font-mono">
+                    {request.providerReference || "-"}
+                  </td>
+
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {new Date(request.initiatedAt).toLocaleString()}
+                  </td>
+
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {request.completedAt
+                      ? new Date(request.completedAt).toLocaleString()
+                      : "-"}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusStyle(
+                        request.status,
+                      )}`}
+                    >
+                      {request.status}
+                    </span>
+                  </td>
+
+                  {isAdmin && !isRazorpay && (
+                    <td className="px-6 py-4 relative">
+                      <ActionMenu
+                        items={[
+                          {
+                            icon: CheckCircle,
+                            label: "Approve",
+                            onClick: () => handleAction("approve", request),
+                          },
+                          {
+                            icon: XCircle,
+                            label: "Reject",
+                            onClick: () => handleAction("reject", request),
+                            danger: true,
+                          },
+                        ]}
+                      />
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -13,7 +13,7 @@ fundRequestRoutes.post(
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorizeRoleTypes(["business"]),
   upload.fields([{ name: "paymentImage", maxCount: 1 }]),
-  validateRequest(FundRequestValidationSchemas.CreateFundRequest),
+  validateRequest({ body: FundRequestValidationSchemas.CreateFundRequest }),
   FundRequestController.create
 );
 
@@ -21,7 +21,7 @@ fundRequestRoutes.post(
 fundRequestRoutes.patch(
   "/verify/:transactionId",
   AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorizeRoleTypes(["ADMIN", "employee"]),
+  AuthMiddleware.authorizeRoleTypes(["ADMIN", "employee", "business"]),
   validateRequest({ body: FundRequestValidationSchemas.VerifyFundRequest }),
   FundRequestController.verify
 );

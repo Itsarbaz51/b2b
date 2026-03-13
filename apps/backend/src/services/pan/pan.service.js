@@ -23,6 +23,10 @@ export default class PanService {
     const { provider, serviceProviderMapping } =
       await ProviderResolver.resolveProvider(serviceId);
 
+    if (serviceProviderMapping.commissionStartLevel === "NONE") {
+      throw ApiError.badRequest("Surcharge disabled for this service (NONE)");
+    }
+
     if (serviceProviderMapping.mode !== "SURCHARGE") {
       throw ApiError.badRequest(
         "This PAN service is currently configured as SURCHARGE mode and cannot be used for this operation. Please contact your administrator."
@@ -33,7 +37,7 @@ export default class PanService {
       serviceProviderMapping.id
     );
 
-    const plugin = getPanPlugin(provider.code, serviceProviderMapping.config);
+    // const plugin = getPanPlugin(provider.code, serviceProviderMapping.config);
 
     return Prisma.$transaction(async (tx) => {
       const wallet = await WalletEngine.getWallet({

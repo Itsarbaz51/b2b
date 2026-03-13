@@ -11,10 +11,7 @@ export const usePermissions = () => {
   const normalizedPermissions =
     roleType === "employee"
       ? user?.userPermissions || []
-      : user?.userPermissions?.map((p) => ({
-          code: p.service?.code,
-          id: p.service?.id,
-        })) || [];
+      : user?.userPermissions || [];
 
   const canAccessRoute = (path) => {
     if (!path) return false;

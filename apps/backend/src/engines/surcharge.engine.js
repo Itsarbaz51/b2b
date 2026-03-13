@@ -39,7 +39,7 @@ export default class SurchargeEngine {
     const txnAmount = BigInt(amount);
 
     if (rule.type === "PERCENTAGE") {
-      return (txnAmount * value) / 100n;
+      return (txnAmount * value) / 10000n;
     }
 
     return value;

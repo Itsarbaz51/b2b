@@ -95,6 +95,10 @@ export default class BankFundRequestService {
   }
 
   static async verifyRequest(payload, actor) {
+    if (actor.role?.name !== "ADMIN" && actor.role?.type !== "employee") {
+      throw ApiError.badRequest("Only admin/employee can verify");
+    }
+
     const { transactionId, action, reason } = payload;
 
     if (!["APPROVE", "REJECT"].includes(action)) {

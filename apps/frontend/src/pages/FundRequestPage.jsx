@@ -1,8 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { CreditCard, Landmark, Search, RefreshCw, Clock } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-
-import RazorpayFundForm from "../components/forms/RazorpayFundForm";
 import AddBankTransferFundForm from "../components/forms/AddBankTransferFundForm";
 import FundRequestTable from "../components/tabels/FundRequestTable";
 
@@ -23,6 +21,7 @@ import { rupeesToPaise } from "../utils/lib";
 import PageHeader from "../components/ui/PageHeader";
 import StateCard from "../components/ui/StateCard";
 import ConfirmCard from "../components/ui/ConfirmCard";
+import AddRazorpayFundForm from "../components/forms/AddRazorpayFundForm";
 
 const FundRequestPage = () => {
   const dispatch = useDispatch();
@@ -215,11 +214,7 @@ const FundRequestPage = () => {
 
       {/* Forms */}
       {method === "razorpay" && (
-        <RazorpayFundForm
-          onSubmit={handleRazorpaySubmit}
-          resetForm={resetForm}
-          isProcessing={processing}
-        />
+        <AddRazorpayFundForm resetForm={resetForm} onSuccess={fetchRequests} />
       )}
 
       {method === "bank" && (

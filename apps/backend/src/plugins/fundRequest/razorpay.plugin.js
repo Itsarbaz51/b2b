@@ -15,7 +15,7 @@ class RazorpayFundRequestPlugin extends FundRequestInterface {
 
   async createRequest({ amount, userId }) {
     const order = await this.client.orders.create({
-      amount: amount * 100,
+      amount: amount,
       currency: "INR",
       receipt: `fund_${Date.now()}`,
       notes: { userId },
@@ -40,10 +40,14 @@ class RazorpayFundRequestPlugin extends FundRequestInterface {
       throw ApiError.badRequest("Invalid signature");
     }
 
+    // Razorpay se payment status fetch
+    const payment = await this.client.payments.fetch(paymentId);
+
     return {
-      status: "VERIFIED",
+      status: payment.status, // captured / authorized / failed
       orderId,
       paymentId,
+      raw: payment,
     };
   }
 }

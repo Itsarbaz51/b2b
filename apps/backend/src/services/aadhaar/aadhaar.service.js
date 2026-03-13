@@ -26,7 +26,9 @@ export default class AadhaarService {
     const { provider, serviceProviderMapping } =
       await ProviderResolver.resolveProvider(serviceId);
 
-    console.log(serviceProviderMapping.mode);
+    if (serviceProviderMapping.commissionStartLevel === "NONE") {
+      throw ApiError.badRequest("Surcharge disabled for this service (NONE)");
+    }
 
     if (serviceProviderMapping.mode !== "SURCHARGE") {
       throw ApiError.badRequest(

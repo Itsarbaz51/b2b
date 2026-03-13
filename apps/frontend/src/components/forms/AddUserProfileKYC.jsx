@@ -35,6 +35,8 @@ import CloseBtn from "../ui/CloseBtn";
 import AadhaarVerificationModal from "./AadhaarVerificationModal";
 import { KYCStatusCard } from "../KYCStatusCard";
 import PANVerificationModal from "./PANVerificationModal";
+import { checkPermission, getServiceId } from "../../utils/permissionChecker";
+import { SERVICES } from "../../utils/constants";
 
 // ---------- Main Form ----------
 export default function AddUserProfileKYC() {
@@ -88,21 +90,20 @@ export default function AddUserProfileKYC() {
   const isApiKyc = kycType === "API";
 
   const { currentUser } = useSelector((state) => state.auth);
-  let permissions;
 
-  const aadhaarServiceId = useMemo(() => {
-    const service = permissions.normalizedServices?.find(
-      (s) => s.code === "AADHAAR",
-    );
-    return service?.original?.service?.id || null;
-  }, [permissions.normalizedServices]);
+  // check permission
+  const canViewPan = checkPermission(currentUser, SERVICES.PAN, "view");
+  const canProcessPan = checkPermission(currentUser, SERVICES.PAN, "process");
 
-  const panServiceId = useMemo(() => {
-    const service = permissions.normalizedServices?.find(
-      (s) => s.code === "PAN",
-    );
-    return service?.original?.service?.id || null;
-  }, [permissions.normalizedServices]);
+  const canViewAadhaar = checkPermission(currentUser, SERVICES.AADHAAR, "view");
+  const canProcessAadhaar = checkPermission(
+    currentUser,
+    SERVICES.AADHAAR,
+    "process",
+  );
+
+  const panServiceId = getServiceId(currentUser, SERVICES.PAN);
+  const aadhaarServiceId = getServiceId(currentUser, SERVICES.AADHAAR);
 
   // Logout handler
   const handleLogout = () => {
@@ -787,11 +788,17 @@ export default function AddUserProfileKYC() {
                 />
 
                 <div className="flex justify-end mt-2">
-                  {permissions.hasPanVerification && (
+                  {canViewPan && (
                     <ButtonField
                       name="Verify PAN"
                       type="button"
                       isOpen={() => {
+                        if (!canProcessPan) {
+                          toast.error(
+                            "You don't have permission to process PAN verification",
+                          );
+                          return;
+                        }
                         const pan = formData.panNumber?.trim().toUpperCase();
                         if (!pan) {
                           toast.error("Please enter PAN number first");
@@ -824,11 +831,17 @@ export default function AddUserProfileKYC() {
                 />
 
                 <div className="flex justify-end mt-2">
-                  {permissions.hasAadhaarVerification && (
+                  {canViewAadhaar && (
                     <ButtonField
                       name="Verify Aadhaar"
                       type="button"
                       isOpen={() => {
+                        if (!canProcessAadhaar) {
+                          toast.error(
+                            "You don't have permission to process AADHAAR verification",
+                          );
+                          return;
+                        }
                         const aadhaar = formData.aadhaarNumber?.trim();
                         if (!aadhaar) {
                           toast.error("Please enter Aadhaar number first");

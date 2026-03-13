@@ -53,6 +53,9 @@ export default class FundRequestService {
       case "BANK_TRANSFER":
         return BankFundRequestService.verifyRequest(payload, actor);
 
+      case "RAZORPAY":
+        return RazorpayFundRequestService.verifyRequest(payload, actor);
+
       default:
         throw ApiError.badRequest("Unsupported provider");
     }
