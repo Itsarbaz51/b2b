@@ -111,41 +111,25 @@ export default function AddUserProfileKYC() {
   };
 
   useEffect(() => {
-    const fetchKYCData = async () => {
+    const fetchData = async () => {
       try {
         await dispatch(getAllEntities("state-list"));
         await dispatch(getAllEntities("city-list"));
 
-        if (currentUser?.kycInfo?.currentStatus !== "NOT_SUBMITTED") {
-          await dispatch(getbyId(currentUser?.kycInfo?.latestKyc?.id));
+        if (currentUser?.isKycVerified && currentUser?.kycId) {
+          await dispatch(getbyId(currentUser.kycId));
         }
       } catch (error) {
         console.error("Failed to fetch KYC data:", error);
       }
     };
 
-    if (!currentUser?.kycInfo?.currentStatus) {
+    if (!currentUser?.id) {
       dispatch(verifyAuth());
     } else {
-      fetchKYCData();
+      fetchData();
     }
-  }, [dispatch, currentUser, currentUser?.kycInfo?.currentStatus]);
-
-  useEffect(() => {
-    if (currentUser?.id) {
-      const fetchKYCIfNeeded = async () => {
-        if (currentUser?.kycInfo?.currentStatus !== "NOT_SUBMITTED") {
-          await dispatch(getbyId(currentUser?.kycInfo?.latestKyc?.id));
-        }
-      };
-      fetchKYCIfNeeded();
-    }
-  }, [
-    dispatch,
-    currentUser?.id,
-    currentUser?.kycInfo?.currentStatus,
-    currentUser?.kycInfo?.latestKyc?.id,
-  ]);
+  }, [dispatch, currentUser?.id, currentUser?.isKycVerified]);
 
   const stateList = useMemo(
     () => addressState?.stateList?.filter((i) => i.stateName) || [],

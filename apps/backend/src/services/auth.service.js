@@ -214,6 +214,11 @@ class AuthServices {
             },
           },
 
+          kycs: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+
           wallets: true,
 
           userPermissions: {
@@ -245,18 +250,16 @@ class AuthServices {
 
         const permissionMap = new Map();
 
-        // role permissions first
         for (const perm of rolePermissions) {
-          permissionMap.set(perm.service.code, {
+          permissionMap.set(perm.service.code.toUpperCase(), {
             service: perm.service,
             canView: perm.canView,
             canProcess: perm.canProcess,
           });
         }
 
-        // user permissions override role
         for (const perm of userPermissions) {
-          permissionMap.set(perm.service.code, {
+          permissionMap.set(perm.service.code.toUpperCase(), {
             service: perm.service,
             canView: perm.canView,
             canProcess: perm.canProcess,
@@ -265,6 +268,8 @@ class AuthServices {
 
         finalPermissions = Array.from(permissionMap.values());
       }
+
+      const latestKycId = user.kycs?.[0]?.id || null;
 
       const transformedUser = {
         id: user.id,
@@ -276,6 +281,7 @@ class AuthServices {
         profileImage: user.profileImage,
         status: user.status,
         isKycVerified: user.isKycVerified,
+        kycId: latestKycId,
         role: {
           id: user.role.id,
           name: user.role.name,
