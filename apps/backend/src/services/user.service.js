@@ -196,33 +196,28 @@ class UserServices {
         },
       });
 
-      // Create wallet for business user
-      await Prisma.wallet.create({
-        data: {
-          userId: user.id,
-          balance: BigInt(0),
-          currency: "INR",
-          walletType: "PRIMARY",
-          holdBalance: BigInt(0),
-          availableBalance: BigInt(0),
-          isActive: true,
-          version: 1,
-        },
+      await Prisma.wallet.createMany({
+        data: [
+          {
+            userId: user.id,
+            walletType: "PRIMARY",
+            currency: "INR",
+            balance: 0,
+            holdBalance: 0,
+            isActive: true,
+            version: 1,
+          },
+          {
+            userId: user.id,
+            walletType: "COMMISSION",
+            currency: "INR",
+            balance: 0,
+            holdBalance: 0,
+            isActive: true,
+            version: 1,
+          },
+        ],
       });
-      // Create wallet for commission user
-      await Prisma.wallet.create({
-        data: {
-          userId: user.id,
-          balance: 0,
-          currency: "INR",
-          walletType: "COMMISSION",
-          holdBalance: 0,
-          availableBalance: 0,
-          isActive: true,
-          version: 1,
-        },
-      });
-
       // Send business-specific credentials email
       await sendCredentialsEmail(
         user,
@@ -282,7 +277,8 @@ class UserServices {
       });
 
       throw ApiError.internal(
-        "Failed to register business user. Please try again."
+        "Failed to register business user. Please try again.",
+        err?.message
       );
     } finally {
       Helper.deleteOldImage(profileImage);

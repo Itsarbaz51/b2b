@@ -198,71 +198,24 @@ class AuthServices {
         where: { id: userId },
         include: {
           role: {
-            select: {
-              id: true,
-              name: true,
-              level: true,
-              description: true,
-              type: true,
-            },
-          },
-          wallets: true,
-          parent: {
-            select: {
-              id: true,
-              username: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phoneNumber: true,
-              profileImage: true,
-            },
-          },
-          children: {
-            select: {
-              id: true,
-              username: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phoneNumber: true,
-              profileImage: true,
-              status: true,
-              createdAt: true,
-            },
-          },
-          kycs: {
             include: {
-              address: {
+              rolePermissions: {
                 include: {
-                  state: {
+                  service: {
                     select: {
                       id: true,
-                      stateName: true,
-                      stateCode: true,
-                      createdAt: true,
-                      updatedAt: true,
-                    },
-                  },
-                  city: {
-                    select: {
-                      id: true,
-                      cityName: true,
-                      cityCode: true,
-                      createdAt: true,
-                      updatedAt: true,
+                      name: true,
+                      code: true,
+                      isActive: true,
                     },
                   },
                 },
               },
             },
-            orderBy: { createdAt: "desc" },
-            take: 1,
           },
-          bankAccounts: {
-            where: { status: "VERIFIED" },
-            orderBy: { isPrimary: "desc" },
-          },
+
+          wallets: true,
+
           userPermissions: {
             include: {
               service: {
@@ -275,142 +228,92 @@ class AuthServices {
               },
             },
           },
-          piiConsents: {
-            select: {
-              id: true,
-              piiType: true,
-              scope: true,
-              providedAt: true,
-              expiresAt: true,
-              userKycId: true,
-            },
-            where: { expiresAt: { gt: new Date() } },
-          },
         },
       });
 
-      if (!user) {
-        // Add audit log for user not found
-        await AuditLogService.createAuditLog({
-          userId: currentUser?.id || null,
-          action: "USER_RETRIEVAL_FAILED",
-          entityType: "USER",
-          entityId: userId,
-          metadata: {
-            reason: "USER_NOT_FOUND",
-            requestedBy: currentUser?.id || null,
-          },
-        });
-        throw ApiError.notFound("User not found");
-      }
+      if (!user) throw ApiError.notFound("User not found");
 
-      // Get permissions based on role
-      try {
-        if (user.role.type === "employee") {
-          // Employee-specific permissions
-          const permissions = await EmployeeServices.getEmployeePermissions(
-            user.id
-          );
-          user.userPermissions = permissions;
-        } else if (
-          [
-            "ADMIN",
-            "STATE HEAD",
-            "MASTER DISTRIBUTOR",
-            "DISTRIBUTOR",
-            "RETAILER",
-          ].includes(user.role.name)
-        ) {
-          const permissions = await UserPermissionService.getUserPermissions(
-            user.id
-          );
-          user.userPermissions = permissions;
-        } else {
-          user.userPermissions = [];
+      let finalPermissions = [];
+
+      if (user.role.type === "employee") {
+        finalPermissions = await EmployeeServices.getEmployeePermissions(
+          user.id
+        );
+      } else {
+        const rolePermissions = user.role.rolePermissions || [];
+        const userPermissions = user.userPermissions || [];
+
+        const permissionMap = new Map();
+
+        // role permissions first
+        for (const perm of rolePermissions) {
+          permissionMap.set(perm.service.code, {
+            service: perm.service,
+            canView: perm.canView,
+            canProcess: perm.canProcess,
+          });
         }
-      } catch (error) {
-        console.error(`Failed to get permissions for user ${user.id}:`, error);
-        user.userPermissions = [];
+
+        // user permissions override role
+        for (const perm of userPermissions) {
+          permissionMap.set(perm.service.code, {
+            service: perm.service,
+            canView: perm.canView,
+            canProcess: perm.canProcess,
+          });
+        }
+
+        finalPermissions = Array.from(permissionMap.values());
       }
 
-      // Transform user data
       const transformedUser = {
-        ...user,
-        kycInfo:
-          user.kycs.length > 0
-            ? {
-                currentStatus: user.kycs[0].status,
-                isKycSubmitted: true,
-                latestKyc: user.kycs[0],
-                kycHistory: user.kycs,
-                totalKycAttempts: user.kycs.length,
-              }
-            : {
-                currentStatus: "NOT_SUBMITTED",
-                isKycSubmitted: false,
-                latestKyc: null,
-                kycHistory: [],
-                totalKycAttempts: 0,
-              },
-        bankInfo: {
-          totalAccounts: user.bankAccounts.length,
-          primaryAccount:
-            user.bankAccounts.find((acc) => acc.isPrimary) || null,
-          verifiedAccounts: user.bankAccounts,
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        profileImage: user.profileImage,
+        status: user.status,
+        isKycVerified: user.isKycVerified,
+        role: {
+          id: user.role.id,
+          name: user.role.name,
+          type: user.role.type,
+          level: user.role.level,
         },
-        // Remove original arrays to avoid duplication
-        kycs: undefined,
-        bankAccounts: undefined,
+        wallets: user.wallets,
+        permissions: finalPermissions,
       };
 
-      // Serialize and secure sensitive data
       const serialized = Helper.serializeUser(transformedUser);
-      const isCurrentUserAdmin =
-        currentUser && currentUser.role?.name === "ADMIN";
 
-      let safeUser;
-      if (isCurrentUserAdmin) {
-        // Admin can see decrypted sensitive data
-        safeUser = { ...serialized };
+      const isAdmin = currentUser?.role?.name === "ADMIN";
 
-        if (safeUser.password) {
-          try {
-            safeUser.password = CryptoService.decrypt(safeUser.password);
-          } catch (error) {
-            console.error(
-              `Failed to decrypt password for user ${userId}:`,
-              error
-            );
-            safeUser.password = "Error decrypting";
+      let safeUser = { ...serialized };
+
+      if (isAdmin) {
+        try {
+          if (user.password) {
+            safeUser.password = CryptoService.decrypt(user.password);
           }
-        }
 
-        if (safeUser.transactionPin) {
-          try {
+          if (user.transactionPin) {
             safeUser.transactionPin = CryptoService.decrypt(
-              safeUser.transactionPin
+              user.transactionPin
             );
-          } catch (error) {
-            console.error(
-              `Failed to decrypt transaction pin for user ${userId}:`,
-              error
-            );
-            safeUser.transactionPin = "Error decrypting";
           }
+        } catch {
+          safeUser.password = "Error decrypting";
+          safeUser.transactionPin = "Error decrypting";
         }
-      } else {
-        // Non-admin users get sanitized data
-        const { password, transactionPin, refreshToken, ...safeData } =
-          serialized;
-        safeUser = safeData;
       }
 
       return safeUser;
     } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      console.error(`Error in getUserById for user ${userId}:`, error);
+      if (error instanceof ApiError) throw error;
+
+      console.error("User fetch error:", error);
       throw ApiError.internal("Failed to retrieve user data");
     }
   }
