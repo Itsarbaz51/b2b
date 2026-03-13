@@ -8,7 +8,7 @@ const EmptyState = ({ type = "empty", search = "" }) => {
 
   switch (type) {
     case "loading":
-      title = "Loading members...";
+      title = "Loading users...";
       message = "Please wait while we fetch the data.";
       Icon = Loader;
       break;
@@ -19,8 +19,8 @@ const EmptyState = ({ type = "empty", search = "" }) => {
       break;
     case "empty":
     default:
-      title = "No members found";
-      message = "Start by adding a new member.";
+      title = "No users found";
+      message = "Start by adding a new user.";
       Icon = Users;
       break;
   }

@@ -38,7 +38,7 @@ const AddEmployeePermissions = ({
     "commission",
     "reports",
     "kyc request",
-    "members",
+    "users",
     "General Settings",
     "Company Accounts",
     "Services",

@@ -43,11 +43,11 @@ const Sidebar = () => {
           staticRoles: BUSINESS_ROLE_LIST,
         },
         {
-          id: "members",
-          label: "Members",
+          id: "users",
+          label: "Users",
           icon: Users,
-          path: "/members",
-          employeePermission: PERMISSIONS.MEMBERS,
+          path: "/users",
+          employeePermission: PERMISSIONS.USERS,
           staticRoles: [
             "ADMIN",
             "STATE HEAD",

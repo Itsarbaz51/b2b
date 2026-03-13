@@ -335,7 +335,7 @@ function About() {
             <Users className="w-8 h-8 text-indigo-600" />
             <span className="text-xl">
               <span className="font-bold text-indigo-600">150+</span> Team
-              members working to serve you better.
+              users working to serve you better.
             </span>
           </div>
         </div>

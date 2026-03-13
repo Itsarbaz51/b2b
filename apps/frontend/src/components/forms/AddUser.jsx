@@ -1,15 +1,13 @@
-// AddMember.js
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllRolesByType } from "../../redux/slices/roleSlice";
 import { registerUser, updateUserProfile } from "../../redux/slices/userSlice";
-// ✅ FIXED: Import employee actions
 import {
   registerEmployee,
   updateEmployeeProfile,
 } from "../../redux/slices/employeeSlice";
 
-export default function AddMember({
+export default function AddUser({
   isAdmin = false,
   profileEdit = false,
   onClose,
@@ -41,21 +39,21 @@ export default function AddMember({
         title: profileEdit
           ? "Profile Update"
           : editData
-          ? "Edit Employee"
-          : "Add New Employee",
+            ? "Edit Employee"
+            : "Add New Employee",
         description: editData
           ? "Update existing employee details"
           : "Create a new employee account",
         button: profileEdit
           ? "Update Profile"
           : editData
-          ? "Update Employee"
-          : "Add Employee",
+            ? "Update Employee"
+            : "Add Employee",
         loading: profileEdit
           ? "Updating Profile..."
           : editData
-          ? "Updating..."
-          : "Creating...",
+            ? "Updating..."
+            : "Creating...",
         success: editData
           ? "Employee updated successfully!"
           : "Employee added successfully!",
@@ -65,24 +63,24 @@ export default function AddMember({
         title: profileEdit
           ? "Profile Update"
           : editData
-          ? "Edit Member"
-          : "Add New Member",
+            ? "Edit User"
+            : "Add New User",
         description: editData
           ? "Update existing user details"
           : "Create a new team user account",
         button: profileEdit
           ? "Update Profile"
           : editData
-          ? "Update Member"
-          : "Add Member",
+            ? "Update User"
+            : "Add User",
         loading: profileEdit
           ? "Updating Profile..."
           : editData
-          ? "Updating..."
-          : "Creating...",
+            ? "Updating..."
+            : "Creating...",
         success: editData
-          ? "Member updated successfully!"
-          : "Member added successfully!",
+          ? "User updated successfully!"
+          : "User added successfully!",
       };
     }
   };
@@ -119,7 +117,7 @@ export default function AddMember({
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    // Auto-generate username from email (only for new members)
+    // Auto-generate username from email (only for new User)
     if (name === "email" && !editData) {
       const usernameFromEmail = value.split("@")[0];
       setFormData((prev) => ({
@@ -214,7 +212,7 @@ export default function AddMember({
           res = await dispatch(updateUserProfile(editData.id, submitData));
         }
       } else {
-        // New member case
+        // New User case
         const form = new FormData();
         Object.keys(formData).forEach((key) => {
           if (

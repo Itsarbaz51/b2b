@@ -1,7 +1,7 @@
 export const PERMISSIONS = {
   // page
   DASHBOARD: "dashboard",
-  MEMBERS: "members",
+  USERS: "users",
   COMMISSION: "commission",
   TRANSACTIONS: "transactions",
   PAYOUT: "payout",

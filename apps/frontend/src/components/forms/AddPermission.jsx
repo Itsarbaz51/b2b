@@ -4,7 +4,7 @@ import ButtonField from "../ui/ButtonField";
 import CloseBtn from "../ui/CloseBtn";
 
 const AddPermission = ({
-  mode,
+  mode, // "user" | "role"
   onSubmit,
   onCancel,
   selectedUser,
@@ -13,7 +13,7 @@ const AddPermission = ({
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState({
-    userId: selectedUser?.id || "",
+    entityId: selectedUser?.id || "",
     permissions: {},
   });
 
@@ -49,12 +49,12 @@ const AddPermission = ({
       });
 
       setFormData({
-        userId: selectedUser.id,
+        entityId: selectedUser.id,
         permissions: permissionMap,
       });
     } else {
       setFormData({
-        userId: selectedUser.id,
+        entityId: selectedUser.id,
         permissions: {},
       });
     }
@@ -149,8 +149,8 @@ const AddPermission = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.userId) {
-      setError("User ID missing");
+    if (!formData.entityId) {
+      setError("Invalid ID");
       return;
     }
 
@@ -159,8 +159,8 @@ const AddPermission = ({
     try {
       const permissionData = {
         ...(mode === "role"
-          ? { roleId: formData.userId }
-          : { userId: formData.userId }),
+          ? { roleId: formData.entityId }
+          : { userId: formData.entityId }),
 
         permissions: Object.keys(formData.permissions).map((serviceId) => ({
           serviceId,
@@ -180,7 +180,6 @@ const AddPermission = ({
       setIsSubmitting(false);
     }
   };
-
   /* ------------------------------
      CLOSE SUGGESTION ON OUTSIDE
   ------------------------------ */

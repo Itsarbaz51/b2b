@@ -16,7 +16,7 @@ import {
 import { updateUserProfileImage } from "../redux/slices/userSlice";
 import { logout, passwordReset } from "../redux/slices/authSlice";
 import ForgotCredentialsModal from "../components/forms/ForgotCredentialsModal";
-import AddMember from "../components/forms/AddMember";
+import AddUser from "../components/forms/AddUser";
 import EditCredentialsModal from "../components/forms/EditCredentialsModal";
 
 const UserProfilePage = ({ onClose }) => {
@@ -503,7 +503,7 @@ const UserProfilePage = ({ onClose }) => {
       </div>
 
       {showProfileModal && (
-        <AddMember
+        <AddUser
           onClose={() => setShowProfileModal(false)}
           onSuccess={handleProfileUpdateSuccess}
           editData={userData}

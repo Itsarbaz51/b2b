@@ -6,7 +6,7 @@ export const protectedRoute = [
   "/commission-management",
   "/reports",
   "/kyc",
-  "/members",
+  "/users",
   "/settings",
   "/employee-management",
   "/wallet",
@@ -56,9 +56,9 @@ export const navbarTitleConfig = {
     tagLine: "All payment history",
     icon: FileText,
   },
-  "/members": {
-    title: "Members",
-    tagLine: "Manage all members",
+  "/users": {
+    title: "Users",
+    tagLine: "Manage all users",
     icon: User,
   },
   "/users": {

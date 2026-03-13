@@ -676,7 +676,7 @@ export default function UserProfileView({
             />
             <StatCard
               icon={Calendar}
-              title="Member Since"
+              title="User Since"
               value={
                 adaptedUser?.createdAt
                   ? new Date(adaptedUser?.createdAt).getFullYear()
@@ -960,7 +960,7 @@ export default function UserProfileView({
             <div className={detailCard}>
               <h3 className={sectionTitleClass}>
                 <Users className="text-cyan-500" size={24} /> Direct{" "}
-                {isEmployee ? "Team Members" : "Children"} (
+                {isEmployee ? "Team Users" : "Children"} (
                 {adaptedUser?.children.length})
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

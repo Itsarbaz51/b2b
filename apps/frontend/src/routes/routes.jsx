@@ -30,7 +30,7 @@ import VerifyResetPassword from "../pages/VerifyResetPassword.jsx";
 import AddUserProfileKYC from "../components/forms/AddUserProfileKYC.jsx";
 
 import EmployeeTable from "../components/tabels/EmployeeTable";
-import MembersTable from "../components/tabels/MembersTable";
+import UsersTable from "../components/tabels/UsersTable";
 import WalletTable from "../components/tabels/Wallet";
 import NoPermissionsPage from "../pages/NoPermissionsPage.jsx";
 import ProtectedRoute from "../layouts/ProtectedRoute.jsx";
@@ -69,7 +69,7 @@ export const createRouter = () => {
           <Route path="reports" element={<Reports />} />
           <Route path="request-fund" element={<FundRequestPage />} />
           <Route path="kyc-request" element={<RequestKYC />} />
-          <Route path="members" element={<MembersTable />} />
+          <Route path="users" element={<UsersTable />} />
           <Route path="settings" element={<Settings />} />
           <Route path="employee-management" element={<EmployeeTable />} />
           <Route path="wallet" element={<WalletTable />} />

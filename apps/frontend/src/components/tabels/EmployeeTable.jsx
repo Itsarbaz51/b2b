@@ -16,7 +16,7 @@ import {
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 
-import AddMember from "../forms/AddMember";
+import AddUser from "../forms/AddUser";
 import {
   getAllEmployeesByParentId,
   deactivateEmployee,
@@ -42,7 +42,7 @@ import AddEmployeePermissions from "../forms/AddEmployeePermissions";
 const EmployeeTable = () => {
   const dispatch = useDispatch();
   const { employees, isLoading, pagination, error, success } = useSelector(
-    (state) => state.employees
+    (state) => state.employees,
   );
   const currentUser = useSelector((state) => state.auth.currentUser);
 
@@ -84,7 +84,7 @@ const EmployeeTable = () => {
         employee.lastName?.toLowerCase().includes(searchLower) ||
         employee.email?.toLowerCase().includes(searchLower) ||
         employee.username?.toLowerCase().includes(searchLower) ||
-        employee.phoneNumber?.includes(search)
+        employee.phoneNumber?.includes(search),
     );
   }, [employees, search]);
 
@@ -111,7 +111,7 @@ const EmployeeTable = () => {
         page: currentPage,
         limit,
         search: search || undefined,
-      })
+      }),
     );
   }, [dispatch, currentPage, limit, search]);
 
@@ -212,7 +212,7 @@ const EmployeeTable = () => {
             reactivateEmployee({
               employeeId: selectedUser.id,
               reason,
-            })
+            }),
           );
           break;
         case "Deactivate":
@@ -220,7 +220,7 @@ const EmployeeTable = () => {
             deactivateEmployee({
               employeeId: selectedUser.id,
               reason,
-            })
+            }),
           );
           break;
         case "Delete":
@@ -228,7 +228,7 @@ const EmployeeTable = () => {
             deleteEmployee({
               employeeId: selectedUser.id,
               reason,
-            })
+            }),
           );
           break;
         default:
@@ -316,7 +316,7 @@ const EmployeeTable = () => {
   const getEmployeePermissions = (employee) => {
     if (!employee?.EmployeePermissionsOwned) return [];
     return employee.EmployeePermissionsOwned.filter(
-      (perm) => perm.isActive
+      (perm) => perm.isActive,
     ).map((perm) => perm.permission);
   };
 
@@ -327,7 +327,7 @@ const EmployeeTable = () => {
         <PageHeader
           breadcrumb={["Dashboard", "Employee Management"]}
           title="Employee Management"
-          description="Manage your team members and employee records"
+          description="Manage your team users and employee records"
         />
         <div className="flex gap-3 mt-4 sm:mt-0">
           <ButtonField
@@ -454,7 +454,7 @@ const EmployeeTable = () => {
                       <div className="flex items-center">
                         <div
                           className={`h-10 w-10 rounded-full ${getAvatarColor(
-                            employee.firstName
+                            employee.firstName,
                           )} flex items-center justify-center text-white font-medium text-sm cursor-pointer hover:scale-105 transition-transform`}
                           onClick={() =>
                             employee.profileImage &&
@@ -502,7 +502,7 @@ const EmployeeTable = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${getRoleColor(
-                          employee.role?.name
+                          employee.role?.name,
                         )}`}
                       >
                         {getRoleDisplayName(employee.role?.name)}
@@ -578,7 +578,7 @@ const EmployeeTable = () => {
                           className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                           onClick={() =>
                             setOpenMenuId(
-                              openMenuId === employee.id ? null : employee.id
+                              openMenuId === employee.id ? null : employee.id,
                             )
                           }
                         >
@@ -619,7 +619,7 @@ const EmployeeTable = () => {
                               setActionType(
                                 employee.status === "IN_ACTIVE"
                                   ? "Activate"
-                                  : "Deactivate"
+                                  : "Deactivate",
                               );
                               setSelectedUser(employee);
                               setShowActionModal(true);
@@ -724,7 +724,7 @@ const EmployeeTable = () => {
 
       {showForm && (
         <div className="fixed inset-0 flex justify-center items-center bg-black/50 z-50">
-          <AddMember
+          <AddUser
             onClose={handleFormClose}
             onSuccess={handleFormSuccess}
             editData={selectedUser}

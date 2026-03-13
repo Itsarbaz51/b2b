@@ -15,7 +15,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import AddMember from "../forms/AddMember";
+import AddUser from "../forms/AddUser";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getAllBusinessUsersByParentId,
@@ -44,7 +44,7 @@ import {
 import { getAllServices } from "../../redux/slices/serviceSlice";
 import { login } from "../../redux/slices/authSlice";
 
-const MembersTable = () => {
+const UsersTable = () => {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [showViewProfile, setShowViewProfile] = useState(false);
@@ -438,18 +438,18 @@ const MembersTable = () => {
   return (
     <div>
       <HeaderSection
-        title="Members Management"
-        tagLine="Manage your team members and their access levels"
+        title="Users Management"
+        tagLine="Manage your team users and their access levels"
         icon={Users}
-        totalCount={`${totalUsers || 0} Members`}
+        totalCount={`${totalUsers || 0} Users`}
       />
 
-      {/* Search + Add Member */}
+      {/* Search + Add user */}
       <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-300 mb-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-1">
-              Team Members
+              Team Users
             </h2>
             <p className="text-gray-600">Manage and monitor your team</p>
           </div>
@@ -459,7 +459,7 @@ const MembersTable = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search members..."
+                placeholder="Search users..."
                 className="pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 bg-gray-50 focus:bg-white"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -483,7 +483,7 @@ const MembersTable = () => {
             </button>
 
             <ButtonField
-              name="Add Member"
+              name="Add User"
               isOpen={() => {
                 setSelectedUser(null);
                 setShowForm(true);
@@ -504,7 +504,7 @@ const MembersTable = () => {
                 #
               </th>
               <th className="px-2 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
-                Member
+                User
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
                 Username
@@ -849,10 +849,10 @@ const MembersTable = () => {
         />
       )}
 
-      {/* Add/Edit Member Modal */}
+      {/* Add/Edit user Modal */}
       {showForm && (
         <div className="fixed inset-0 flex justify-center items-center bg-black/50 z-50">
-          <AddMember
+          <AddUser
             onClose={handleFormClose}
             onSuccess={handleFormSuccess}
             editData={selectedUser}
@@ -918,4 +918,4 @@ const MembersTable = () => {
   );
 };
 
-export default MembersTable;
+export default UsersTable;
