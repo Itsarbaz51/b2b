@@ -48,8 +48,8 @@ const AddBankTransferFundForm = ({ onSubmit, resetForm, isProcessing }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-xl rounded-xl shadow-xl">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 ">
+      <div className="bg-white w-full max-w-xl rounded-xl shadow-xl ">
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-gray-300">
           <div className="flex items-center gap-2">

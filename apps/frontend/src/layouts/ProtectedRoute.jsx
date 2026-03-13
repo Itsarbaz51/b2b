@@ -9,54 +9,66 @@ const ProtectedRoute = ({ children }) => {
   const permissions = usePermissions();
   const currentPath = location.pathname;
 
-  // Public routes
+  /* PUBLIC ROUTES */
   if (ROUTE_CONFIG.PUBLIC.includes(currentPath)) {
     return children;
   }
 
-  // Authentication check
+  /* AUTH CHECK */
   if (!isAuthenticated || !currentUser) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // User status checks
-  if (currentUser.status === "DELETE" || currentUser.status === "IN_ACTIVE") {
-    if (["/unauthorized", "/logout"].includes(currentPath)) {
-      return children;
-    }
-    return <Navigate to="/unauthorized" replace state={{ from: location }} />;
+  /* STATUS CHECK */
+  if (["DELETE", "IN_ACTIVE"].includes(currentUser.status)) {
+    if (["/unauthorized", "/logout"].includes(currentPath)) return children;
+    return <Navigate to="/unauthorized" replace />;
   }
 
-  // KYC verification - Business users ke liye
-  const isBusinessUser = [
-    "ADMIN",
-    "STATE HEAD",
-    "MASTER DISTRIBUTOR",
-    "DISTRIBUTOR",
-    "RETAILER",
-  ].includes(currentUser.role?.name || currentUser.role);
+  const isBusinessUser = currentUser?.role?.type === "business";
+
+  const primaryWallet = currentUser?.wallets?.find(
+    (w) => w.walletType === "PRIMARY"
+  );
+
+  const walletBalance = Number(primaryWallet?.balance || 0);
+
+  /* ---------------- WALLET CHECK ---------------- */
 
   if (
     isBusinessUser &&
-    !currentUser?.isKycVerified &&
-    currentPath !== "/kyc-submit"
+    walletBalance < 100 &&
+    !["/add-fund"].includes(currentPath)
   ) {
-    return <Navigate to="/kyc-submit" replace state={{ from: location }} />;
+    return <Navigate to="/add-fund" replace />;
+  }
+
+  /* ---------------- KYC CHECK ---------------- */
+
+  if (
+    isBusinessUser &&
+    walletBalance >= 100 &&
+    !currentUser?.isKycVerified &&
+    !["/kyc-submit"].includes(currentPath)
+  ) {
+    return <Navigate to="/kyc-submit" replace />;
   }
 
   if (currentPath === "/kyc-submit" && currentUser?.isKycVerified) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  /* ---------------- EMPLOYEE PERMISSIONS ---------------- */
+
   if (permissions.isEmployee) {
     if (!permissions.canAccessRoute(currentPath)) {
       if (permissions.normalizedPermissions.length === 0) {
         return <Navigate to="/permission-denied" replace />;
       }
-
       return <Navigate to="/dashboard" replace />;
     }
   }
+
   return children;
 };
 

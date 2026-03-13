@@ -36,6 +36,7 @@ import NoPermissionsPage from "../pages/NoPermissionsPage.jsx";
 import ProtectedRoute from "../layouts/ProtectedRoute.jsx";
 import CommissionManagement from "../pages/CommissionManagement.jsx";
 import FundRequestPage from "../pages/FundRequestPage.jsx";
+import FundAddPage from "../pages/FundAddPage.jsx";
 
 export const createRouter = () => {
   return createBrowserRouter(
@@ -86,6 +87,14 @@ export const createRouter = () => {
           element={
             <ProtectedRoute>
               <AddUserProfileKYC />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="add-fund"
+          element={
+            <ProtectedRoute>
+              <FundAddPage />
             </ProtectedRoute>
           }
         />
