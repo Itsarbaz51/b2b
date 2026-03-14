@@ -322,7 +322,7 @@ const CompanyAccounts = () => {
                         <tr className="hover:bg-gray-50/50 transition-colors">
                           <td className="px-6 py-5">
                             <div className="flex items-center">
-                              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                              <div className="h-12 w-12 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                                 {getInitials(account?.accountHolder || "NA")}
                               </div>
                               <div className="ml-4">

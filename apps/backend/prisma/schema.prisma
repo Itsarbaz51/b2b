@@ -7,6 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model LoginEvent {
+  id String @id @default(uuid())
+
+  userId   String  @map("user_id")
+  roleType String? @map("role_type")
+
+  message String?
+  level   String?
+
+  domainName String? @map("domain_name")
+  ipAddress  String? @map("ip_address")
+
+  latitude  Float?
+  longitude Float?
+  location  String?
+  accuracy  Int?
+
+  userAgent String? @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("login_events")
+}
+
+model AuditLog {
+  id         String  @id @default(uuid())
+  userId     String? @map("user_id")
+  action     String
+  entityType String? @map("entity_type")
+  entityId   String? @map("entity_id")
+  ipAddress  String? @map("ip_address")
+  metadata   Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("audit_logs")
+}
+
 model Role {
   id                 String              @id @default(uuid())
   name               String              @unique
@@ -86,6 +129,7 @@ model User {
   role                          Role                 @relation(fields: [roleId], references: [id])
   wallets                       Wallet[]
   limits                        UserLimit?
+  loginEvents                   LoginEvent[]
 
   @@index([parentId])
   @@index([hierarchyLevel])

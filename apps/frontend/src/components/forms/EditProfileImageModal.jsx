@@ -120,7 +120,7 @@ const EditProfileImageModal = ({
           {/* Image Preview and Upload */}
           <div className="flex flex-col items-center space-y-4 mb-6">
             <div className="relative">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 border-4 border-white shadow-lg">
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-linear-to-br from-gray-200 to-gray-300 border-4 border-white shadow-lg">
                 {imagePreview ? (
                   <img
                     src={imagePreview}

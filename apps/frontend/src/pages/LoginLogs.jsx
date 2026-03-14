@@ -484,7 +484,7 @@ const LoginLogs = () => {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
+                        <div className="h-11 w-11 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
                           {getInitials(log.user?.firstName, log.user?.lastName)}
                         </div>
                         <div>

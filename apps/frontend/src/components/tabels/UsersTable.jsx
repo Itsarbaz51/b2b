@@ -564,7 +564,7 @@ const UsersTable = () => {
                   <td className="px-1 py-5">
                     <div className="flex items-center space-x-3">
                       <div
-                        className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                        className="w-12 h-12 rounded-full overflow-hidden bg-linear-to-br from-gray-200 to-gray-300 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
                         onClick={() =>
                           user?.profileImage &&
                           setPreviewImage(user?.profileImage)

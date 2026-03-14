@@ -247,7 +247,7 @@ const Dashboard = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <button
               onClick={() => navigate("/users")}
-              className="group flex items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border border-teal-100"
+              className="group flex items-center justify-center p-6 bg-linear-to-br from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border border-teal-100"
             >
               <div className="flex items-center">
                 <div className="bg-teal-100 group-hover:bg-teal-200 p-3 rounded-full mr-4 transition-colors duration-300">
@@ -266,7 +266,7 @@ const Dashboard = ({
 
             <button
               onClick={() => navigate("/commission-management")}
-              className="group flex items-center justify-center p-6 bg-gradient-to-br from-violet-50 to-purple-50 hover:from-violet-100 hover:to-purple-100 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border border-violet-100"
+              className="group flex items-center justify-center p-6 bg-linear-to-br from-violet-50 to-purple-50 hover:from-violet-100 hover:to-purple-100 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border border-violet-100"
             >
               <div className="flex items-center">
                 <div className="bg-violet-100 group-hover:bg-violet-200 p-3 rounded-full mr-4 transition-colors duration-300">
@@ -285,7 +285,7 @@ const Dashboard = ({
 
             <button
               onClick={() => navigate("/reports")}
-              className="group flex items-center justify-center p-6 bg-gradient-to-br from-emerald-50 to-green-50 hover:from-emerald-100 hover:to-green-100 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border border-emerald-100"
+              className="group flex items-center justify-center p-6 bg-linear-to-br from-emerald-50 to-green-50 hover:from-emerald-100 hover:to-green-100 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border border-emerald-100"
             >
               <div className="flex items-center">
                 <div className="bg-emerald-100 group-hover:bg-emerald-200 p-3 rounded-full mr-4 transition-colors duration-300">

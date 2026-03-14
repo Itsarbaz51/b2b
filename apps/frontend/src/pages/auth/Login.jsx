@@ -186,7 +186,7 @@ const Login = () => {
   const isLoginDisabled = isLoading || location.loading || !!location.error;
 
   return (
-    <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+    <div className="flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
         {/* Header with Gradient */}
         <div className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-700 px-6 py-8">

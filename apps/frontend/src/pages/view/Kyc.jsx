@@ -166,7 +166,7 @@ function Kyc({ viewedKyc, onClose }) {
                     className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-3xl font-bold flex items-center justify-center shadow-lg">
+                  <div className="w-24 h-24 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-white text-3xl font-bold flex items-center justify-center shadow-lg">
                     {viewedKyc?.profile?.name?.[0]?.toUpperCase() || "U"}
                   </div>
                 )}

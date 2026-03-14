@@ -276,7 +276,7 @@ function TermsConditions() {
   return (
     <div className="min-h-screen bg-white" id="terms-conditions">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden">
+      <section className="relative bg-linear-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
@@ -438,7 +438,7 @@ function TermsConditions() {
                 </div>
 
                 {/* Contact Info */}
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-8">
+                <div className="bg-linear-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-8">
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">
                     Contact Information
                   </h3>

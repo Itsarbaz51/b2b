@@ -25,6 +25,7 @@ import { getAuditLogs } from "../redux/slices/logsSlice";
 import { getAllRoles } from "../redux/slices/roleSlice";
 import RefreshToast from "../components/ui/RefreshToast";
 import Pagination from "../components/ui/Pagination"; // Import Pagination component
+import ContributionGraph from "../components/ui/ContributionGraph";
 
 const AuditLogs = () => {
   const dispatch = useDispatch();
@@ -47,7 +48,7 @@ const AuditLogs = () => {
     deviceType: "all",
     roleId: "",
     sort: "desc",
-    sortBy: "timestamp",
+    sortBy: "createdAt",
   });
 
   // Get current user from auth state
@@ -56,7 +57,7 @@ const AuditLogs = () => {
 
   const isAdmin = useMemo(
     () => currentUser.role?.name === "ADMIN",
-    [currentUser]
+    [currentUser],
   );
 
   useEffect(() => {
@@ -123,13 +124,13 @@ const AuditLogs = () => {
 
     if (
       ["SUCCESS", "VERIFIED", "REGISTERED", "CREATE", "ACTIVATED"].some((key) =>
-        action.includes(key)
+        action.includes(key),
       )
     )
       return "text-green-600";
     if (
       ["FAILED", "REJECT", "ERROR", "LOGOUT", "DELETED", "DEACTIVATED"].some(
-        (keyword) => action.includes(keyword)
+        (keyword) => action.includes(keyword),
       )
     ) {
       return "text-red-600";
@@ -144,14 +145,14 @@ const AuditLogs = () => {
 
     if (
       ["SUCCESS", "VERIFIED", "REGISTERED", "CREATE", "ACTIVATED"].some((key) =>
-        action.includes(key)
+        action.includes(key),
       )
     )
       return "bg-green-50 border-green-200";
 
     if (
       ["FAILED", "ERROR", "LOGOUT", "REJECT", "DELETED", "DEACTIVATED"].some(
-        (keyword) => action.includes(keyword)
+        (keyword) => action.includes(keyword),
       )
     )
       return "bg-red-50 border-red-200";
@@ -209,7 +210,7 @@ const AuditLogs = () => {
       deviceType: "all",
       roleId: "",
       sort: "desc",
-      sortBy: "timestamp",
+      sortBy: "createdAt",
     });
     setSearchTerm("");
     setCurrentPage(1);
@@ -257,21 +258,21 @@ const AuditLogs = () => {
     const successEvents =
       logsList?.data?.paginatedLogs?.filter((log) =>
         ["SUCCESS", "CREATED", "VERIFIED", "REGISTERED", "ACTIVATED"].some(
-          (keyword) => log.message?.action?.includes(keyword)
-        )
+          (keyword) => log.message?.action?.includes(keyword),
+        ),
       )?.length || 0;
 
     const successRate =
       totalEvents > 0 ? (successEvents / totalEvents) * 100 : 0;
 
     const uniqueUsers = new Set(
-      logsList?.data?.paginatedLogs.map((log) => log.user?.id).filter(Boolean)
+      logsList?.data?.paginatedLogs.map((log) => log.user?.id).filter(Boolean),
     ).size;
 
     const uniqueIPs = new Set(
       logsList?.data?.paginatedLogs
         .map((log) => log.message?.ipAddress)
-        .filter(Boolean)
+        .filter(Boolean),
     ).size;
 
     return {
@@ -293,6 +294,7 @@ const AuditLogs = () => {
       searchTerm !== ""
     );
   }, [filters, searchTerm]);
+  console.log(logsList);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden p-6">
@@ -332,7 +334,7 @@ const AuditLogs = () => {
                   <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase">
                     Device Type
                   </div>
-                  {["all", "desktop", "mobile", "tablet"].map((device) => (
+                  {["all", "Desktop", "Mobile", "Tablet"].map((device) => (
                     <button
                       key={device}
                       onClick={() => handleDeviceFilterChange(device)}
@@ -456,7 +458,11 @@ const AuditLogs = () => {
           )}
         </div>
       </div>
-
+      {/* {logsList?.data?.contributionGraph && (
+        <div className="px-6 pt-6">
+          <ContributionGraph data={logsList.data.contributionGraph} />
+        </div>
+      )} */}
       {/* Stats Cards - These won't be affected by search */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 py-6">
         <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:scale-105 transition-transform duration-300 shadow-sm hover:shadow-lg">
@@ -471,7 +477,7 @@ const AuditLogs = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 hover:scale-105 transition-transform duration-300 shadow-sm hover:shadow-lg">
+        <div className="bg-linear-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 hover:scale-105 transition-transform duration-300 shadow-sm hover:shadow-lg">
           <div className="flex items-center gap-3">
             <Shield className="w-8 h-8 text-green-600" />
             <div>
@@ -483,7 +489,7 @@ const AuditLogs = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 hover:scale-105 transition-transform duration-300 shadow-sm hover:shadow-lg">
+        <div className="bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 hover:scale-105 transition-transform duration-300 shadow-sm hover:shadow-lg">
           <div className="flex items-center gap-3">
             <User className="w-8 h-8 text-blue-600" />
             <div>
@@ -495,7 +501,7 @@ const AuditLogs = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-2xl p-6 hover:scale-105 transition-transform duration-300 shadow-sm hover:shadow-lg">
+        <div className="bg-linear-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-2xl p-6 hover:scale-105 transition-transform duration-300 shadow-sm hover:shadow-lg">
           <div className="flex items-center gap-3">
             <Globe className="w-8 h-8 text-cyan-600" />
             <div>
@@ -556,7 +562,7 @@ const AuditLogs = () => {
                       <td className="px-6 py-4">{getShowingFrom() + index}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                          <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
                             {log.user?.firstName?.[0] || "U"}
                             {log.user?.lastName?.[0] || "S"}
                           </div>
@@ -576,7 +582,7 @@ const AuditLogs = () => {
                       <td className="px-6 py-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold border ${getActionBg(
-                            log.message?.action
+                            log.message?.action,
                           )} ${getActionColor(log.message?.action)}`}
                         >
                           {log.message?.action?.replace(/_/g, " ") || "N/A"}
@@ -740,7 +746,7 @@ const AuditLogs = () => {
                                 <code>
                                   {"{\n"}
                                   {Object.entries(
-                                    log.message?.metadata || {}
+                                    log.message?.metadata || {},
                                   ).map(([key, value], index, arr) => {
                                     const isObject =
                                       typeof value === "object" &&

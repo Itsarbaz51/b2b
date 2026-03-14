@@ -17,7 +17,7 @@ export default function UnauthorizedPage() {
   const renderContent = () => {
     if (userStatus === "IN_ACTIVE") {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-6">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-orange-50 to-red-50 p-6">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
             <div className="mb-6">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-100 mb-4">
@@ -80,7 +80,7 @@ export default function UnauthorizedPage() {
 
     if (userStatus === "DELETE") {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-red-50 to-gray-100 p-6">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-red-50 to-gray-100 p-6">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
             <div className="mb-6">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 mb-4">

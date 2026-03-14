@@ -11,7 +11,7 @@ const MainLayout = () => {
       <Sidebar />
       <div className="ml-64 flex flex-col h-screen">
         <Navbar />
-        <div className="flex-1 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 p-6 overflow-auto">
+        <div className="flex-1 bg-linear-to-br from-gray-50 via-blue-50 to-indigo-100 p-6 overflow-auto">
           <Outlet />
           <Footer />
         </div>
