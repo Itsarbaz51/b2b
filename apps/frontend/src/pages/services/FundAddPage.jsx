@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { CreditCard, Landmark, Wallet, ArrowLeft } from "lucide-react";
 
-import AddRazorpayFundForm from "../components/forms/AddRazorpayFundForm";
-import AddBankTransferFundForm from "../components/forms/AddBankTransferFundForm";
+import AddRazorpayFundForm from "../../components/forms/services/AddRazorpayFundForm";
+import AddBankTransferFundForm from "../../components/forms/services/AddBankTransferFundForm";
 
-import { getTransactions } from "../redux/slices/transactionSlice";
-import { createFundRequest } from "../redux/slices/fundSlice";
-import { rupeesToPaise } from "../utils/lib";
+import { getTransactions } from "../../redux/slices/transactionSlice";
+import { createFundRequest } from "../../redux/slices/fundSlice";
+import { rupeesToPaise } from "../../utils/lib";
+import { SERVICES } from "../../utils/constants";
+import NoPermissionsPage from "../NoPermissionsPage";
+import { usePermissions } from "../../components/hooks/usePermission";
 
 const FundAddPage = () => {
   const dispatch = useDispatch();
@@ -35,6 +38,15 @@ const FundAddPage = () => {
   useEffect(() => {
     fetchRequests();
   }, []);
+
+  // permission hook
+  const { canView, canProcess, serviceId } = usePermissions(
+    SERVICES.FUND_REQUEST,
+  );
+
+  if (!canView) {
+    return <NoPermissionsPage />;
+  }
 
   const handleBankSubmit = async (data) => {
     try {
@@ -94,27 +106,37 @@ const FundAddPage = () => {
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => setMethod("razorpay")}
-                className="border border-gray-300 rounded-lg p-5 flex flex-col items-center gap-3 hover:border-blue-500 hover:bg-blue-50 transition"
-              >
-                <CreditCard className="text-blue-600" size={28} />
-                <span className="font-medium">Razorpay</span>
-                <span className="text-xs text-gray-500 text-center">
-                  Instant payment gateway
-                </span>
-              </button>
+              {canProcess && (
+                <>
+                  <button
+                    onClick={() => setMethod("razorpay")}
+                    className="border border-gray-300 rounded-lg p-5 flex flex-col items-center gap-3 hover:border-blue-500 hover:bg-blue-50 transition"
+                  >
+                    <CreditCard className="text-blue-600" size={28} />
+                    <span className="font-medium">Razorpay</span>
+                    <span className="text-xs text-gray-500 text-center">
+                      Instant payment gateway
+                    </span>
+                  </button>
 
-              <button
-                onClick={() => setMethod("bank")}
-                className="border border-gray-300 rounded-lg p-5 flex flex-col items-center gap-3 hover:border-green-500 hover:bg-green-50 transition"
-              >
-                <Landmark className="text-green-600" size={28} />
-                <span className="font-medium">Bank Transfer</span>
-                <span className="text-xs text-gray-500 text-center">
-                  Manual bank transfer
-                </span>
-              </button>
+                  <button
+                    onClick={() => setMethod("bank")}
+                    className="border border-gray-300 rounded-lg p-5 flex flex-col items-center gap-3 hover:border-green-500 hover:bg-green-50 transition"
+                  >
+                    <Landmark className="text-green-600" size={28} />
+                    <span className="font-medium">Bank Transfer</span>
+                    <span className="text-xs text-gray-500 text-center">
+                      Manual bank transfer
+                    </span>
+                  </button>
+                </>
+              )}
+
+              {!canProcess && (
+                <p className="text-sm text-gray-500 col-span-2 text-center">
+                  You don't have permission to add funds.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -133,13 +155,14 @@ const FundAddPage = () => {
             <AddRazorpayFundForm
               resetForm={resetForm}
               onSuccess={fetchRequests}
+              serviceId={serviceId}
             />
           </div>
         )}
 
         {/* Bank Transfer Form */}
         {method === "bank" && (
-          <div className="space-y-4 ">
+          <div className="space-y-4">
             <button
               onClick={resetForm}
               className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
@@ -152,6 +175,7 @@ const FundAddPage = () => {
               onSubmit={handleBankSubmit}
               resetForm={resetForm}
               isProcessing={processing}
+              serviceId={serviceId}
             />
           </div>
         )}

@@ -1,32 +1,43 @@
 import { useSelector } from "react-redux";
-import { checkPermission } from "../../utils/permissionChecker";
 
-export const usePermissions = () => {
-  const user = useSelector((state) => state.auth.currentUser);
+export const usePermissions = (serviceCode) => {
+  const { currentUser } = useSelector((s) => s.auth);
 
-  const roleType = user?.role?.type;
+  if (!currentUser) {
+    return { canView: false, canProcess: false, serviceId: null };
+  }
 
-  const isEmployee = roleType === "employee";
+  const roleType = currentUser?.role?.type;
 
-  const normalizedPermissions =
-    roleType === "employee"
-      ? user?.userPermissions || []
-      : user?.userPermissions || [];
+  // ---------------- BUSINESS USER ----------------
+  if (roleType === "business") {
+    const permission = currentUser?.permissions?.find(
+      (p) => p?.service?.code === serviceCode,
+    );
 
-  const canAccessRoute = (path) => {
-    if (!path) return false;
+    return {
+      canView: permission?.canView || false,
+      canProcess: permission?.canProcess || false,
+      serviceId: permission?.service?.id || null,
+    };
+  }
 
-    // "/dashboard" → "dashboard"
-    const permission = path.split("/")[1].replace("-", "_");
+  // ---------------- EMPLOYEE USER ----------------
+  if (roleType === "employee") {
+    const allowed = currentUser?.permissions?.includes(
+      serviceCode?.toLowerCase(),
+    );
 
-    if (!permission) return true;
-
-    return checkPermission(user, permission);
-  };
+    return {
+      canView: allowed,
+      canProcess: allowed,
+      serviceId: null,
+    };
+  }
 
   return {
-    normalizedPermissions,
-    canAccessRoute,
-    isEmployee,
+    canView: false,
+    canProcess: false,
+    serviceId: null,
   };
 };

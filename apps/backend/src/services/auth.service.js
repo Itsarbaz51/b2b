@@ -240,11 +240,34 @@ class AuthServices {
 
       let finalPermissions = [];
 
-      if (user.role.type === "employee") {
+      // ---------------- ADMIN BYPASS ----------------
+      if (user.role.name === "ADMIN") {
+        const services = await Prisma.service.findMany({
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            isActive: true,
+          },
+        });
+
+        finalPermissions = services.map((service) => ({
+          service,
+          canView: true,
+          canProcess: true,
+        }));
+      }
+
+      // ---------------- EMPLOYEE ----------------
+      else if (user.role.type === "employee") {
         finalPermissions = await EmployeeServices.getEmployeePermissions(
           user.id
         );
-      } else {
+      }
+
+      // ---------------- BUSINESS USERS ----------------
+      else {
         const rolePermissions = user.role.rolePermissions || [];
         const userPermissions = user.userPermissions || [];
 

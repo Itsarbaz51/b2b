@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { verifyPan } from "../../redux/slices/panSlice.js";
-import ButtonField from "../ui/ButtonField";
-import { InputField } from "../ui/InputField";
+import { verifyPan } from "../../../redux/slices/panSlice.js";
+import ButtonField from "../../ui/ButtonField.jsx";
+import { InputField } from "../../ui/InputField.jsx";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 

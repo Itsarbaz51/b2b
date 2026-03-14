@@ -16,7 +16,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/slices/authSlice";
 import { BUSINESS_ROLES, PERMISSIONS, SERVICES } from "../utils/constants";
-import { checkPermission } from "../utils/permissionChecker";
+import { usePermissions } from "./hooks/usePermission";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -28,6 +28,16 @@ const Sidebar = () => {
   };
 
   const BUSINESS_ROLE_LIST = Object.values(BUSINESS_ROLES);
+
+  // service permissions
+  const fundRequestPermissions = usePermissions(SERVICES.FUND_REQUEST);
+  const payoutPermissions = usePermissions(SERVICES.PAYOUT);
+
+  const userData = currentUser || {};
+  const role = userData.role?.name || userData.role || "USER";
+  const roleType = userData.role?.type || "business";
+
+  const employeePermissions = userData?.permissions || [];
 
   // Base menu items structure - IMPROVED: Better permission checks
   const baseMenuItems = [
@@ -81,7 +91,7 @@ const Sidebar = () => {
           label: "Add Fund",
           icon: BadgeIndianRupee,
           path: "/request-fund",
-          businessUserPermission: SERVICES.FUND_REQUEST,
+          businessUserPermission: fundRequestPermissions.canView,
           employeePermission: PERMISSIONS.FUND_REQUEST,
           staticRoles: [
             "ADMIN",
@@ -96,7 +106,7 @@ const Sidebar = () => {
           label: "Payouts",
           icon: ArrowDownCircle,
           path: "/card-payout",
-          businessUserPermission: SERVICES.PAYOUT,
+          businessPermission: payoutPermissions.canView,
           employeePermission: PERMISSIONS.PAYOUT,
           staticRoles: [
             "STATE HEAD",
@@ -175,11 +185,6 @@ const Sidebar = () => {
     },
   ];
 
-  // Safe data extraction with fallbacks
-  const userData = currentUser || {};
-  const role = userData.role?.name || userData.role || "USER";
-  const roleType = userData.role?.type || "business";
-
   // Filter menu sections based on user role and  - IMPROVED LOGIC
   const filteredMenuSections = baseMenuItems
     .map((section) => {
@@ -187,34 +192,30 @@ const Sidebar = () => {
         let roleAllowed = true;
         let permissionAllowed = true;
 
-        // BUSINESS USER ROLE CHECK
+        // business role check
         if (roleType === "business") {
           roleAllowed = item.staticRoles?.includes(role);
         }
 
-        // EMPLOYEE PERMISSION CHECK
-        if (roleType === "employee" && item.employeePermission) {
-          permissionAllowed = checkPermission(
-            userData,
-            item.employeePermission,
-          );
+        // business service permission
+        if (
+          roleType === "business" &&
+          item.businessUserPermission !== undefined
+        ) {
+          permissionAllowed = item.businessUserPermission;
         }
 
-        // BUSINESS SERVICE PERMISSION
-        if (roleType === "business" && item.businessUserPermission) {
-          permissionAllowed = checkPermission(
-            userData,
-            item.businessUserPermission,
+        // employee permission
+        if (roleType === "employee" && item.employeePermission) {
+          permissionAllowed = employeePermissions.includes(
+            item.employeePermission,
           );
         }
 
         return roleAllowed && permissionAllowed;
       });
 
-      return {
-        ...section,
-        items: filteredItems,
-      };
+      return { ...section, items: filteredItems };
     })
     .filter((section) => section.items.length > 0);
 

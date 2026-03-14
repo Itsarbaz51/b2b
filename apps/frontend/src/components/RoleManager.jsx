@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 
 import PageHeader from "../components/ui/PageHeader";
 import EmptyState from "../components/ui/EmptyState";
-import { RoleList } from "../components/tabels/RoleList";
+import { RoleTable } from "./tabels/RoleTable";
 import { RoleFormModal } from "./forms/RoleForm";
 import AddEmployeePermissions from "./forms/AddEmployeePermissions";
 
@@ -266,7 +266,7 @@ export default function RoleManager() {
 
         {/* DATA TABLE */}
         {!isLoading && filteredRoles.length > 0 && (
-          <RoleList
+          <RoleTable
             roles={filteredRoles}
             onEdit={handleEdit}
             onDelete={handleDelete}

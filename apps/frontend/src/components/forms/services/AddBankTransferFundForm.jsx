@@ -1,24 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { X, Landmark, Upload } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
-import { getAdminPrimaryBank } from "../../redux/slices/bankSlice";
+import { getAdminPrimaryBank } from "../../../redux/slices/bankSlice";
 import { v4 as uuidv4 } from "uuid";
-import { usePermissions } from "../hooks/usePermission";
 
-const AddBankTransferFundForm = ({ onSubmit, resetForm, isProcessing }) => {
+const AddBankTransferFundForm = ({
+  onSubmit,
+  resetForm,
+  isProcessing,
+  serviceId,
+}) => {
   const [idempotencyKey] = useState(uuidv4());
 
   const dispatch = useDispatch();
   const { bankDetail: adminBank } = useSelector((s) => s.bank);
-
-  const { normalizedPermissions } = usePermissions();
-
-  const fundServiceId = useMemo(() => {
-    const service = normalizedPermissions?.find(
-      (s) => s.code === "FUND_REQUEST",
-    );
-    return service?.id || null;
-  }, [normalizedPermissions]);
 
   const [form, setForm] = useState({
     provider: "BANK_TRANSFER",
@@ -26,7 +21,7 @@ const AddBankTransferFundForm = ({ onSubmit, resetForm, isProcessing }) => {
     rrn: "",
     transactionDate: new Date().toISOString().split("T")[0],
     paymentImage: null,
-    serviceId: fundServiceId,
+    serviceId,
     idempotencyKey,
   });
 

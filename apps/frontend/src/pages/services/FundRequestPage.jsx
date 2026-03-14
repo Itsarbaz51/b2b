@@ -1,13 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { CreditCard, Landmark, Search, RefreshCw, Clock } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import AddBankTransferFundForm from "../components/forms/AddBankTransferFundForm";
-import FundRequestTable from "../components/tabels/FundRequestTable";
+import AddBankTransferFundForm from "../../components/forms/services/AddBankTransferFundForm";
+import FundRequestTable from "../../components/tabels/services/FundRequestTable";
 
 import {
   createFundRequest,
   verifyFundRequest,
-} from "../redux/slices/fundSlice";
+} from "../../redux/slices/fundSlice";
 const rejectReasons = [
   "Invalid RRN",
   "Amount mismatch",
@@ -15,13 +15,15 @@ const rejectReasons = [
   "Duplicate payment",
   "Bank transaction not found",
 ];
-import { getTransactions } from "../redux/slices/transactionSlice";
+import { getTransactions } from "../../redux/slices/transactionSlice";
 
-import { rupeesToPaise } from "../utils/lib";
-import PageHeader from "../components/ui/PageHeader";
-import StateCard from "../components/ui/StateCard";
-import ConfirmCard from "../components/ui/ConfirmCard";
-import AddRazorpayFundForm from "../components/forms/AddRazorpayFundForm";
+import { rupeesToPaise } from "../../utils/lib";
+import PageHeader from "../../components/ui/PageHeader";
+import StateCard from "../../components/ui/StateCard";
+import ConfirmCard from "../../components/ui/ConfirmCard";
+import AddRazorpayFundForm from "../../components/forms/services/AddRazorpayFundForm";
+import { usePermissions } from "../../components/hooks/usePermission";
+import { SERVICES } from "../../utils/constants";
 
 const FundRequestPage = () => {
   const dispatch = useDispatch();
@@ -39,11 +41,7 @@ const FundRequestPage = () => {
     currentUser?.role?.name === "ADMIN" ||
     currentUser?.role?.type === "employee";
 
-  /*
-  --------------------------------
-  FETCH FUND REQUESTS
-  --------------------------------
-  */
+  const { canProcess, serviceId } = usePermissions(SERVICES.FUND_REQUEST);
 
   const fetchRequests = () => {
     dispatch(
@@ -102,10 +100,6 @@ const FundRequestPage = () => {
       console.error(err);
       throw err;
     }
-  };
-
-  const handleRazorpaySubmit = async (data) => {
-    console.log("RAZORPAY", data);
   };
 
   const handleAction = (type, request) => {
@@ -187,21 +181,25 @@ const FundRequestPage = () => {
             Refresh
           </button>
 
-          <button
-            onClick={() => setMethod("razorpay")}
-            className="px-5 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
-          >
-            <CreditCard className="w-4 h-4" />
-            Razorpay
-          </button>
+          {!isAdmin && canProcess && (
+            <>
+              <button
+                onClick={() => setMethod("razorpay")}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                Razorpay
+              </button>
 
-          <button
-            onClick={() => setMethod("bank")}
-            className="px-5 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
-          >
-            <Landmark className="w-4 h-4" />
-            Bank Transfer
-          </button>
+              <button
+                onClick={() => setMethod("bank")}
+                className="px-5 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
+              >
+                <Landmark className="w-4 h-4" />
+                Bank Transfer
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -214,7 +212,11 @@ const FundRequestPage = () => {
 
       {/* Forms */}
       {method === "razorpay" && (
-        <AddRazorpayFundForm resetForm={resetForm} onSuccess={fetchRequests} />
+        <AddRazorpayFundForm
+          resetForm={resetForm}
+          onSuccess={fetchRequests}
+          serviceId={serviceId}
+        />
       )}
 
       {method === "bank" && (
@@ -222,6 +224,7 @@ const FundRequestPage = () => {
           onSubmit={handleBankSubmit}
           resetForm={resetForm}
           isProcessing={processing}
+          serviceId={serviceId}
         />
       )}
 

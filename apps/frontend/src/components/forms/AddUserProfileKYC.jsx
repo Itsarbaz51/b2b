@@ -32,11 +32,11 @@ import { FileUpload } from "../ui/FileUpload";
 import { DropdownField } from "../ui/DropdownField";
 import ButtonField from "../ui/ButtonField";
 import CloseBtn from "../ui/CloseBtn";
-import AadhaarVerificationModal from "./AadhaarVerificationModal";
+import AadhaarVerificationModal from "./services/AadhaarVerificationModal";
 import { KYCStatusCard } from "../KYCStatusCard";
-import PANVerificationModal from "./PANVerificationModal";
-import { checkPermission, getServiceId } from "../../utils/permissionChecker";
+import PANVerificationModal from "./services/PANVerificationModal";
 import { SERVICES } from "../../utils/constants";
+import { usePermissions } from "../hooks/usePermission";
 
 // ---------- Main Form ----------
 export default function AddUserProfileKYC() {
@@ -91,19 +91,18 @@ export default function AddUserProfileKYC() {
 
   const { currentUser } = useSelector((state) => state.auth);
 
-  // check permission
-  const canViewPan = checkPermission(currentUser, SERVICES.PAN, "view");
-  const canProcessPan = checkPermission(currentUser, SERVICES.PAN, "process");
+  // permission hook
+  const {
+    canView: canViewAadhaar,
+    canProcess: canProcessAadhaar,
+    serviceId: aadhaarServiceId,
+  } = usePermissions(SERVICES.AADHAAR);
 
-  const canViewAadhaar = checkPermission(currentUser, SERVICES.AADHAAR, "view");
-  const canProcessAadhaar = checkPermission(
-    currentUser,
-    SERVICES.AADHAAR,
-    "process",
-  );
-
-  const panServiceId = getServiceId(currentUser, SERVICES.PAN);
-  const aadhaarServiceId = getServiceId(currentUser, SERVICES.AADHAAR);
+  const {
+    canView: canViewPan,
+    canProcess: canProcessPan,
+    serviceId: panServiceId,
+  } = usePermissions(SERVICES.PAN);
 
   // Logout handler
   const handleLogout = () => {
@@ -130,6 +129,22 @@ export default function AddUserProfileKYC() {
       fetchData();
     }
   }, [dispatch, currentUser?.id, currentUser?.isKycVerified]);
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      const fetchKYCIfNeeded = async () => {
+        if (currentUser?.isKycVerified == false) {
+          await dispatch(getbyId(currentUser?.kycId));
+        }
+      };
+      fetchKYCIfNeeded();
+    }
+  }, [
+    dispatch,
+    currentUser?.id,
+    currentUser?.isKycVerified,
+    currentUser?.kycId,
+  ]);
 
   const stateList = useMemo(
     () => addressState?.stateList?.filter((i) => i.stateName) || [],
@@ -409,11 +424,7 @@ export default function AddUserProfileKYC() {
       }
 
       // Optional: API verification check
-      if (
-        permissions.hasPanVerification &&
-        permissions.hasAadhaarVerification &&
-        kycType === "MANUAL"
-      ) {
+      if (canProcessPan && canProcessAadhaar && kycType === "MANUAL") {
         toast.info("You can verify PAN / Aadhaar for auto KYC");
       }
     }

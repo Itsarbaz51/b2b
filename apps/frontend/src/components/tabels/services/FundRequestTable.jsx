@@ -1,6 +1,6 @@
 import { CreditCard, Eye, CheckCircle, XCircle } from "lucide-react";
-import { paisaToRupee } from "../../utils/lib";
-import ActionMenu from "../ui/ActionMenu";
+import { paisaToRupee } from "../../../utils/lib";
+import ActionMenu from "../../ui/ActionMenu";
 
 const getStatusStyle = (status) => {
   switch (status) {

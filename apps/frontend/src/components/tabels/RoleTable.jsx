@@ -1,7 +1,7 @@
 import { Trash2, Edit2, Users, Shield, TrendingUp } from "lucide-react";
 import EmptyState from "../ui/EmptyState";
 
-export function RoleList({
+export function RoleTable({
   roles,
   onEdit,
   onDelete,

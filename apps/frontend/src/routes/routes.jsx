@@ -21,22 +21,22 @@ import Dashboard from "../pages/Dashboard";
 import TransactionHistory from "../pages/TransactionsPage.jsx";
 import Reports from "../pages/Reports";
 import Settings from "../pages/Settings.jsx";
-import CardPayout from "../pages/services/CardPayout";
 import UserProfilePage from "../pages/UserProfilePage.jsx";
 import UnauthorizedPage from "../pages/UnauthorizedPage.jsx";
 import RequestKYC from "../pages/KYCRequest.jsx";
 import Logs from "../pages/Logs.jsx";
 import VerifyResetPassword from "../pages/VerifyResetPassword.jsx";
-import AddUserProfileKYC from "../components/forms/AddUserProfileKYC.jsx";
 
 import EmployeeTable from "../components/tabels/EmployeeTable";
 import UsersTable from "../components/tabels/UsersTable";
-import WalletTable from "../components/tabels/Wallet";
 import NoPermissionsPage from "../pages/NoPermissionsPage.jsx";
 import ProtectedRoute from "../layouts/ProtectedRoute.jsx";
 import CommissionManagement from "../pages/CommissionManagement.jsx";
-import FundRequestPage from "../pages/FundRequestPage.jsx";
-import FundAddPage from "../pages/FundAddPage.jsx";
+
+// services pages and forms
+import AddUserProfileKYC from "../components/forms/AddUserProfileKYC.jsx";
+import FundRequestPage from "../pages/services/FundRequestPage.jsx";
+import FundAddPage from "../pages/services/FundAddPage.jsx";
 
 export const createRouter = () => {
   return createBrowserRouter(
@@ -73,8 +73,6 @@ export const createRouter = () => {
           <Route path="users" element={<UsersTable />} />
           <Route path="settings" element={<Settings />} />
           <Route path="employee-management" element={<EmployeeTable />} />
-          <Route path="wallet" element={<WalletTable />} />
-          <Route path="card-payout" element={<CardPayout />} />
           <Route path="profile/:id" element={<UserProfilePage />} />
           <Route path="logs" element={<Logs />} />
 

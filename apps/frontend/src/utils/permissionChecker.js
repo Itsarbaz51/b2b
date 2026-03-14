@@ -9,12 +9,12 @@ export const checkPermission = (user, permission, action = "view") => {
 
   // EMPLOYEE PERMISSIONS
   if (roleType === "employee") {
-    return user?.userPermissions?.includes(permission);
+    return user?.permissions?.includes(permission);
   }
 
   // BUSINESS SERVICE PERMISSIONS
   if (roleType === "business") {
-    const servicePermission = user?.userPermissions?.find(
+    const servicePermission = user?.permissions?.find(
       (p) => p.service?.code === permission,
     );
 
@@ -32,7 +32,7 @@ export const checkPermission = (user, permission, action = "view") => {
 };
 
 export const getServiceId = (user, serviceCode) => {
-  const permission = user?.userPermissions?.find(
+  const permission = user?.permissions?.find(
     (p) => p?.service?.code === serviceCode,
   );
 

@@ -14,25 +14,25 @@ import RoleManager from "../components/RoleManager";
 import PageHeader from "../components/ui/PageHeader";
 import { BUSINESS_ROLES, PERMISSIONS } from "../utils/constants";
 import ApiIntegration from "./ApiIntegration";
-import { checkPermission } from "../utils/permissionChecker";
 
 const Settings = () => {
   const { currentUser = {} } = useSelector((state) => state.auth);
 
-  // Get user role and type
   const userRole = currentUser?.role?.name || currentUser?.role;
   const userType = currentUser?.role?.type || "business";
-  const isEmployee = userType === "employee";
-  const isBusinessUser = !isEmployee;
 
-  // Define all available tabs with role-based visibility - UPDATED LOGIC
+  const isEmployee = userType === "employee";
+  const isAdmin = userRole === BUSINESS_ROLES.ADMIN;
+
+  const employeePermissions = currentUser?.permissions || [];
+
+  // ---------------- ALL TABS ----------------
   const allTabs = [
     {
       id: "general",
       label: "General Settings",
       icon: SettingsIcon,
       component: <MainSettings />,
-      // Show to Admin and employees with permission
       showToRoles: [BUSINESS_ROLES.ADMIN],
       employeePermission: PERMISSIONS.GENERAL_SETTINGS,
     },
@@ -41,7 +41,6 @@ const Settings = () => {
       label: "Company Accounts",
       icon: CreditCard,
       component: <CompanyAccounts />,
-      // Show to Admin and employees with permission
       showToRoles: [
         BUSINESS_ROLES.ADMIN,
         BUSINESS_ROLES.STATE_HEAD,
@@ -51,21 +50,19 @@ const Settings = () => {
       ],
       employeePermission: PERMISSIONS.COMPANY_ACCOUNTS,
     },
-    {
-      id: "services",
-      label: "Services",
-      icon: UserCog,
-      component: <ManageServices />,
-      // Show only to Admin and employees with permission
-      showToRoles: [BUSINESS_ROLES.ADMIN],
-      employeePermission: PERMISSIONS.MANAGE_SERVICES,
-    },
+    // {
+    //   id: "services",
+    //   label: "Services",
+    //   icon: UserCog,
+    //   component: <ManageServices />,
+    //   showToRoles: [BUSINESS_ROLES.ADMIN],
+    //   employeePermission: PERMISSIONS.MANAGE_SERVICES,
+    // },
     {
       id: "roles",
       label: "Roles Management",
       icon: UserCog,
       component: <RoleManager />,
-      // Show only to Admin and employees with permission
       showToRoles: [BUSINESS_ROLES.ADMIN],
       employeePermission: PERMISSIONS.ROLE_MANAGEMENT,
     },
@@ -74,76 +71,37 @@ const Settings = () => {
       label: "API Integration",
       icon: Cpu,
       component: <ApiIntegration />,
-      // Show only to Admin and employees with permission
       showToRoles: [BUSINESS_ROLES.ADMIN],
     },
   ];
 
+  // ---------------- FILTER TABS ----------------
   const visibleTabs = allTabs.filter((tab) => {
-    // EMPLOYEE PERMISSION CHECK
+    // ADMIN BYPASS
+    if (isAdmin) return true;
+
+    // EMPLOYEE PERMISSION
     if (isEmployee) {
       if (!tab.employeePermission) return false;
-      return checkPermission(currentUser, tab.employeePermission);
+      return employeePermissions.includes(tab.employeePermission);
     }
 
     // BUSINESS ROLE CHECK
-    if (isBusinessUser) {
-      return tab.showToRoles?.includes(userRole);
-    }
-
-    return false;
+    return tab.showToRoles?.includes(userRole);
   });
 
-  // Set active tab - Use first visible tab
-  const [activeTab, setActiveTab] = useState(() => {
-    return visibleTabs[0]?.id || "general";
-  });
+  // ---------------- ACTIVE TAB ----------------
+  const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id || "general");
 
-  // Update active tab if current active tab is not in visible tabs
   useEffect(() => {
-    if (
-      !visibleTabs.find((tab) => tab.id === activeTab) &&
-      visibleTabs.length > 0
-    ) {
-      setActiveTab(visibleTabs[0].id);
+    if (!visibleTabs.find((tab) => tab.id === activeTab)) {
+      setActiveTab(visibleTabs[0]?.id);
     }
-  }, [visibleTabs, activeTab]);
+  }, [visibleTabs]);
 
-  // Render active tab component
-  const renderActiveTab = () => {
-    const activeTabConfig = allTabs.find((tab) => tab.id === activeTab);
+  const activeTabConfig = visibleTabs.find((tab) => tab.id === activeTab);
 
-    if (!activeTabConfig) {
-      return <NoAccess />;
-    }
-
-    // BUSINESS ROLE CHECK
-    if (isBusinessUser) {
-      const shouldHaveAccess =
-        activeTabConfig.showToRoles &&
-        activeTabConfig.showToRoles.includes(userRole);
-
-      if (!shouldHaveAccess) {
-        return <NoAccess />;
-      }
-    }
-
-    // EMPLOYEE PERMISSION CHECK
-    if (isEmployee && activeTabConfig.employeePermission) {
-      const hasPermission = checkPermission(
-        currentUser,
-        activeTabConfig.employeePermission,
-      );
-
-      if (!hasPermission) {
-        return <NoAccess />;
-      }
-    }
-
-    return activeTabConfig.component;
-  };
-
-  // Show no access message if no tabs are available
+  // ---------------- NO ACCESS ----------------
   if (visibleTabs.length === 0) {
     return (
       <div>
@@ -167,7 +125,7 @@ const Settings = () => {
         description="Manage your application settings and configurations"
       />
 
-      {/* Tabs Navigation */}
+      {/* Tabs */}
       <div className="flex space-x-1 my-8 bg-gray-100 p-1 rounded-lg w-fit">
         {visibleTabs.map((tab) => (
           <button
@@ -186,11 +144,12 @@ const Settings = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="mt-4">{renderActiveTab()}</div>
+      <div className="mt-4">{activeTabConfig?.component}</div>
     </div>
   );
 };
 
+// ---------------- NO ACCESS COMPONENT ----------------
 const NoAccess = ({
   message = "You don't have permission to view this section.",
 }) => (

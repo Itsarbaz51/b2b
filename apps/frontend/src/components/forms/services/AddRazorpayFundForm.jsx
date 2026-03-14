@@ -1,26 +1,16 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useDispatch } from "react-redux";
 import {
   createFundRequest,
   verifyFundRequest,
-} from "../../redux/slices/fundSlice";
+} from "../../../redux/slices/fundSlice";
 import { v4 as uuidv4 } from "uuid";
-import { usePermissions } from "../hooks/usePermission";
 import { CreditCard, X } from "lucide-react";
 
-const AddRazorpayFundForm = ({ resetForm, onSuccess }) => {
+const AddRazorpayFundForm = ({ resetForm, onSuccess, serviceId }) => {
   const [amount, setAmount] = useState("");
   const dispatch = useDispatch();
   const [idempotencyKey] = useState(uuidv4());
-
-  const { normalizedPermissions } = usePermissions();
-
-  const serviceId = useMemo(() => {
-    const service = normalizedPermissions?.find(
-      (s) => s.code === "FUND_REQUEST",
-    );
-    return service?.id || null;
-  }, [normalizedPermissions]);
 
   const handleSubmit = async () => {
     if (!amount) return alert("Amount required");

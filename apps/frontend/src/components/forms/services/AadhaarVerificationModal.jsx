@@ -3,9 +3,9 @@ import { useDispatch } from "react-redux";
 import {
   sendAadhaarOtp,
   verifyAadhaarOtp,
-} from "../../redux/slices/aadhaarSlice.js";
-import ButtonField from "../ui/ButtonField";
-import { InputField } from "../ui/InputField";
+} from "../../../redux/slices/aadhaarSlice.js";
+import ButtonField from "../../ui/ButtonField.jsx";
+import { InputField } from "../../ui/InputField.jsx";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 
