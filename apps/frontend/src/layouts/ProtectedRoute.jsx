@@ -6,7 +6,6 @@ import { usePermissions } from "../components/hooks/usePermission";
 const ProtectedRoute = ({ children }) => {
   const location = useLocation();
   const { isAuthenticated, currentUser } = useSelector((state) => state.auth);
-  const permissions = usePermissions();
   const currentPath = location.pathname;
 
   // PUBLIC ROUTES
@@ -33,9 +32,19 @@ const ProtectedRoute = ({ children }) => {
 
   const walletBalance = Number(primaryWallet?.balance || 0);
 
-  // ---------------- KYC CHECK (FIRST) ----------------
+  // ---------------- WALLET CHECK ----------------
   if (
     isBusinessUser &&
+    walletBalance < 100 &&
+    !["/add-fund"].includes(currentPath)
+  ) {
+    return <Navigate to="/add-fund" replace />;
+  }
+
+  // ---------------- KYC CHECK ----------------
+  if (
+    isBusinessUser &&
+    walletBalance >= 100 &&
     !currentUser?.isKycVerified &&
     !["/kyc-submit"].includes(currentPath)
   ) {
@@ -44,15 +53,6 @@ const ProtectedRoute = ({ children }) => {
 
   if (currentPath === "/kyc-submit" && currentUser?.isKycVerified) {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  // --------------- WALLET CHECK ----------------
-  if (
-    isBusinessUser &&
-    walletBalance < 0 &&
-    !["/add-fund"].includes(currentPath)
-  ) {
-    return <Navigate to="/add-fund" replace />;
   }
 
   // ---------------- SERVICE PERMISSIONS ----------------
