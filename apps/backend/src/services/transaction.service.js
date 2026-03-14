@@ -131,12 +131,22 @@ export default class TransactionService {
     search,
     date,
     role,
+    userId, 
   }) {
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;
     const skip = (pageNumber - 1) * limitNumber;
-    const isAdmin = role === "ADMIN" || role === "employee";
+
+    const isAdminOrEmployee = role === "ADMIN" || role === "employee";
+
     const filters = [];
+
+    /* OWN DATA FOR BUSINESS USER */
+    if (!isAdminOrEmployee) {
+      filters.push({
+        userId: userId,
+      });
+    }
 
     const selectFields = {
       id: true,
@@ -177,10 +187,10 @@ export default class TransactionService {
       },
     };
 
-    if (isAdmin) {
+    /* EXTRA FIELDS ONLY FOR ADMIN / EMPLOYEE */
+    if (isAdminOrEmployee) {
       selectFields.idempotencyKey = true;
       selectFields.pricing = true;
-      selectFields.providerReference = true;
       selectFields.providerResponse = true;
       selectFields.apiEntityId = true;
     }
@@ -209,29 +219,13 @@ export default class TransactionService {
     if (search) {
       filters.push({
         OR: [
-          {
-            txnId: {
-              contains: search,
-            },
-          },
+          { txnId: { contains: search } },
           {
             user: {
               OR: [
-                {
-                  firstName: {
-                    contains: search,
-                  },
-                },
-                {
-                  lastName: {
-                    contains: search,
-                  },
-                },
-                {
-                  phoneNumber: {
-                    contains: search,
-                  },
-                },
+                { firstName: { contains: search } },
+                { lastName: { contains: search } },
+                { phoneNumber: { contains: search } },
               ],
             },
           },
