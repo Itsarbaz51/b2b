@@ -68,7 +68,6 @@ export class LoginLogService {
     if (deviceType) {
       where.userAgent = {
         contains: deviceType,
-        mode: "insensitive",
       };
     }
 
