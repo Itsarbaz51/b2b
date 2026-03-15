@@ -7,10 +7,6 @@ class EmployeeValidationSchemas {
         .string()
         .min(3, "Username must be at least 3 characters")
         .max(30, "Username cannot exceed 30 characters")
-        .regex(
-          /^[a-zA-Z0-9_]+$/,
-          "Username can only contain letters, numbers, and underscores"
-        )
         .transform((val) => val.trim()),
       firstName: z.string().min(1, "First name is required"),
       lastName: z.string().min(1, "Last name is required"),

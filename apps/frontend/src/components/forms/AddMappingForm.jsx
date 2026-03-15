@@ -5,6 +5,9 @@ import { X } from "lucide-react";
 import { useRef } from "react";
 import Editor from "@monaco-editor/react";
 import { paisaToRupee, rupeesToPaise } from "../../utils/lib";
+import HeaderSection from "../ui/HeaderSection";
+import InputField from "../ui/InputField";
+import ButtonField from "../ui/ButtonField";
 
 export default function AddMappingForm({
   services = [],
@@ -100,23 +103,11 @@ export default function AddMappingForm({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
         {/* Header */}
-        <div className="bg-linear-to-r from-cyan-500 via-blue-600 to-indigo-700 px-6 py-5 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              {editData ? "Update Mapping" : "Create Mapping"}
-            </h2>
-            <p className="text-blue-100 text-sm">
-              Configure service provider mapping
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-full p-2"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        <HeaderSection
+          title={editData ? "Update Mapping" : "Create Mapping"}
+          tagLine={"Configure service provider mapping"}
+          isClose={onClose}
+        />
 
         <div className="p-6 max-h-[70vh] overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -223,44 +214,31 @@ export default function AddMappingForm({
               </div>
 
               {form.mode === "COMMISSION" && (
-                <div>
-                  <label className="text-sm font-semibold mb-2 block">
-                    Selling Price (₹)
-                  </label>
-
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                    value={form.sellingPrice}
-                    onChange={(e) =>
-                      setForm({ ...form, sellingPrice: e.target.value })
-                    }
-                    min={0}
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Provider Cost (₹)
-                </label>
-
-                <input
+                <InputField
+                  label={"Selling Price (₹)"}
                   type="number"
-                  step="0.01"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.providerCost}
+                  value={form.sellingPrice}
                   onChange={(e) =>
-                    setForm({ ...form, providerCost: e.target.value })
+                    setForm({ ...form, sellingPrice: e.target.value })
                   }
                   min={0}
                 />
+              )}
 
-                <p className="text-xs text-gray-500 mt-1">
-                  Stored: {(Number(providerCost) * 100).toFixed(0)} paisa
-                </p>
-              </div>
+              <InputField
+                label={"Provider Cost (₹)"}
+                type="number"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                value={form.providerCost}
+                onChange={(e) =>
+                  setForm({ ...form, providerCost: e.target.value })
+                }
+                min={0}
+              />
+
+              <p className="text-xs text-gray-500 mt-1">
+                Stored: {(Number(providerCost) * 100).toFixed(0)} paisa
+              </p>
               <div>
                 <label className="text-sm font-semibold mb-2 block">
                   Status
@@ -340,12 +318,10 @@ export default function AddMappingForm({
             </div>
 
             <div className="flex justify-end">
-              <button
+              <ButtonField
+                name={editData ? "Update Mapping" : "Create Mapping"}
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold"
-              >
-                {editData ? "Update Mapping" : "Create Mapping"}
-              </button>
+              />
             </div>
           </form>
         </div>

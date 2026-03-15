@@ -6,6 +6,9 @@ import {
   registerEmployee,
   updateEmployeeProfile,
 } from "../../redux/slices/employeeSlice";
+import HeaderSection from "../ui/HeaderSection";
+import InputField from "../ui/InputField";
+import ButtonField from "../ui/ButtonField";
 
 export default function AddUser({
   isAdmin = false,
@@ -299,24 +302,11 @@ export default function AddUser({
     <div className="fixed inset-0 bg-opacity-50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fadeIn">
         {/* Header */}
-        <div className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-700 px-6 py-5 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              {displayText.title}
-            </h2>
-
-            <p className="text-blue-100 text-sm mt-1">
-              {displayText.description}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all duration-200"
-            disabled={loading}
-          >
-            ✕
-          </button>
-        </div>
+        <HeaderSection
+          title={displayText.title}
+          tagLine={displayText.description}
+          isClose={onClose}
+        />
 
         {/* Body */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
@@ -335,50 +325,31 @@ export default function AddUser({
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Username - Always show in both modes */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Username *
-                </label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.username
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="Username"
-                />
-                {errors.username && (
-                  <p className="text-red-500 text-sm mt-1">{errors.username}</p>
-                )}
-              </div>
+              <InputField
+                label={"Username"}
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Username"
+                error={errors.username}
+              />
 
               {/* ✅ Email - Conditionally disabled in edit mode if not admin */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email *
-                </label>
-                <input
+                <InputField
+                  label={"Email"}
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   disabled={shouldDisableEmail}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.email
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  } ${
+                  className={`${
                     shouldDisableEmail ? "bg-gray-100 cursor-not-allowed" : ""
                   }`}
                   placeholder="email@example.com"
+                  error={errors.email}
                 />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                )}
                 {shouldDisableEmail && (
                   <p className="text-gray-500 text-sm mt-1">
                     Only admins can update email address
@@ -387,81 +358,44 @@ export default function AddUser({
               </div>
 
               {/* First Name - Always show */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  First Name *
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.firstName
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="First name"
-                />
-                {errors.firstName && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.firstName}
-                  </p>
-                )}
-              </div>
+              <InputField
+                label={"First Name"}
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                error={errors.firstName}
+                placeholder="First name"
+              />
 
               {/* Last Name - Always show */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Last Name *
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.lastName
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="Last name"
-                />
-                {errors.lastName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
-                )}
-              </div>
+
+              <InputField
+                label={"Last Name"}
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                error={errors.lastName}
+                placeholder="Last name"
+              />
 
               {/* Phone Number - Always show */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 10);
-                    setFormData({ ...formData, phoneNumber: value });
-                    if (errors.phoneNumber)
-                      setErrors({ ...errors, phoneNumber: "" });
-                  }}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.phoneNumber
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="10-digit number"
-                />
-                {errors.phoneNumber && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.phoneNumber}
-                  </p>
-                )}
-              </div>
+              <InputField
+                label={"Phone Number"}
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setFormData({ ...formData, phoneNumber: value });
+                  if (errors.phoneNumber)
+                    setErrors({ ...errors, phoneNumber: "" });
+                }}
+                maxLength={10}
+                placeholder="10-digit number"
+                error={errors.phoneNumber}
+              />
 
               {/* ✅ Role - Hidden in profileEdit mode */}
               {!shouldHideRole && (
@@ -525,13 +459,11 @@ export default function AddUser({
 
             {/* Submit */}
             <div className="pt-3 flex justify-end">
-              <button
+              <ButtonField
+                name={loading ? displayText.loading : displayText.button}
                 type="submit"
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? displayText.loading : displayText.button}
-              </button>
+                isLoading={loading}
+              />
             </div>
           </form>
         </div>

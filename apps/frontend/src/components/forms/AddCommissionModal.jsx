@@ -6,6 +6,7 @@ import { getAllRoles, getAllRolesByType } from "../../redux/slices/roleSlice";
 import { getAllBusinessUsersByParentId } from "../../redux/slices/userSlice";
 import { getAllServices } from "../../redux/slices/serviceSlice";
 import { rupeesToPaise } from "../../utils/lib";
+import HeaderSection from "../ui/HeaderSection";
 
 const scopes = ["ROLE", "USER"];
 const commissionTypes = ["FLAT", "PERCENTAGE"];
@@ -386,27 +387,13 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     <div className="fixed inset-0 bg-opacity-50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fadeIn">
         {/* Header */}
-        <div className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-700 px-6 py-5 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              {editData
-                ? "Edit Commission Setting"
-                : "Add New Commission Setting"}
-            </h2>
-            <p className="text-blue-100 text-sm mt-1">
-              {editData
-                ? "Update existing commission setting"
-                : "Create a new commission setting for roles or users"}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all duration-200"
-            disabled={loading}
-          >
-            ✕
-          </button>
-        </div>
+        <HeaderSection
+          title={
+            editData ? "Edit Commission Setting" : "Add New Commission Setting"
+          }
+          tagLine={"Configure your commission settings"}
+          isClose={onClose}
+        />
 
         {/* Body */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">

@@ -1,6 +1,8 @@
 // RoleFormModal.js
 import { X } from "lucide-react";
 import { useState, useEffect } from "react";
+import HeaderSection from "../ui/HeaderSection";
+import InputField from "../ui/InputField";
 
 export function RoleFormModal({
   isOpen,
@@ -87,25 +89,15 @@ export function RoleFormModal({
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        <div className="bg-gradient-to-r from-cyan-500 to-purple-600 px-8 py-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              {editData ? "Update Employee Role" : "Create Employee Role"}
-            </h2>
-            <p className="text-cyan-50 text-sm mt-1">
-              {editData
-                ? "Modify employee role details"
-                : "Create a new employee role for your team"}
-            </p>
-          </div>
-          <button
-            onClick={handleClose}
-            disabled={isLoading}
-            className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors disabled:opacity-50"
-          >
-            <X size={24} />
-          </button>
-        </div>
+        <HeaderSection
+          title={editData ? "Update Employee Role" : "Create Employee Role"}
+          tagLine={
+            editData
+              ? "Modify employee role details"
+              : "Create a new employee role for your team"
+          }
+          isClose={handleClose}
+        />
 
         <div className="p-8 overflow-y-auto max-h-[calc(90vh-140px)]">
           {/* Error Messages */}
@@ -124,24 +116,14 @@ export function RoleFormModal({
 
           <div className="grid grid-cols-1 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Role Name <span className="text-red-500">*</span>
-              </label>
-              <input
+              <InputField
+                label={"Role Name"}
                 type="text"
                 value={name}
                 onChange={handleNameChange}
                 placeholder="e.g., ADMINISTRATOR, MANAGER, SUPERVISOR"
-                className={`w-full bg-gray-50 border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
-                  errors.name
-                    ? "border-red-400 focus:ring-red-300"
-                    : "border-gray-300 focus:ring-cyan-500"
-                }`}
-                disabled={isLoading}
+                error={errors.name}
               />
-              {errors.name && (
-                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-              )}
               <p className="text-gray-500 text-xs mt-1">
                 Only uppercase letters and spaces allowed. Must be unique.
               </p>

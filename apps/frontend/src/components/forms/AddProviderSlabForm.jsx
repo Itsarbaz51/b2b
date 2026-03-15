@@ -3,6 +3,9 @@ import { createService } from "../../redux/slices/serviceSlice";
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { rupeesToPaise } from "../../utils/lib";
+import HeaderSection from "../ui/HeaderSection";
+import InputField from "../ui/InputField";
+import ButtonField from "../ui/ButtonField";
 
 export default function AddProviderSlabForm({
   mappingId,
@@ -82,25 +85,11 @@ export default function AddProviderSlabForm({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-linear-to-r from-cyan-500 via-blue-600 to-indigo-700 px-6 py-5 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              {editData ? "Update Slab" : "Create Slab"}
-            </h2>
-
-            <p className="text-blue-100 text-sm">
-              Configure provider pricing slab
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-full p-2"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        <HeaderSection
+          title={editData ? "Update Slab" : "Create Slab"}
+          tagLine={"Configure provider pricing slab"}
+          isClose={onClose}
+        />
 
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -111,37 +100,24 @@ export default function AddProviderSlabForm({
             )}
 
             <div className="grid md:grid-cols-2 gap-4">
-              {/* Min Amount */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Min Amount (₹)
-                </label>
-
-                <input
-                  type="number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.minAmount}
-                  onChange={(e) =>
-                    setForm({ ...form, minAmount: e.target.value })
-                  }
-                />
-              </div>
+              <InputField
+                label={"Min Amount (₹)"}
+                type="number"
+                value={form.minAmount}
+                onChange={(e) =>
+                  setForm({ ...form, minAmount: e.target.value })
+                }
+              />
 
               {/* Max Amount */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Max Amount (₹)
-                </label>
-
-                <input
-                  type="number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.maxAmount}
-                  onChange={(e) =>
-                    setForm({ ...form, maxAmount: e.target.value })
-                  }
-                />
-              </div>
+              <InputField
+                label={"Max Amount (₹)"}
+                type="number"
+                value={form.maxAmount}
+                onChange={(e) =>
+                  setForm({ ...form, maxAmount: e.target.value })
+                }
+              />
 
               {/* Mode */}
               <div>
@@ -179,39 +155,26 @@ export default function AddProviderSlabForm({
               </div>
 
               {/* Provider Cost */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Provider Cost (₹)
-                </label>
 
-                <input
-                  type="number"
-                  step="0.01"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.providerCost}
-                  onChange={(e) =>
-                    setForm({ ...form, providerCost: e.target.value })
-                  }
-                />
-              </div>
+              <InputField
+                label={"Provider Cost (₹)"}
+                type="number"
+                value={form.providerCost}
+                onChange={(e) =>
+                  setForm({ ...form, providerCost: e.target.value })
+                }
+              />
 
               {/* Selling Price */}
               {form.mode === "COMMISSION" && (
-                <div>
-                  <label className="text-sm font-semibold mb-2 block">
-                    Selling Price (₹)
-                  </label>
-
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                    value={form.sellingPrice}
-                    onChange={(e) =>
-                      setForm({ ...form, sellingPrice: e.target.value })
-                    }
-                  />
-                </div>
+                <InputField
+                  label={"Selling Price (₹)"}
+                  type="number"
+                  value={form.sellingPrice}
+                  onChange={(e) =>
+                    setForm({ ...form, sellingPrice: e.target.value })
+                  }
+                />
               )}
             </div>
 
@@ -230,12 +193,10 @@ export default function AddProviderSlabForm({
             )}
 
             <div className="flex justify-end">
-              <button
+              <ButtonField
+                name={editData ? "Update Slab" : "Create Slab"}
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold"
-              >
-                {editData ? "Update Slab" : "Create Slab"}
-              </button>
+              />
             </div>
           </form>
         </div>

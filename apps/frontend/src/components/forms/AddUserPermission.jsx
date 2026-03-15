@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import InputField from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
 import CloseBtn from "../ui/CloseBtn";
+import HeaderSection from "../ui/HeaderSection";
 
 const AddUserPermission = ({
   mode, // "user" | "role"
@@ -207,18 +208,19 @@ const AddUserPermission = ({
     <div className="fixed inset-0 backdrop-blur-xs bg-black/40 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">
-              {mode === "role"
+          <HeaderSection
+            title={
+              mode === "role"
                 ? currentMode === "add"
                   ? "Add Role Permission"
                   : "Edit Role Permission"
                 : currentMode === "add"
                   ? "Add User Permission"
-                  : "Edit User Permission"}
-            </h3>
-            <CloseBtn isClose={onCancel} />
-          </div>
+                  : "Edit User Permission"
+            }
+            tagLine={"Configure provider pricing slab"}
+            isClose={onCancel}
+          />
 
           {error && <div className="mb-3 text-red-600 text-sm">{error}</div>}
 

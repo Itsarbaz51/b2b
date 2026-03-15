@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { createService, updateService } from "../../redux/slices/serviceSlice";
+import ButtonField from "../ui/ButtonField";
+import InputField from "../ui/InputField";
+import HeaderSection from "../ui/HeaderSection";
 
 export default function AddServiceForm({ editData, onClose, onSuccess }) {
   const dispatch = useDispatch();
@@ -96,27 +99,15 @@ export default function AddServiceForm({ editData, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 bg-opacity-50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-fadeIn">
-        {/* Header */}
-        <div className="bg-linear-to-r from-cyan-500 via-blue-600 to-indigo-700 px-6 py-5 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              {editData ? "Update Service" : "Create Service"}
-            </h2>
-
-            <p className="text-blue-100 text-sm mt-1">
-              {editData
-                ? "Update existing service details"
-                : "Create a new service"}
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white hover:text-black hover:bg-opacity-20 rounded-full p-2"
-          >
-            ✕
-          </button>
-        </div>
+        <HeaderSection
+          title={editData ? "Update Service" : "Create Service"}
+          tagLine={
+            editData
+              ? "Update existing service details"
+              : "Create a new service"
+          }
+          isClose={onClose}
+        />
 
         {/* Body */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
@@ -134,51 +125,23 @@ export default function AddServiceForm({ editData, onClose, onSuccess }) {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Service Name */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Service Name *
-                </label>
+              <InputField
+                label={"Service Name "}
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Service name"
+                error={errors.name}
+              />
 
-                <input
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.name
-                      ? "border-red-400 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="Service name"
-                />
-
-                {errors.name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-                )}
-              </div>
-
-              {/* Code */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 ">
-                  Service Code *
-                </label>
-
-                <input
-                  name="code"
-                  value={form.code}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none uppercase ${
-                    errors.code
-                      ? "border-red-400 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="Service code"
-                />
-
-                {errors.code && (
-                  <p className="text-red-500 text-sm mt-1">{errors.code}</p>
-                )}
-              </div>
+              <InputField
+                label={"Service Code"}
+                name="code"
+                value={form.code}
+                onChange={handleChange}
+                placeholder="Service code"
+                error={errors.code}
+              />
 
               {/* Status */}
               <div>
@@ -200,17 +163,11 @@ export default function AddServiceForm({ editData, onClose, onSuccess }) {
 
             {/* Submit */}
             <div className="pt-3 flex justify-end">
-              <button
+              <ButtonField
+                name={editData ? "Update Service" : "Create Service"}
                 type="submit"
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all disabled:opacity-50"
-              >
-                {loading
-                  ? "Saving..."
-                  : editData
-                    ? "Update Service"
-                    : "Create Service"}
-              </button>
+                isDisabled={loading}
+              />
             </div>
           </form>
         </div>

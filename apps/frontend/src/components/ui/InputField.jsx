@@ -12,6 +12,7 @@ const InputField = ({
   error,
   maxLength,
   inputMode,
+  className,
 }) => (
   <div>
     <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -32,7 +33,7 @@ const InputField = ({
         maxLength={maxLength}
         inputMode={inputMode}
         min={type == "number" && 0}
-        className={`w-full ${
+        className={`w-full ${className} ${
           Icon ? "pl-10" : "pl-4"
         } pr-4 py-3 bg-gray-50 border-2 ${
           error ? "border-red-500" : "border-gray-200"

@@ -238,29 +238,25 @@ class AuditLogService {
     ipAddress = null,
     metadata = {},
   }) {
-    try {
-      const auditData = {
-        id: uuidv4(),
-        userId,
-        action,
-        entityType,
-        entityId,
-        ipAddress,
-        metadata,
-      };
+    const auditData = {
+      id: uuidv4(),
+      userId,
+      action,
+      entityType,
+      entityId,
+      ipAddress,
+      metadata,
+    };
 
-      const savedLog = await Prisma.auditLog.create({
-        data: auditData,
-      });
+    const savedLog = await Prisma.auditLog.create({
+      data: auditData,
+    });
 
-      return {
-        success: true,
-        data: savedLog,
-        message: "Audit log created successfully",
-      };
-    } catch (error) {
-      throw ApiError.internal("Failed to create audit log");
-    }
+    return {
+      success: true,
+      data: savedLog,
+      message: "Audit log created successfully",
+    };
   }
 }
 

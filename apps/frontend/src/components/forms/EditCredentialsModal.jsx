@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { updateCredentials } from "../../redux/slices/authSlice";
 import ZodErrorCatch from "../../layouts/ZodErrorCatch";
+import HeaderSection from "../ui/HeaderSection";
 
 const EditCredentialsModal = ({ userId, type, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -175,10 +176,7 @@ const EditCredentialsModal = ({ userId, type, onClose, onSuccess }) => {
   return (
     <div className="fixed inset-0 bg-opacity-50 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
-        <div className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-700 px-6 py-5 rounded-t-xl">
-          <h2 className="text-xl font-semibold text-white">{getTitle()}</h2>
-          <p className="text-blue-100 text-sm">{getDescription()}</p>
-        </div>
+        <HeaderSection title={getTitle()} tagLine={getDescription()} />
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {apiError && (

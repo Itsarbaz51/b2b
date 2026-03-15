@@ -37,6 +37,7 @@ import { KYCStatusCard } from "../KYCStatusCard";
 import PANVerificationModal from "./services/PANVerificationModal";
 import { SERVICES } from "../../utils/constants";
 import { usePermissions } from "../hooks/usePermission";
+import HeaderSection from "../ui/HeaderSection";
 
 // ---------- Main Form ----------
 export default function AddUserProfileKYC() {
@@ -619,20 +620,11 @@ export default function AddUserProfileKYC() {
     return (
       <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          {/* Header with Logout Button */}
-          <div className="bg-linear-to-r from-cyan-500 to-purple-600 rounded-2xl shadow-xl p-8 mb-8">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <Shield className="text-white" size={32} />
-                <div>
-                  <h1 className="text-3xl font-bold text-white">
-                    KYC Verification
-                  </h1>
-                  <p className="text-cyan-50">Your KYC verification status</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <HeaderSection
+            title={"KYC Verification"}
+            tagLine={"Your KYC verification status"}
+            icon={Shield}
+          />
 
           {/* KYC Status Card */}
           <KYCStatusCard kycDetail={kycDetail} onLogout={handleLogout} />
@@ -697,24 +689,15 @@ export default function AddUserProfileKYC() {
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header with Logout Button */}
-        <div className="bg-linear-to-r from-cyan-500 to-purple-600 rounded-2xl shadow-xl p-8 mb-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <Shield className="text-white" size={32} />
-              <div>
-                <h1 className="text-3xl font-bold text-white">
-                  KYC Verification
-                </h1>
-                <p className="text-cyan-50">
-                  {kycDetail?.status === "REJECT"
-                    ? "Please correct your KYC information and resubmit"
-                    : "Complete your KYC to access all features"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <HeaderSection
+          title={"KYC Verification"}
+          tagLine={
+            kycDetail?.status === "REJECT"
+              ? "Please correct your KYC information and resubmit"
+              : "Complete your KYC to access all features"
+          }
+          icon={Shield}
+        />
 
         {/* Show reject reason if KYC was rejected */}
         {kycDetail?.status === "REJECT" && (
