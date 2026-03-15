@@ -15,7 +15,7 @@ export const protectedRoute = [
   "/permission",
   "/profile/:id",
   "/logs",
-  "/card-payout",
+  "/payout",
   "/verify-reset-password",
 ];
 
@@ -46,7 +46,7 @@ export const navbarTitleConfig = {
     tagLine: "Manage fund request",
     icon: BadgeIndianRupee,
   },
-  "/card-payout": {
+  "/payout": {
     title: "Payout",
     tagLine: "Manage outgoing transactions",
     icon: ArrowDownCircle,

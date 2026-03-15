@@ -181,7 +181,7 @@ const FundRequestPage = () => {
             Refresh
           </button>
 
-          {!isAdmin && canProcess && (
+          {canProcess && (
             <>
               <button
                 onClick={() => setMethod("razorpay")}

@@ -6,7 +6,7 @@ import {
 } from "../redux/slices/settingSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { InputField } from "../components/ui/InputField";
+import InputField from "../components/ui/InputField";
 import { FileUpload } from "../components/ui/FileUpload";
 
 const MainSetting = () => {

@@ -27,7 +27,7 @@ import {
 } from "../../redux/slices/kycSlice";
 import { toast } from "react-toastify";
 import { verifyAuth, logoutUser } from "../../redux/slices/authSlice";
-import { InputField } from "../ui/InputField";
+import InputField from "../ui/InputField";
 import { FileUpload } from "../ui/FileUpload";
 import { DropdownField } from "../ui/DropdownField";
 import ButtonField from "../ui/ButtonField";

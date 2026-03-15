@@ -1,8 +1,11 @@
 import React from "react";
+import CloseBtn from "./CloseBtn";
 
-function HeaderSection({ title, tagLine, icon: Icon, totalCount }) {
+function HeaderSection({ title, tagLine, icon: Icon, totalCount, isClose }) {
   return (
-    <div className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-700 text-white p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden">
+    <div
+      className={`bg-linear-to-r from-cyan-500 via-blue-600 to-indigo-700 text-white p-8  shadow-xl mb-8 relative overflow-hidden ${isClose ? "flex justify-between rounded-t-2xl" : "rounded-2xl"}`}
+    >
       <div className="relative z-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -21,6 +24,7 @@ function HeaderSection({ title, tagLine, icon: Icon, totalCount }) {
           )}
         </div>
       </div>
+      {isClose && <CloseBtn isClose={isClose} />}
     </div>
   );
 }

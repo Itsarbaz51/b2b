@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
-import { InputField } from "../ui/InputField";
+import InputField from "../ui/InputField";
 import { DropdownField } from "../ui/DropdownField";
 import { FileUpload } from "../ui/FileUpload";
 import ButtonField from "../ui/ButtonField";

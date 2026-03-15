@@ -5,7 +5,11 @@ import {
   verifyFundRequest,
 } from "../../../redux/slices/fundSlice";
 import { v4 as uuidv4 } from "uuid";
-import { CreditCard, X } from "lucide-react";
+import { CreditCard } from "lucide-react";
+
+import HeaderSection from "../../ui/HeaderSection";
+import InputField from "../../ui/InputField";
+import ButtonField from "../../ui/ButtonField";
 
 const AddRazorpayFundForm = ({ resetForm, onSuccess, serviceId }) => {
   const [amount, setAmount] = useState("");
@@ -66,35 +70,30 @@ const AddRazorpayFundForm = ({ resetForm, onSuccess, serviceId }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-md rounded-xl shadow-lg">
-        <div className="flex justify-between items-center p-6 border-b border-gray-300">
-          <h2 className="text-lg font-semibold">Razorpay Payment</h2>
-          <button onClick={resetForm}>
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto relative">
+        <HeaderSection
+          title={"Razorpay Payment"}
+          tagLine={"Add funds instantly using Razorpay"}
+          isClose={resetForm}
+        />
 
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-sm font-medium">Amount</label>
+        {/* BODY */}
+        <div className="p-4 sm:p-6 space-y-5">
+          <InputField
+            label="Amount"
+            name="amount"
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
 
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full border border-gray-300 outline-blue-600 rounded-lg px-4 py-2"
-              placeholder="Enter amount"
-            />
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg flex items-center justify-center gap-2"
-          >
-            <CreditCard className="w-4 h-4" />
-            Pay with Razorpay
-          </button>
+          <ButtonField
+            name="Pay with Razorpay"
+            icon={CreditCard}
+            isOpen={handleSubmit}
+            btncss="w-full bg-blue-600 text-white"
+          />
         </div>
       </div>
     </div>

@@ -56,15 +56,15 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // ---------------- SERVICE PERMISSIONS ----------------
+  const serviceCodeFromPath = currentPath
+    .replace("/", "")
+    .replaceAll("-", "_")
+    .toUpperCase();
+
+  const permission = usePermissions(serviceCodeFromPath);
+
   if (currentUser?.role?.type === "business") {
-    const serviceCodeFromPath = currentPath
-      .replace("/", "")
-      .replaceAll("-", "_")
-      .toUpperCase();
-
     if (Object.values(SERVICES).includes(serviceCodeFromPath)) {
-      const permission = usePermissions(serviceCodeFromPath);
-
       if (!permission.canView) {
         return <Navigate to="/dashboard" replace />;
       }

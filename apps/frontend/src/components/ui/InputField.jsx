@@ -1,6 +1,6 @@
 import { AlertCircle } from "lucide-react";
 
-export const InputField = ({
+const InputField = ({
   label,
   name,
   type = "text",
@@ -31,6 +31,7 @@ export const InputField = ({
         placeholder={placeholder}
         maxLength={maxLength}
         inputMode={inputMode}
+        min={type == "number" && 0}
         className={`w-full ${
           Icon ? "pl-10" : "pl-4"
         } pr-4 py-3 bg-gray-50 border-2 ${
@@ -46,3 +47,5 @@ export const InputField = ({
     )}
   </div>
 );
+
+export default InputField;

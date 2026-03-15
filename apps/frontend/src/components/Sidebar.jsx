@@ -103,12 +103,13 @@ const Sidebar = () => {
         },
         {
           id: "payout",
-          label: "Payouts",
+          label: "Payout",
           icon: ArrowDownCircle,
-          path: "/card-payout",
+          path: "/payout",
           businessPermission: payoutPermissions.canView,
           employeePermission: PERMISSIONS.PAYOUT,
           staticRoles: [
+            "ADMIN",
             "STATE HEAD",
             "MASTER DISTRIBUTOR",
             "DISTRIBUTOR",
