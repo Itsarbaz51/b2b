@@ -38,7 +38,7 @@ export const DropdownField = ({
         <option value="">{placeholder}</option>
         {options.map((option) => (
           <option key={option?.id} value={option?.id}>
-            {option.stateName || option.cityName}
+            {option.label || option.label}
           </option>
         ))}
       </select>

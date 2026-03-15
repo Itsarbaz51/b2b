@@ -8,6 +8,7 @@ import { paisaToRupee, rupeesToPaise } from "../../utils/lib";
 import HeaderSection from "../ui/HeaderSection";
 import InputField from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
+import { DropdownField } from "../ui/DropdownField";
 
 export default function AddMappingForm({
   services = [],
@@ -99,6 +100,35 @@ export default function AddMappingForm({
     onClose();
   };
 
+  const statusOptions = [
+    { id: true, label: "Active" },
+    { id: false, label: "Inactive" },
+  ];
+  const serviceOptions = services.map((s) => ({
+    id: s.id,
+    label: s.name,
+  }));
+
+  const providerOptions = providers.map((p) => ({
+    id: p.id,
+    label: p.name,
+  }));
+
+  const modeOptions = [
+    { id: "COMMISSION", label: "Commission" },
+    { id: "SURCHARGE", label: "Surcharge" },
+  ];
+
+  const pricingTypeOptions = [
+    { id: "FLAT", label: "Flat" },
+    { id: "PERCENTAGE", label: "Percentage" },
+  ];
+
+  const commissionLevelOptions = [
+    { id: "NONE", label: "None" },
+    { id: "ADMIN_ONLY", label: "Admin" },
+    { id: "HIERARCHY", label: "Hierarchy" },
+  ];
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
@@ -119,99 +149,59 @@ export default function AddMappingForm({
 
             {/* Fields */}
             <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Service
-                </label>
-
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.serviceId}
-                  onChange={(e) =>
-                    setForm({ ...form, serviceId: e.target.value })
-                  }
-                >
-                  <option>Select Service</option>
-
-                  {services.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Provider
-                </label>
-
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.providerId}
-                  onChange={(e) =>
-                    setForm({ ...form, providerId: e.target.value })
-                  }
-                >
-                  <option>Select Provider</option>
-
-                  {providers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold mb-2 block">Mode</label>
-
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.mode}
-                  onChange={(e) => setForm({ ...form, mode: e.target.value })}
-                >
-                  <option>Select Mode</option>
-
-                  <option value="COMMISSION">Commission</option>
-                  <option value="SURCHARGE">Surcharge</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Pricing Type
-                </label>
-
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.pricingValueType}
-                  onChange={(e) =>
-                    setForm({ ...form, pricingValueType: e.target.value })
-                  }
-                >
-                  <option value="FLAT">Flat</option>
-                  <option value="PERCENTAGE">Percentage</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Commission Start Level
-                </label>
-
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.commissionStartLevel}
-                  onChange={(e) =>
-                    setForm({ ...form, commissionStartLevel: e.target.value })
-                  }
-                >
-                  <option value="NONE">None</option>
-                  <option value="ADMIN_ONLY">Admin</option>
-                  <option value="HIERARCHY">Hierarchy</option>
-                </select>
-              </div>
+              <DropdownField
+                label="Service"
+                value={form.serviceId}
+                onChange={(e) =>
+                  setForm({ ...form, serviceId: e.target.value })
+                }
+                options={serviceOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+              />
+              <DropdownField
+                label="Provider"
+                value={form.providerId}
+                onChange={(e) =>
+                  setForm({ ...form, providerId: e.target.value })
+                }
+                options={providerOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+              />
+              <DropdownField
+                label="Mode"
+                value={form.mode}
+                onChange={(e) => setForm({ ...form, mode: e.target.value })}
+                options={modeOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+              />
+              <DropdownField
+                label="Pricing Type"
+                value={form.pricingValueType}
+                onChange={(e) =>
+                  setForm({ ...form, pricingValueType: e.target.value })
+                }
+                options={pricingTypeOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+              />
+              <DropdownField
+                label="Commission Start Level"
+                value={form.commissionStartLevel}
+                onChange={(e) =>
+                  setForm({ ...form, commissionStartLevel: e.target.value })
+                }
+                options={commissionLevelOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+              />
 
               {form.mode === "COMMISSION" && (
                 <InputField
@@ -239,25 +229,23 @@ export default function AddMappingForm({
               <p className="text-xs text-gray-500 mt-1">
                 Stored: {(Number(providerCost) * 100).toFixed(0)} paisa
               </p>
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Status
-                </label>
 
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.isActive}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      isActive: e.target.value === "true",
-                    })
-                  }
-                >
-                  <option value={true}>Active</option>
-                  <option value={false}>Inactive</option>
-                </select>
-              </div>
+              <DropdownField
+                label="Status Type"
+                value={form.isActive}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    isActive: e.target.value === "true",
+                  })
+                }
+                options={statusOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+                placeholder="Select status type"
+              />
+
               <div className="flex items-center mt-6">
                 <input
                   type="checkbox"

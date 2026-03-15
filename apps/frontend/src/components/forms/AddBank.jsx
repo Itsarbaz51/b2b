@@ -171,7 +171,7 @@ const AddBank = ({
               onChange={onChange}
               options={accountTypes.map((type) => ({
                 id: type.value,
-                stateName: type.label,
+                label: type.label,
               }))}
               error={allErrors.accountType}
               placeholder="Select account type"

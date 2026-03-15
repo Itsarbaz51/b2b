@@ -81,6 +81,15 @@ export default function AddProviderSlabForm({
     onSuccess?.();
     onClose();
   };
+  const modeOptions = [
+    { id: "COMMISSION", label: "Commission" },
+    { id: "SURCHARGE", label: "Surcharge" },
+  ];
+
+  const pricingTypeOptions = [
+    { id: "FLAT", label: "Flat" },
+    { id: "PERCENTAGE", label: "Percentage" },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -120,42 +129,33 @@ export default function AddProviderSlabForm({
               />
 
               {/* Mode */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block">Mode</label>
-
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.mode}
-                  onChange={(e) => setForm({ ...form, mode: e.target.value })}
-                >
-                  <option value="COMMISSION">Commission</option>
-                  <option value="SURCHARGE">Surcharge</option>
-                </select>
-              </div>
+              <DropdownField
+                label="Status"
+                value={form.mode}
+                onChange={(e) => setForm({ ...form, mode: e.target.value })}
+                options={modeOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+              />
 
               {/* Pricing Type */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block">
-                  Pricing Type
-                </label>
-
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.pricingValueType}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      pricingValueType: e.target.value,
-                    })
-                  }
-                >
-                  <option value="FLAT">Flat</option>
-                  <option value="PERCENTAGE">Percentage</option>
-                </select>
-              </div>
+              <DropdownField
+                label="Pricing Type"
+                value={form.pricingValueType}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    pricingValueType: e.target.value,
+                  })
+                }
+                options={pricingTypeOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+              />
 
               {/* Provider Cost */}
-
               <InputField
                 label={"Provider Cost (₹)"}
                 type="number"

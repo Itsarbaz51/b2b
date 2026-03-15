@@ -4,6 +4,7 @@ import { createService, updateService } from "../../redux/slices/serviceSlice";
 import ButtonField from "../ui/ButtonField";
 import InputField from "../ui/InputField";
 import HeaderSection from "../ui/HeaderSection";
+import { DropdownField } from "../ui/DropdownField";
 
 export default function AddServiceForm({ editData, onClose, onSuccess }) {
   const dispatch = useDispatch();
@@ -96,6 +97,10 @@ export default function AddServiceForm({ editData, onClose, onSuccess }) {
     setLoading(false);
   };
 
+  const statusOptions = [
+    { id: true, label: "Active" },
+    { id: false, label: "Inactive" },
+  ];
   return (
     <div className="fixed inset-0 bg-opacity-50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-fadeIn">
@@ -144,21 +149,18 @@ export default function AddServiceForm({ editData, onClose, onSuccess }) {
               />
 
               {/* Status */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Status
-                </label>
 
-                <select
-                  name="isActive"
-                  value={form.isActive}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-blue-400"
-                >
-                  <option value={true}>Active</option>
-                  <option value={false}>Inactive</option>
-                </select>
-              </div>
+              <DropdownField
+                label="Status Type"
+                name="isActive"
+                value={form.isActive}
+                onChange={handleChange}
+                options={statusOptions.map((type) => ({
+                  id: type.id,
+                  label: type.label,
+                }))}
+                placeholder="Select status type"
+              />
             </div>
 
             {/* Submit */}

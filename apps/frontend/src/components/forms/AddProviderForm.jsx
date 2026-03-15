@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import HeaderSection from "../ui/HeaderSection";
 import InputField from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
+import { DropdownField } from "../ui/DropdownField";
 
 export default function AddProviderForm({ editData, onClose, onSuccess }) {
   const dispatch = useDispatch();
@@ -54,6 +55,10 @@ export default function AddProviderForm({ editData, onClose, onSuccess }) {
     setLoading(false);
   };
 
+  const statusOptions = [
+    { id: true, label: "Active" },
+    { id: false, label: "Inactive" },
+  ];
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -79,25 +84,20 @@ export default function AddProviderForm({ editData, onClose, onSuccess }) {
           />
 
           {/* Status */}
-          <div>
-            <label className="text-sm font-semibold text-gray-700">
-              Status
-            </label>
-
-            <select
-              className="w-full border border-gray-300 px-4 py-3 rounded-xl mt-1"
-              value={form.isActive}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  isActive: e.target.value === "true",
-                })
-              }
-            >
-              <option value={true}>Active</option>
-              <option value={false}>Inactive</option>
-            </select>
-          </div>
+          <DropdownField
+            label="Status"
+            value={form.isActive}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                isActive: e.target.value === "true",
+              })
+            }
+            options={statusOptions.map((type) => ({
+              id: type.id,
+              label: type.label,
+            }))}
+          />
 
           {/* Button */}
           <div className="flex justify-end pt-3">
