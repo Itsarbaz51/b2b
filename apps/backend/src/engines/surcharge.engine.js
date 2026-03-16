@@ -94,7 +94,6 @@ export default class SurchargeEngine {
         createdBy,
       });
 
-      return;
     }
 
     // HIERARCHY MODE

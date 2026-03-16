@@ -36,6 +36,7 @@ const ProtectedRoute = ({ children }) => {
   if (
     isBusinessUser &&
     walletBalance < 100 &&
+    !currentUser?.isKycVerified &&
     !["/add-fund"].includes(currentPath)
   ) {
     return <Navigate to="/add-fund" replace />;
