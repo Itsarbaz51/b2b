@@ -26,6 +26,7 @@ class WonderpayPayoutPlugin extends PayoutPluginInterface {
         }
       );
 
+      console.log(data);
       if (data.statusCode !== 1) {
         throw ApiError.badRequest(data.message || "Balance fetch failed");
       }
@@ -52,6 +53,7 @@ class WonderpayPayoutPlugin extends PayoutPluginInterface {
           clientOrderId,
         }
       );
+      console.log(data);
 
       if (data.statusCode !== 1) {
         throw ApiError.badRequest(

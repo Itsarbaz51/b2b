@@ -9,7 +9,6 @@ import { rupeesToPaise } from "../../utils/lib";
 import HeaderSection from "../ui/HeaderSection";
 
 const scopes = ["ROLE", "USER"];
-const commissionTypes = ["FLAT", "PERCENTAGE"];
 
 const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   const dispatch = useDispatch();
@@ -37,15 +36,10 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     type: "FLAT",
     value: "",
 
-    minAmount: "",
-    maxAmount: "",
-
     applyTDS: false,
     tdsPercent: "",
     applyGST: false,
     gstPercent: "",
-
-    effectiveTo: "",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -72,10 +66,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
         applyGST: editData.applyGST || false,
         gstPercent: editData.gstPercent ?? "",
-
-        effectiveTo: editData.effectiveTo
-          ? new Date(editData.effectiveTo).toISOString().split("T")[0]
-          : "",
       });
 
       // USER scope prefill search input
@@ -214,52 +204,28 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       }
     }
 
-    if (formData.effectiveFrom && formData.effectiveTo) {
-      const fromDate = new Date(formData.effectiveFrom);
-      const toDate = new Date(formData.effectiveTo);
-      if (toDate <= fromDate) {
-        newErrors.effectiveTo =
-          "Effective to date must be after effective from date";
-      }
-    }
-
     // 🔥 TDS validation only if mode = COMMISSION
     if (formData.mode === "COMMISSION" && formData.applyTDS) {
       if (formData.tdsPercent === "" || isNaN(formData.tdsPercent)) {
         newErrors.tdsPercent = "TDS percentage is required";
-      } else if (
-        bigint(formData.tdsPercent) < 0 ||
-        bigint(formData.tdsPercent) > 100
-      ) {
+      } else if (formData.tdsPercent < 0 || formData.tdsPercent > 100) {
         newErrors.tdsPercent = "TDS percentage must be between 0 and 100";
       }
     }
 
     // 🔥 GST validation only if mode = SURCHARGE
     if (formData.mode === "SURCHARGE" && formData.applyGST) {
+      console.log(formData.gstPercent);
+
       if (formData.gstPercent === "" || isNaN(formData.gstPercent)) {
         newErrors.gstPercent = "GST percentage is required";
-      } else if (
-        bigint(formData.gstPercent) < 0 ||
-        bigint(formData.gstPercent) > 100
-      ) {
+      } else if (formData.gstPercent < 0 || formData.gstPercent > 100) {
         newErrors.gstPercent = "GST percentage must be between 0 and 100";
       }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  // Convert date to ISO string with timezone
-  const formatDateToISO = (dateString) => {
-    if (!dateString) return undefined;
-
-    const date = new Date(dateString);
-    // Set to start of day in local timezone and convert to ISO
-    return new Date(
-      date.getTime() - date.getTimezoneOffset() * 60000,
-    ).toISOString();
   };
 
   const handleSubmit = async (e) => {
@@ -287,14 +253,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         type: formData.type,
 
         value: rupeesToPaise(formData.value),
-
-        minAmount: formData.minAmount
-          ? rupeesToPaise(formData.minAmount)
-          : undefined,
-
-        maxAmount: formData.maxAmount
-          ? rupeesToPaise(formData.maxAmount)
-          : undefined,
 
         applyTDS: formData.applyTDS,
         tdsPercent: formData.applyTDS ? formData.tdsPercent : undefined,
@@ -648,57 +606,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Min Amount */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Min Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  name="minAmount"
-                  value={formData.minAmount}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.minAmount
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="Optional"
-                  step="1"
-                  min="0"
-                />
-                {errors.minAmount && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.minAmount}
-                  </p>
-                )}
-              </div>
-
-              {/* Max Amount */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Max Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  name="maxAmount"
-                  value={formData.maxAmount}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.maxAmount
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="Optional"
-                  step="1"
-                  min="0"
-                />
-                {errors.maxAmount && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.maxAmount}
-                  </p>
-                )}
-              </div>
               {/* TDS Settings */}
               {formData.mode === "COMMISSION" && (
                 <div className="w-full mt-6">
@@ -796,31 +703,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                   </div>
                 </div>
               )}
-
-              {/* Effective To */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Effective To
-                </label>
-                <input
-                  type="date"
-                  name="effectiveTo"
-                  value={formData.effectiveTo}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.effectiveTo
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder="Optional"
-                  min={formData.effectiveFrom}
-                />
-                {errors.effectiveTo && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.effectiveTo}
-                  </p>
-                )}
-              </div>
             </div>
             {/* Submit Button */}
             <div className="pt-3 flex justify-end space-x-4">

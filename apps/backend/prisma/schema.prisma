@@ -341,19 +341,35 @@ model CommissionSetting {
   createdBy String  @map("created_by")
   isActive  Boolean @default(true) @map("is_active")
 
-  effectiveTo DateTime? @map("effective_to")
-
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("update_at")
 
-  role       Role? @relation(fields: [roleId], references: [id])
-  targetUser User? @relation(fields: [targetUserId], references: [id])
+  role         Role?   @relation(fields: [roleId], references: [id])
+  targetUser   User?   @relation(fields: [targetUserId], references: [id])
+  supportsSlab Boolean @default(false) @map("support_slab")
 
   serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
+  userPricingSlabs       UserPricingSlab[]
 
   @@unique([serviceProviderMappingId, roleId])
   @@unique([serviceProviderMappingId, targetUserId])
   @@map("commission_settings")
+}
+
+model UserPricingSlab {
+  id                  String @id @default(uuid())
+  commissionSettingId String @map("commission_setting_id")
+
+  minAmount BigInt @map("min_amount")
+  maxAmount BigInt @map("max_amount")
+
+  value             BigInt
+  CommissionSetting CommissionSetting @relation(fields: [commissionSettingId], references: [id])
+  createdAt         DateTime          @default(now())
+
+  @@unique([commissionSettingId, minAmount, maxAmount])
+  @@index([minAmount, maxAmount])
+  @@map("user_pricing_slabs")
 }
 
 model CommissionEarning {
@@ -442,6 +458,12 @@ model ServiceProviderMapping {
   sellingPrice         BigInt?
   commissionStartLevel CommissionStartLevel @default(NONE)
 
+  applyTDS   Boolean @default(false) @map("apply_tds")
+  tdsPercent BigInt? @map("tds_percent")
+
+  applyGST   Boolean @default(false) @map("apply_gst")
+  gstPercent BigInt? @map("gst_percent")
+
   config Json?
 
   priority     Int     @default(1)
@@ -472,13 +494,8 @@ model ProviderSlab {
   minAmount BigInt @map("min_amount")
   maxAmount BigInt @map("max_amount")
 
-  mode             PricingMode      @default(COMMISSION)
-  pricingValueType PricingValueType @default(FLAT) @map("pricing_value_type")
-
-  providerCost BigInt? @map("provider_cost")
-  sellingPrice BigInt? @map("selling_price")
-
-  createdAt DateTime @default(now()) @map("created_at")
+  providerCost BigInt   @map("provider_cost")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   mapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
 

@@ -1,11 +1,11 @@
 import { useDispatch } from "react-redux";
 import { createService } from "../../redux/slices/serviceSlice";
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
 import { rupeesToPaise } from "../../utils/lib";
 import HeaderSection from "../ui/HeaderSection";
 import InputField from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
+import { DropdownField } from "../ui/DropdownField";
 
 export default function AddProviderSlabForm({
   mappingId,

@@ -4,31 +4,53 @@ import WalletEngine from "../../engines/wallet.engine.js";
 import TransactionService from "../transaction.service.js";
 import LedgerEngine from "../../engines/ledger.engine.js";
 import { ApiError } from "../../utils/ApiError.js";
+import { CommissionSettingService } from "../commission.service.js";
 
 export default class WonderpayPayoutService {
   static getPlugin(provider, mapping) {
     return getPayoutPlugin(provider.code, mapping.config);
   }
 
-  static async checkBalance(serviceProviderMapping, provider) {
+  static async checkBalance(serviceProviderMapping, provider, actor, payload) {
     const plugin = this.getPlugin(provider, serviceProviderMapping);
     return plugin.checkBalance();
   }
 
-  static async verifyAccount(payload, serviceProviderMapping, provider) {
+  static async verifyAccount(serviceProviderMapping, provider, payload, actor) {
+    const { number, accountNo, ifscCode, clientOrderId } = payload;
     const plugin = this.getPlugin(provider, serviceProviderMapping);
 
+    await CommissionSettingService.checkUserPricingRule(
+      userId,
+      serviceProviderMapping.id
+    );
+
     return plugin.verifyAccount({
-      number: payload.mobile,
-      accountNo: payload.accountNo,
-      ifscCode: payload.ifscCode,
-      clientOrderId: payload.clientOrderId,
+      number,
+      accountNo,
+      ifscCode,
+      clientOrderId,
     });
   }
 
-  static async transfer(payload, actor, serviceProviderMapping, provider) {
+  static async transfer(serviceProviderMapping, provider, payload, actor) {
     const plugin = this.getPlugin(provider, serviceProviderMapping);
-    const amount = BigInt(payload.amount);
+    const {
+      number,
+      amount,
+      transferMode,
+      accountNo,
+      ifscCode,
+      beneficiaryName,
+      clientOrderId,
+    } = payload;
+
+    const amountBigint = BigInt(amount);
+
+    await CommissionSettingService.checkUserPricingRule(
+      userId,
+      serviceProviderMapping.id
+    );
 
     return Prisma.$transaction(async (tx) => {
       const wallet = await WalletEngine.getWallet({
@@ -37,28 +59,28 @@ export default class WonderpayPayoutService {
         walletType: "PRIMARY",
       });
 
-      if (wallet.balance < amount) {
+      if (wallet.balance < amountBigint) {
         throw ApiError.badRequest("Insufficient wallet balance");
       }
 
-      await WalletEngine.debit(tx, wallet, amount);
+      await WalletEngine.debit(tx, wallet, amountBigint);
 
       const { transaction } = await TransactionService.create(tx, {
         userId: actor.id,
         walletId: wallet.id,
         serviceProviderMappingId: serviceProviderMapping.id,
-        amount,
+        amountBigint,
         requestPayload: payload,
       });
 
       const providerResponse = await plugin.payout({
-        number: payload.mobile,
-        amount: Number(amount),
-        transferMode: payload.transferMode,
-        accountNo: payload.accountNo,
-        ifscCode: payload.ifscCode,
-        beneficiaryName: payload.beneficiaryName,
-        clientOrderId: transaction.id,
+        number,
+        amountBigint,
+        transferMode,
+        accountNo,
+        ifscCode,
+        beneficiaryName,
+        clientOrderId,
       });
 
       await LedgerEngine.create(tx, {

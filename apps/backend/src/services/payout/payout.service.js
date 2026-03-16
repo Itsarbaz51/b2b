@@ -1,19 +1,44 @@
 import ProviderResolver from "../../resolvers/Provider.resolver.js";
 import WonderpayPayoutService from "./payout.wonderpay.service.js";
 import { ApiError } from "../../utils/ApiError.js";
+import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
 
 export default class PayoutService {
-  static async checkBalance(payload) {
-    const { serviceId, provider } = payload;
+  static async checkPermission(userId, serviceId) {
+    await ServicePermissionResolver.validateHierarchyServiceAccess(
+      userId,
+      serviceId
+    );
+  }
 
+  static async resolveProvider(serviceId, provider) {
     const { provider: providerData, serviceProviderMapping } =
       await ProviderResolver.resolveProvider(serviceId, provider);
+
+    if (serviceProviderMapping.commissionStartLevel === "NONE") {
+      throw ApiError.badRequest("Surcharge disabled for this service (NONE)");
+    }
+
+    return { providerData, serviceProviderMapping };
+  }
+
+  static async checkBalance(payload, actor) {
+    const { serviceId, provider } = payload;
+
+    await this.checkPermission(actor.id, serviceId);
+
+    const { providerData, serviceProviderMapping } = await this.resolveProvider(
+      serviceId,
+      provider
+    );
 
     switch (providerData.code) {
       case "WONDERPAY":
         return WonderpayPayoutService.checkBalance(
           serviceProviderMapping,
-          providerData
+          providerData,
+          actor,
+          payload
         );
 
       default:
@@ -21,18 +46,23 @@ export default class PayoutService {
     }
   }
 
-  static async verifyAccount(payload) {
+  static async verifyAccount(payload, actor) {
     const { serviceId, provider } = payload;
 
-    const { provider: providerData, serviceProviderMapping } =
-      await ProviderResolver.resolveProvider(serviceId, provider);
+    await this.checkPermission(actor.id, serviceId);
+
+    const { providerData, serviceProviderMapping } = await this.resolveProvider(
+      serviceId,
+      provider
+    );
 
     switch (providerData.code) {
       case "WONDERPAY":
         return WonderpayPayoutService.verifyAccount(
-          payload,
           serviceProviderMapping,
-          providerData
+          providerData,
+          payload,
+          actor
         );
 
       default:
@@ -43,16 +73,20 @@ export default class PayoutService {
   static async transfer(payload, actor) {
     const { serviceId, provider } = payload;
 
-    const { provider: providerData, serviceProviderMapping } =
-      await ProviderResolver.resolveProvider(serviceId, provider);
+    await this.checkPermission(actor.id, serviceId);
+
+    const { providerData, serviceProviderMapping } = await this.resolveProvider(
+      serviceId,
+      provider
+    );
 
     switch (providerData.code) {
       case "WONDERPAY":
         return WonderpayPayoutService.transfer(
-          payload,
-          actor,
           serviceProviderMapping,
-          providerData
+          providerData,
+          payload,
+          actor
         );
 
       default:
@@ -60,18 +94,23 @@ export default class PayoutService {
     }
   }
 
-  static async checkStatus(payload) {
+  static async checkStatus(payload, actor) {
     const { serviceId, provider } = payload;
 
-    const { provider: providerData, serviceProviderMapping } =
-      await ProviderResolver.resolveProvider(serviceId, provider);
+    await this.checkPermission(actor.id, serviceId);
+
+    const { providerData, serviceProviderMapping } = await this.resolveProvider(
+      serviceId,
+      provider
+    );
 
     switch (providerData.code) {
       case "WONDERPAY":
         return WonderpayPayoutService.checkStatus(
-          payload,
           serviceProviderMapping,
-          providerData
+          providerData,
+          payload,
+          actor
         );
 
       default:

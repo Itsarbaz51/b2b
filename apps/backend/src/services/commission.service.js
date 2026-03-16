@@ -16,7 +16,6 @@ export class CommissionSettingService {
       tdsPercent,
       applyGST,
       gstPercent,
-      effectiveTo,
     } = data;
 
     if (!mode || !type || value === undefined || value === null) {
@@ -87,8 +86,6 @@ export class CommissionSettingService {
 
       applyGST: applyGST || false,
       gstPercent: gstPercent ? BigInt(gstPercent) : null,
-
-      effectiveTo: effectiveTo ? new Date(effectiveTo) : null,
 
       createdBy,
       isActive: true,
