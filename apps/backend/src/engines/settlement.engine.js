@@ -20,7 +20,7 @@ export default class SettlementEngine {
     const pricing = await PricingEngine.calculateSurcharge(tx, {
       userId,
       serviceProviderMappingId: serviceProviderMapping.id,
-      amount: payload.amount || serviceProviderMapping.providerCost,
+      amount: payload.amount || 0,
     });
 
     const { providerCost, surcharge, gst, totalDebit } = pricing;

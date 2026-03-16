@@ -93,7 +93,6 @@ export default class SurchargeEngine {
         netAmount: amount,
         createdBy,
       });
-
     }
 
     // HIERARCHY MODE

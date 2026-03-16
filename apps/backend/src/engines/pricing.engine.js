@@ -95,7 +95,7 @@ export default class PricingEngine {
     }
 
     //  FINAL AMOUNT
-    const totalDebit = providerCost + surcharge + gst;
+    const totalDebit = providerCost + surcharge + gst + txnAmount;
 
     return {
       txnAmount,

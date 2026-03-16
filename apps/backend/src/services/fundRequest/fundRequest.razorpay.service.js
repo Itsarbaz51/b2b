@@ -4,6 +4,7 @@ import WalletEngine from "../../engines/wallet.engine.js";
 import TransactionService from "../transaction.service.js";
 import SurchargeEngine from "../../engines/surcharge.engine.js";
 import LedgerEngine from "../../engines/ledger.engine.js";
+import PricingEngine from "../../engines/pricing.engine.js";
 import { ApiError } from "../../utils/ApiError.js";
 import ApiEntityService from "../apiEntity.service.js";
 
@@ -18,7 +19,7 @@ export default class RazorpayFundRequestService {
       },
     });
 
-    // invalidate previous pending txn
+    // invalidate old pending order
     if (existing) {
       await Prisma.transaction.update({
         where: { id: existing.id },
@@ -43,27 +44,21 @@ export default class RazorpayFundRequestService {
 
     const amount = BigInt(payload.amount);
 
-    let providerCost = 0n;
-
-    if (serviceProviderMapping.pricingValueType === "PERCENTAGE") {
-      providerCost =
-        (amount * BigInt(serviceProviderMapping.providerCost)) / 10000n;
-    } else {
-      providerCost = BigInt(serviceProviderMapping.providerCost);
-    }
-
-    const surcharge = await SurchargeEngine.calculate(Prisma, {
+    // PRICING ENGINE
+    const pricing = await PricingEngine.calculateSurcharge(Prisma, {
       userId: actor.id,
       serviceProviderMappingId: serviceProviderMapping.id,
       amount,
     });
 
-    const finalAmount = amount + surcharge + providerCost;
+    const finalAmount = pricing.totalDebit;
 
+    // CREATE RAZORPAY ORDER
     const providerResponse = await plugin.createRequest({
       amount: Number(finalAmount),
       userId: actor.id,
     });
+    console.log("init", providerResponse);
 
     return Prisma.$transaction(async (tx) => {
       const wallet = await WalletEngine.getWallet({
@@ -80,8 +75,9 @@ export default class RazorpayFundRequestService {
         providerReference: providerResponse.orderId,
         pricing: {
           amount,
-          surcharge,
-          providerCost,
+          surcharge: pricing.surcharge,
+          providerCost: pricing.providerCost,
+          gst: pricing.gst,
           total: finalAmount,
         },
         idempotencyKey: payload.idempotencyKey,
@@ -167,7 +163,7 @@ export default class RazorpayFundRequestService {
         throw ApiError.badRequest("Payment not captured");
       }
 
-      // CREDIT WALLET
+      // CREDIT USER WALLET
       await WalletEngine.credit(tx, wallet, transaction.pricing.amount);
 
       // LEDGER ENTRY
@@ -176,17 +172,19 @@ export default class RazorpayFundRequestService {
         transactionId: transaction.id,
         entryType: "CREDIT",
         referenceType: "FUND_REQUEST",
+        serviceProviderMappingId: transaction.serviceProviderMapping.id,
         amount: transaction.pricing.amount,
         narration: "Fund added via Razorpay",
         createdBy: actor.id,
       });
 
-      // DISTRIBUTE SURCHARGE
+      // DISTRIBUTE SURCHARGE / GST / PROVIDER COST
       await SurchargeEngine.distribute(tx, {
         transactionId: transaction.id,
         userId: transaction.userId,
         serviceProviderMappingId: transaction.serviceProviderMappingId,
         createdBy: actor.id,
+        pricing: transaction.pricing,
       });
 
       // UPDATE TRANSACTION
