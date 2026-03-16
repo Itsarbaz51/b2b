@@ -30,7 +30,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     scope: "ROLE",
     roleId: "",
     targetUserId: "",
-    serviceId: "",
+    serviceProviderMappingId: "",
 
     mode: "COMMISSION",
     type: "FLAT",
@@ -40,6 +40,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     tdsPercent: "",
     applyGST: false,
     gstPercent: "",
+    supportSlab: false,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -51,11 +52,13 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   // Prefill form if editData exists
   useEffect(() => {
     if (editData) {
+      console.log(editData);
+
       setFormData({
         scope: editData.scope || "ROLE",
         roleId: editData.roleId || "",
         targetUserId: editData.targetUserId || "",
-        serviceId: editData.serviceProviderId || editData.serviceId || "",
+        serviceProviderMappingId: editData.serviceProviderMappingId || "",
 
         mode: editData.mode || "COMMISSION",
         type: editData.type || "FLAT",
@@ -66,6 +69,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
         applyGST: editData.applyGST || false,
         gstPercent: editData.gstPercent ?? "",
+        supportSlab: editData.supportSlab ?? false,
       });
 
       // USER scope prefill search input
@@ -169,8 +173,8 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     const newErrors = {};
 
     // Service
-    if (!formData.serviceId) {
-      newErrors.serviceId = "Service is required";
+    if (!formData.serviceProviderMappingId) {
+      newErrors.serviceProviderMappingId = "Service is required";
     }
 
     // Value
@@ -194,13 +198,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       const fromDate = new Date(formData.effectiveFrom);
       if (isNaN(fromDate.getTime())) {
         newErrors.effectiveFrom = "Invalid effective from date";
-      }
-    }
-
-    if (formData.effectiveTo) {
-      const toDate = new Date(formData.effectiveTo);
-      if (isNaN(toDate.getTime())) {
-        newErrors.effectiveTo = "Invalid effective to date";
       }
     }
 
@@ -247,8 +244,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         targetUserId:
           formData.scope === "USER" ? formData.targetUserId : undefined,
 
-        serviceId: formData.serviceId,
-
+        serviceProviderMappingId: formData.serviceProviderMappingId,
         mode: formData.mode,
         type: formData.type,
 
@@ -259,6 +255,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
         applyGST: formData.applyGST,
         gstPercent: formData.applyGST ? formData.gstPercent : undefined,
+        supportSlab: formData.supportSlab,
       };
 
       // Add scope-specific field
@@ -528,12 +525,13 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                   Service *
                 </label>
                 <select
-                  name="serviceId"
-                  value={formData.serviceId}
+                  name="serviceProviderMappingId
+"
+                  value={formData.serviceProviderMappingId}
                   onChange={handleChange}
                   disabled={servicesLoading}
                   className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.serviceId
+                    errors.serviceProviderMappingId
                       ? "border-red-400 focus:ring-red-300 bg-red-50"
                       : servicesLoading
                         ? "bg-gray-100 cursor-not-allowed border-gray-300"
@@ -549,9 +547,9 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                     </option>
                   ))}
                 </select>
-                {errors.serviceId && (
+                {errors.serviceProviderMappingId && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.serviceId}
+                    {errors.serviceProviderMappingId}
                   </p>
                 )}
                 {servicesLoading && (
@@ -703,6 +701,23 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                   </div>
                 </div>
               )}
+
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="supportSlab"
+                  name="supportSlab"
+                  checked={formData.supportSlab}
+                  onChange={handleChange}
+                  className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label
+                  htmlFor="supportSlab"
+                  className="block text-sm font-semibold text-gray-700"
+                >
+                  support Slab
+                </label>
+              </div>
             </div>
             {/* Submit Button */}
             <div className="pt-3 flex justify-end space-x-4">

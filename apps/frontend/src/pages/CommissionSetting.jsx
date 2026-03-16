@@ -14,6 +14,7 @@ import {
   clearCommissionSuccess,
 } from "../redux/slices/commissionSlice";
 import CommissionSettingTable from "../components/tabels/CommissionSettingTable";
+import AddCommissionSlabForm from "../components/forms/AddCommissionSlabForm";
 
 const CommissionSetting = () => {
   const [search, setSearch] = useState("");
@@ -21,7 +22,9 @@ const CommissionSetting = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [selectedCommission, setSelectedCommission] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
+  const [showSlabForm, setShowSlabForm] = useState(false);
+  const [selectedCommissionForSlab, setSelectedCommissionForSlab] =
+    useState(null);
   const dispatch = useDispatch();
   const searchTimeoutRef = useRef(null);
   const initialLoadRef = useRef(false);
@@ -142,7 +145,11 @@ const CommissionSetting = () => {
     },
     [dispatch, totalPages, limit, search],
   );
-
+  const handleAddSlab = (commission) => {
+    setSelectedCommissionForSlab(commission);
+    setShowSlabForm(true);
+    setOpenMenuId(null);
+  };
   const handleFormClose = () => {
     setShowForm(false);
     setSelectedCommission(null);
@@ -244,6 +251,7 @@ const CommissionSetting = () => {
       {/* Commission Table Component */}
       <CommissionSettingTable
         commissions={filteredCommissions}
+        onAddSlab={handleAddSlab}
         isLoading={isLoading}
         search={search}
         currentPage={currentPage}
@@ -272,6 +280,22 @@ const CommissionSetting = () => {
             />
           </div>
         )}
+      {showSlabForm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <AddCommissionSlabForm
+            commissionSettingId={selectedCommissionForSlab?.id}
+            onClose={() => {
+              setShowSlabForm(false);
+              setSelectedCommissionForSlab(null);
+            }}
+            onSuccess={() => {
+              setShowSlabForm(false);
+              setSelectedCommissionForSlab(null);
+              handleManualRefresh();
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

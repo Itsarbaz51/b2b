@@ -1,10 +1,11 @@
-import { Edit, X, MoreVertical } from "lucide-react";
+import { Edit, X, MoreVertical, Plus } from "lucide-react";
 import EmptyState from "../ui/EmptyState";
 import { useSelector } from "react-redux";
 import { paisaToRupee } from "../../utils/lib";
 
 const CommissionSettingTable = ({
   commissions = [],
+  onAddSlab,
   isLoading = false,
   search = "",
   currentPage = 1,
@@ -35,17 +36,29 @@ const CommissionSettingTable = ({
     }
   };
 
-  const commissionActions = [
-    {
-      icon: Edit,
-      label: "Edit Commission",
-      onClick: (commission) => {
-        onEditCommission(commission);
-        onMenuToggle(null);
+  const getCommissionActions = (commission) => {
+    const actions = [
+      {
+        icon: Edit,
+        label: "Edit Commission",
+        onClick: (commission) => {
+          onEditCommission(commission);
+          onMenuToggle(null);
+        },
       },
-      color: "text-blue-600",
-    },
-  ];
+    ];
+    console.log("onAddSlab prop:", onAddSlab);
+    if (commission?.supportsSlab) {
+      actions.push({
+        icon: Plus,
+        label: "Add Slab",
+        onClick: (commission) => onAddSlab?.(commission),
+        color: "text-green-600",
+      });
+    }
+
+    return actions;
+  };
 
   const { currentUser } = useSelector((state) => state.auth);
 
@@ -173,17 +186,44 @@ const CommissionSettingTable = ({
                     )}`}
                   >
                     {commission.type}
+                    {commission.supportsSlab && (
+                      <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                        SLAB
+                      </span>
+                    )}
                   </span>
                 </td>
 
                 <td className="px-6 py-5">
-                  <div className="text-sm font-semibold">
-                    {commission.type === "PERCENTAGE"
-                      ? `${paisaToRupee(commission.value)}%`
-                      : `₹${paisaToRupee(commission.value)}`}
-                  </div>
-                </td>
+                  {commission.supportsSlab &&
+                  commission.userPricingSlabs?.length > 0 ? (
+                    <div className="space-y-1 text-xs">
+                      {commission.userPricingSlabs.map((slab) => (
+                        <div
+                          key={slab.id}
+                          className="bg-gray-100 px-2 py-1 rounded flex justify-between"
+                        >
+                          <span>
+                            ₹{paisaToRupee(slab.minAmount)} - ₹
+                            {paisaToRupee(slab.maxAmount)}
+                          </span>
 
+                          <span className="font-semibold text-blue-600">
+                            {commission.type === "PERCENTAGE"
+                              ? `${paisaToRupee(slab.value)}%`
+                              : `₹${paisaToRupee(slab.value)}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm font-semibold">
+                      {commission.type === "PERCENTAGE"
+                        ? `${paisaToRupee(commission.value)}%`
+                        : `₹${paisaToRupee(commission.value)}`}
+                    </div>
+                  )}
+                </td>
                 <td className="px-6 py-5 text-sm text-gray-600">
                   <div className="space-y-1">
                     {commission.mode === "COMMISSION" &&
@@ -222,20 +262,22 @@ const CommissionSettingTable = ({
 
                       {openMenuId === commission.id && (
                         <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                          {commissionActions.map((action, index) => (
-                            <button
-                              key={index}
-                              onClick={() => {
-                                action.onClick(commission);
-                              }}
-                              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <action.icon
-                                className={`w-4 h-4 mr-3 ${action.color}`}
-                              />
-                              {action.label}
-                            </button>
-                          ))}
+                          {getCommissionActions(commission).map(
+                            (action, index) => (
+                              <button
+                                key={index}
+                                onClick={() => {
+                                  action.onClick(commission);
+                                }}
+                                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <action.icon
+                                  className={`w-4 h-4 mr-3 ${action.color}`}
+                                />
+                                {action.label}
+                              </button>
+                            ),
+                          )}
                         </div>
                       )}
                     </div>

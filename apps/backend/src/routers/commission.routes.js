@@ -5,6 +5,7 @@ import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   CommissionEarningController,
   CommissionSettingController,
+  CommissionSlabController,
 } from "../controllers/commission.controller.js";
 
 const commissionRoutes = Router();
@@ -50,6 +51,13 @@ commissionRoutes.get(
   "/earnings/summary",
   AuthMiddleware.isAuthenticated,
   CommissionEarningController.getSummary
+);
+
+commissionRoutes.post(
+  "/slab",
+  AuthMiddleware.isAuthenticated,
+  AuthMiddleware.authorize(["employee", "ADMIN"]),
+  CommissionSlabController.upsert
 );
 
 export default commissionRoutes;

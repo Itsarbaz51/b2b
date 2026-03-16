@@ -349,14 +349,14 @@ model CommissionSetting {
   supportsSlab Boolean @default(false) @map("support_slab")
 
   serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
-  userPricingSlabs       UserPricingSlab[]
+  commissionSlabs       CommissionSlab[]
 
   @@unique([serviceProviderMappingId, roleId])
   @@unique([serviceProviderMappingId, targetUserId])
   @@map("commission_settings")
 }
 
-model UserPricingSlab {
+model CommissionSlab {
   id                  String @id @default(uuid())
   commissionSettingId String @map("commission_setting_id")
 
@@ -369,7 +369,7 @@ model UserPricingSlab {
 
   @@unique([commissionSettingId, minAmount, maxAmount])
   @@index([minAmount, maxAmount])
-  @@map("user_pricing_slabs")
+  @@map("commission_slabs")
 }
 
 model CommissionEarning {

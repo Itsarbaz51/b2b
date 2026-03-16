@@ -203,5 +203,27 @@ export const getCommissionSummary = () => async (dispatch) => {
     throw error;
   }
 };
+// Create or Update Commission Slab
+export const createCommissionSlab = (payload) => async (dispatch) => {
+  try {
+    dispatch(commissionRequest());
 
+    const { data } = await axios.post(`/commissions/slab`, payload);
+
+    dispatch(commissionSuccess(data));
+
+    if (data.message) {
+      toast.success(data.message);
+    }
+
+    return data;
+  } catch (error) {
+    const errMsg = error?.response?.data?.message || error?.message;
+
+    dispatch(commissionFail(errMsg));
+    toast.error(errMsg);
+
+    throw error;
+  }
+};
 export default commissionSlice.reducer;

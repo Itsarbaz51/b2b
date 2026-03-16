@@ -6,7 +6,7 @@ class CommissionValidationSchemas {
       scope: z.enum(["ROLE", "USER"]),
       roleId: z.string().uuid().optional(),
       targetUserId: z.string().uuid().optional(),
-      serviceId: z.string().uuid().optional(),
+      serviceProviderMappingId: z.string().uuid().optional(),
 
       mode: z.enum(["COMMISSION", "SURCHARGE"]),
       type: z.enum(["FLAT", "PERCENTAGE"]),
@@ -18,8 +18,7 @@ class CommissionValidationSchemas {
 
       applyGST: z.boolean().optional(),
       gstPercent: z.coerce.bigint().min(0).max(100).optional(),
-
-      effectiveTo: z.string().datetime().nullable().optional(),
+      supportSlab: z.boolean().optional(),
     });
   }
 

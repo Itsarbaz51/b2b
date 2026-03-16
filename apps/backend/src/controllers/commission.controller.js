@@ -2,8 +2,10 @@ import asyncHandler from "../utils/AsyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import CommissionEarningService, {
   CommissionSettingService,
+  CommissionSlabService,
 } from "../services/commission.service.js";
 import { ApiError } from "../utils/ApiError.js";
+import Helper from "../utils/helper.js";
 
 export class CommissionSettingController {
   static createOrUpdate = asyncHandler(async (req, res) => {
@@ -100,5 +102,17 @@ export class CommissionEarningController {
     const summary = await CommissionEarningService.getCommissionSummary(userId);
 
     return res.json(ApiResponse.success(summary, "Commission summary fetched"));
+  });
+}
+
+export class CommissionSlabController {
+  static upsert = asyncHandler(async (req, res) => {
+    const slab = await CommissionSlabService.upsert(req.body);
+
+    return res
+      .status(200)
+      .json(
+        ApiResponse.success(Helper.serializeBigInt(slab), "Commission slab operation successful", 200)
+      );
   });
 }

@@ -8,7 +8,7 @@ export class CommissionSettingService {
       scope,
       roleId,
       targetUserId,
-      serviceId,
+      serviceProviderMappingId,
       mode,
       type,
       value,
@@ -16,6 +16,7 @@ export class CommissionSettingService {
       tdsPercent,
       applyGST,
       gstPercent,
+      supportSlab,
     } = data;
 
     if (!mode || !type || value === undefined || value === null) {
@@ -39,9 +40,9 @@ export class CommissionSettingService {
     }
 
     // Verify referenced entities exist
-    if (serviceId) {
+    if (serviceProviderMappingId) {
       const service = await Prisma.serviceProviderMapping.findUnique({
-        where: { id: serviceId },
+        where: { id: serviceProviderMappingId },
       });
       if (!service) throw ApiError.notFound("Service not found");
     }
@@ -66,7 +67,7 @@ export class CommissionSettingService {
         scope,
         roleId: roleId || null,
         targetUserId: targetUserId || null,
-        serviceProviderMappingId: serviceId || null,
+        serviceProviderMappingId: serviceProviderMappingId || null,
         isActive: true,
       },
     });
@@ -75,7 +76,7 @@ export class CommissionSettingService {
       scope,
       roleId: roleId || null,
       targetUserId: targetUserId || null,
-      serviceProviderMappingId: serviceId || null,
+      serviceProviderMappingId: serviceProviderMappingId || null,
 
       mode,
       type,
@@ -86,7 +87,7 @@ export class CommissionSettingService {
 
       applyGST: applyGST || false,
       gstPercent: gstPercent ? BigInt(gstPercent) : null,
-
+      supportSlab,
       createdBy,
       isActive: true,
     };
@@ -180,7 +181,8 @@ export class CommissionSettingService {
       where: filter,
       include: {
         serviceProviderMapping: {
-          include: {
+          select: {
+            id: true, // jo chahiye
             service: {
               select: {
                 id: true,
@@ -203,6 +205,7 @@ export class CommissionSettingService {
             lastName: true,
           },
         },
+        userPricingSlabs: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -502,5 +505,76 @@ export default class CommissionEarningService {
         },
       });
     }
+  }
+}
+
+export class CommissionSlabService {
+  static async upsert(payload) {
+    const { id, commissionSettingId, minAmount, maxAmount, value, _delete } =
+      payload;
+
+    // DELETE
+    if (_delete === true) {
+      if (!id) throw ApiError.badRequest("Slab id required for delete");
+
+      const slab = await Prisma.commissionSlab.findUnique({
+        where: { id },
+      });
+
+      if (!slab) throw ApiError.notFound("Slab not found");
+
+      return Prisma.commissionSlab.delete({
+        where: { id },
+      });
+    }
+
+    if (!commissionSettingId)
+      throw ApiError.badRequest("commissionSettingId required");
+
+    const min = BigInt(minAmount);
+    const max = BigInt(maxAmount);
+
+    if (min >= max)
+      throw ApiError.badRequest("Min amount must be less than max");
+
+    // overlap check
+    const overlap = await Prisma.commissionSlab.findFirst({
+      where: {
+        commissionSettingId,
+        minAmount: { lte: max },
+        maxAmount: { gte: min },
+        NOT: id ? { id } : undefined,
+      },
+    });
+
+    if (overlap) throw ApiError.conflict("Slab range overlap");
+
+    // UPDATE
+    if (id) {
+      const slab = await Prisma.commissionSlab.findUnique({
+        where: { id },
+      });
+
+      if (!slab) throw ApiError.notFound("Slab not found");
+
+      return Prisma.commissionSlab.update({
+        where: { id },
+        data: {
+          minAmount: min,
+          maxAmount: max,
+          value: BigInt(value),
+        },
+      });
+    }
+
+    // CREATE
+    return Prisma.commissionSlab.create({
+      data: {
+        commissionSettingId,
+        minAmount: min,
+        maxAmount: max,
+        value: BigInt(value),
+      },
+    });
   }
 }
