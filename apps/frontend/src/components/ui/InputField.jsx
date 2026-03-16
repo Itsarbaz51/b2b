@@ -32,7 +32,7 @@ const InputField = ({
         placeholder={placeholder}
         maxLength={maxLength}
         inputMode={inputMode}
-        min={type == "number" && 0}
+        min={type === "number" ? 0 : undefined}
         className={`w-full ${className} ${
           Icon ? "pl-10" : "pl-4"
         } pr-4 py-3 bg-gray-50 border-2 ${

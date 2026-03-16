@@ -13,6 +13,13 @@ const ProtectedRoute = ({ children }) => {
     return children;
   }
 
+  const serviceCodeFromPath = currentPath
+    .replace("/", "")
+    .replaceAll("-", "_")
+    .toUpperCase();
+
+  const permission = usePermissions(serviceCodeFromPath);
+
   // AUTH CHECK
   if (!isAuthenticated || !currentUser) {
     return <Navigate to="/login" replace state={{ from: location }} />;
@@ -57,13 +64,6 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // ---------------- SERVICE PERMISSIONS ----------------
-  const serviceCodeFromPath = currentPath
-    .replace("/", "")
-    .replaceAll("-", "_")
-    .toUpperCase();
-
-  const permission = usePermissions(serviceCodeFromPath);
-
   if (currentUser?.role?.type === "business") {
     if (Object.values(SERVICES).includes(serviceCodeFromPath)) {
       if (!permission.canView) {
