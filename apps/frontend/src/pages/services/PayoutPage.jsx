@@ -17,6 +17,7 @@ import { SERVICES } from "../../utils/constants";
 
 import PayoutTable from "../../components/tabels/services/PayoutTable";
 import AddPayoutForm from "../../components/forms/services/AddPayoutForm";
+import { v4 as uuidv4 } from "uuid";
 
 const PayoutPage = () => {
   const dispatch = useDispatch();
@@ -28,6 +29,7 @@ const PayoutPage = () => {
   const [verifying, setVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [search, setSearch] = useState("");
+  const [idempotencyKey] = useState(uuidv4());
 
   const resetForm = () => {
     setMethod(null);
@@ -102,9 +104,14 @@ const PayoutPage = () => {
         createPayout({
           provider: "WONDERPAY",
           serviceId,
-          ...data,
+          number: data.mobile,
           amount: rupeesToPaise(data.amount),
-          transferMode: "IMPS",
+          transferMode: data.transferMode,
+          beneficiaryName: data.beneficiaryName,
+          accountNo: data.accountNo,
+          ifscCode: data.ifscCode,
+          vpa: data.vpa,
+          idempotencyKey,
         }),
       );
 

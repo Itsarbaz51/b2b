@@ -379,7 +379,7 @@ class Helper {
     return cleaned;
   }
 
-  static generatePayoutId(prefix = "TXN") {
+  static generateTxnId(prefix = "TXN") {
     const now = new Date();
 
     // DATE → YYYYMMDD

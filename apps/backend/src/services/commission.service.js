@@ -19,6 +19,7 @@ export class CommissionSettingService {
       supportsSlab,
     } = data;
 
+    // ---------------- VALIDATIONS ----------------
     if (!mode || !type || value === undefined || value === null) {
       throw ApiError.badRequest("mode, type and value are required");
     }
@@ -31,15 +32,15 @@ export class CommissionSettingService {
       throw ApiError.badRequest("GST percent required");
     }
 
-    // Validation based on scope
     if (scope === "ROLE" && !roleId) {
       throw ApiError.badRequest("roleId is required for ROLE scope");
     }
+
     if (scope === "USER" && !targetUserId) {
       throw ApiError.badRequest("targetUserId is required for USER scope");
     }
 
-    // Verify referenced entities exist
+    // ---------------- VERIFY REFERENCES ----------------
     if (serviceProviderMappingId) {
       const service = await Prisma.serviceProviderMapping.findUnique({
         where: { id: serviceProviderMappingId },
@@ -61,7 +62,7 @@ export class CommissionSettingService {
       if (!userExists) throw ApiError.notFound("Target user not found");
     }
 
-    // Check for existing active commission setting
+    // ---------------- FIND EXISTING ----------------
     const existing = await Prisma.commissionSetting.findFirst({
       where: {
         scope,
@@ -72,17 +73,23 @@ export class CommissionSettingService {
       },
     });
 
-    const payload = {
+    // ---------------- CREATE PAYLOAD (NO DISCONNECT) ----------------
+    const createPayload = {
       scope,
-      role: roleId ? { connect: { id: roleId } } : { disconnect: true },
 
-      targetUser: targetUserId
-        ? { connect: { id: targetUserId } }
-        : { disconnect: true },
+      ...(roleId && {
+        role: { connect: { id: roleId } },
+      }),
 
-      serviceProviderMapping: {
-        connect: { id: serviceProviderMappingId },
-      },
+      ...(targetUserId && {
+        targetUser: { connect: { id: targetUserId } },
+      }),
+
+      ...(serviceProviderMappingId && {
+        serviceProviderMapping: {
+          connect: { id: serviceProviderMappingId },
+        },
+      }),
 
       mode,
       type,
@@ -93,20 +100,58 @@ export class CommissionSettingService {
 
       applyGST: applyGST || false,
       gstPercent: gstPercent ? BigInt(gstPercent) : null,
-      supportsSlab,
+
+      supportsSlab: supportsSlab || false,
       createdBy,
       isActive: true,
     };
-    console.log(payload);
 
+    // ---------------- UPDATE PAYLOAD (WITH DISCONNECT) ----------------
+    const updatePayload = {
+      scope,
+
+      ...(roleId
+        ? { role: { connect: { id: roleId } } }
+        : { role: { disconnect: true } }),
+
+      ...(targetUserId
+        ? { targetUser: { connect: { id: targetUserId } } }
+        : { targetUser: { disconnect: true } }),
+
+      ...(serviceProviderMappingId
+        ? {
+            serviceProviderMapping: {
+              connect: { id: serviceProviderMappingId },
+            },
+          }
+        : { serviceProviderMapping: { disconnect: true } }),
+
+      mode,
+      type,
+      value: BigInt(value),
+
+      applyTDS: applyTDS || false,
+      tdsPercent: tdsPercent ? BigInt(tdsPercent) : null,
+
+      applyGST: applyGST || false,
+      gstPercent: gstPercent ? BigInt(gstPercent) : null,
+
+      supportsSlab: supportsSlab || false,
+      isActive: true,
+    };
+
+    // ---------------- EXECUTION ----------------
     let result;
+
     if (existing) {
       result = await Prisma.commissionSetting.update({
         where: { id: existing.id },
-        data: payload,
+        data: updatePayload,
       });
     } else {
-      result = await Prisma.commissionSetting.create({ data: payload });
+      result = await Prisma.commissionSetting.create({
+        data: createPayload,
+      });
     }
 
     return Helper.serializeBigInt(result);

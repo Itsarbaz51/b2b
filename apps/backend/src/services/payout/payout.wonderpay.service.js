@@ -37,7 +37,7 @@ export default class WonderpayPayoutService {
         };
       }
 
-      const clientOrderId = Helper.generatePayoutId("PAYOUT");
+      const clientOrderId = Helper.generateTxnId("PAYOUT");
 
       try {
         const response = await plugin.payout({
