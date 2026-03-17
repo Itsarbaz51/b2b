@@ -46,30 +46,6 @@ export default class PayoutService {
     }
   }
 
-  static async verifyAccount(payload, actor) {
-    const { serviceId, provider } = payload;
-
-    await this.checkPermission(actor.id, serviceId);
-
-    const { providerData, serviceProviderMapping } = await this.resolveProvider(
-      serviceId,
-      provider
-    );
-
-    switch (providerData.code) {
-      case "WONDERPAY":
-        return WonderpayPayoutService.verifyAccount(
-          serviceProviderMapping,
-          providerData,
-          payload,
-          actor
-        );
-
-      default:
-        throw ApiError.badRequest("Unsupported payout provider");
-    }
-  }
-
   static async transfer(payload, actor) {
     const { serviceId, provider } = payload;
 

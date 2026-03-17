@@ -379,10 +379,22 @@ class Helper {
     return cleaned;
   }
 
-  static generateTxnId(prefix = "TXN") {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(1000 + Math.random() * 9000);
-    return `${prefix}-${timestamp}${random}`;
+  static generatePayoutId(prefix = "TXN") {
+    const now = new Date();
+
+    // DATE → YYYYMMDD
+    const date = now.toLocaleDateString("en-CA").replace(/-/g, "");
+
+    // TIME → HHMMSS (24-hour format)
+    const time = now
+      .toLocaleTimeString("en-GB", { hour12: false })
+      .replace(/:/g, "");
+
+    // Random 3 digit
+    const random = Math.floor(100 + Math.random() * 900);
+
+    const ms = now.getMilliseconds().toString().padStart(3, "0");
+    return `${prefix}-${date}-${time}${ms}-${random}`;
   }
 }
 

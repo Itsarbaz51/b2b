@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "mime-types": "^3.0.1",
     "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
     "nodemailer": "^7.0.9",
     "prisma": "^6.19.2",
     "razorpay": "^2.9.6",

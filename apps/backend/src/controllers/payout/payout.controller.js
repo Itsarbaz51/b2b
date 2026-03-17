@@ -1,45 +1,40 @@
-import FundRequestService from "../../services/fundRequest/fundRequest.service.js";
-import { ApiResponse } from "../../utils/ApiResponse.js";
+import PayoutService from "../../services/payout/payout.service.js";
 import asyncHandler from "../../utils/AsyncHandler.js";
-import Helper from "../../utils/helper.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiError } from "../../utils/ApiError.js";
 
-class FundRequestController {
-  static create = asyncHandler(async (req, res) => {
-    const payload = {
-      ...req.body,
-      paymentImage: req.files?.paymentImage?.[0] || null,
-    };
+export default class PayoutController {
+  static checkBalance = asyncHandler(async (req, res) => {
+    const result = await PayoutService.checkBalance(req.body, req.user);
 
-    const result = await FundRequestService.create(payload, req.user);
-
-    return res.json(
-      ApiResponse.success(
-        Helper.serializeBigInt(result),
-        "Fund request created"
-      )
-    );
+    return res
+      .status(200)
+      .json(ApiResponse.success(result, "Balance fetched", 200));
   });
 
-  static verify = asyncHandler(async (req, res) => {
-    const payload = {
-      transactionId: req.params.transactionId,
-      action: req.body.action,
-      reason: req.body?.reason,
+  static transfer = asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ApiError("User not authenticated", 401);
+    }
 
-      razorpay_payment_id: req.body?.razorpay_payment_id,
-      razorpay_order_id: req.body?.razorpay_order_id,
-      razorpay_signature: req.body?.razorpay_signature,
-    };
+    const result = await PayoutService.transfer(req.body, req.user);
 
-    const result = await FundRequestService.verify(payload, req.user);
+    return res
+      .status(200)
+      .json(ApiResponse.success(result, "Payout initiated successfully", 200));
+  });
 
-    return res.json(
-      ApiResponse.success(
-        Helper.serializeBigInt(result),
-        `${payload?.action} success`
-      )
-    );
+  static checkStatus = asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ApiError("User not authenticated", 401);
+    }
+
+    const result = await PayoutService.checkStatus(req.body, req.user);
+
+    return res
+      .status(200)
+      .json(ApiResponse.success(result, "Payout status fetched", 200));
   });
 }
-
-export default FundRequestController;

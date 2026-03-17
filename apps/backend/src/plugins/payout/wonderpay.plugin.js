@@ -39,36 +39,6 @@ class WonderpayPayoutPlugin extends PayoutPluginInterface {
     }
   }
 
-  // ACCOUNT VERIFY
-  async verifyAccount({ number, accountNo, ifscCode, clientOrderId }) {
-    try {
-      const { data } = await this.client.post(
-        "/api/api/api-module/payout/account-validate",
-        {
-          clientId: this.config.clientId,
-          secretKey: this.config.secretKey,
-          number,
-          accountNo,
-          ifscCode,
-          clientOrderId,
-        }
-      );
-      console.log(data);
-
-      if (data.statusCode !== 1) {
-        throw ApiError.badRequest(
-          data.message || "Account verification failed"
-        );
-      }
-
-      return data;
-    } catch (err) {
-      throw ApiError.internal(
-        err.response?.data?.message || "Wonderpay account verify failed"
-      );
-    }
-  }
-
   // PAYOUT
   async payout({
     number,
@@ -96,6 +66,7 @@ class WonderpayPayoutPlugin extends PayoutPluginInterface {
           clientOrderId,
         }
       );
+      console.log(data);
 
       if (data.statusCode !== 1) {
         throw ApiError.badRequest(data.message || "Payout failed");

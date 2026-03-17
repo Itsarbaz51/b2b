@@ -1,7 +1,7 @@
 import { ApiError } from "../utils/ApiError.js";
 
 export default class WalletEngine {
-  // Get Wallet
+  // ✅ Get Wallet
   static async getWallet({ tx, userId, walletType = "PRIMARY" }) {
     const wallet = await tx.wallet.findUnique({
       where: {
@@ -13,95 +13,94 @@ export default class WalletEngine {
     });
 
     if (!wallet) throw ApiError.notFound("Wallet not found");
-
     if (!wallet.isActive) throw ApiError.notFound("Wallet not Active");
 
     return wallet;
   }
 
-  // ➖ Debit
-  static async debit(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+  // ➕ CREDIT
+  static async credit(tx, walletId, amount) {
+    const amt = BigInt(amount);
 
-    const available = wallet.balance - wallet.holdBalance;
-
-    if (available < amt) throw ApiError.badRequest("Insufficient balance");
-
-    const updated = await tx.wallet.updateMany({
-      where: {
-        id: wallet.id,
-        version: wallet.version,
-      },
-      data: {
-        balance: wallet.balance - amt,
-        version: { increment: 1 },
-      },
-    });
-
-    if (!updated.count) throw ApiError.conflict("Wallet concurrency conflict");
+    await tx.$executeRaw`
+      UPDATE "Wallet"
+      SET 
+        "balance" = "balance" + ${amt},
+        "version" = "version" + 1
+      WHERE id = ${walletId}
+    `;
   }
 
-  // ➕ Credit
-  static async credit(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+  // 🔒 HOLD (Atomic + Race Condition Safe)
+  static async hold(tx, walletId, amount) {
+    const amt = BigInt(amount);
 
-    await tx.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        balance: wallet.balance + amt,
-        version: { increment: 1 },
-      },
-    });
+    const result = await tx.$executeRaw`
+      UPDATE "Wallet"
+      SET 
+        "holdBalance" = "holdBalance" + ${amt},
+        "version" = "version" + 1
+      WHERE id = ${walletId}
+      AND ("balance" - "holdBalance") >= ${amt}
+    `;
+
+    if (result === 0) {
+      throw ApiError.badRequest("Insufficient available balance");
+    }
   }
 
-  // Hold
-  static async hold(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+  // 🔓 RELEASE HOLD
+  static async releaseHold(tx, walletId, amount) {
+    const amt = BigInt(amount);
 
-    const available = wallet.balance - wallet.holdBalance;
+    const result = await tx.$executeRaw`
+      UPDATE "Wallet"
+      SET 
+        "holdBalance" = "holdBalance" - ${amt},
+        "version" = "version" + 1
+      WHERE id = ${walletId}
+      AND "holdBalance" >= ${amt}
+    `;
 
-    if (available < amt)
-      throw ApiError.badRequest("Insufficient balance to hold");
-
-    await tx.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        holdBalance: wallet.holdBalance + amt,
-        version: { increment: 1 },
-      },
-    });
-  }
-
-  // Release Hold
-  static async releaseHold(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
-
-    if (wallet.holdBalance < amt)
+    if (result === 0) {
       throw ApiError.badRequest("Invalid hold release");
-
-    await tx.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        holdBalance: wallet.holdBalance - amt,
-        version: { increment: 1 },
-      },
-    });
+    }
   }
 
-  // Move Hold → Debit (On Success)
-  static async captureHold(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+  // ✅ CAPTURE HOLD → FINAL DEBIT
+  static async captureHold(tx, walletId, amount) {
+    const amt = BigInt(amount);
 
-    if (wallet.holdBalance < amt)
+    const result = await tx.$executeRaw`
+      UPDATE "Wallet"
+      SET 
+        "holdBalance" = "holdBalance" - ${amt},
+        "balance" = "balance" - ${amt},
+        "version" = "version" + 1
+      WHERE id = ${walletId}
+      AND "holdBalance" >= ${amt}
+    `;
+
+    if (result === 0) {
       throw ApiError.badRequest("Invalid hold capture");
+    }
+  }
 
-    await tx.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        holdBalance: wallet.holdBalance - amt,
-        balance: wallet.balance - amt,
-        version: { increment: 1 },
-      },
-    });
+  // ➖ DIRECT DEBIT (rare use)
+  static async debit(tx, walletId, amount) {
+    const amt = BigInt(amount);
+
+    const result = await tx.$executeRaw`
+      UPDATE "Wallet"
+      SET 
+        "balance" = "balance" - ${amt},
+        "version" = "version" + 1
+      WHERE id = ${walletId}
+      AND "balance" >= ${amt}
+    `;
+
+    if (result === 0) {
+      throw ApiError.badRequest("Insufficient balance");
+    }
   }
 }

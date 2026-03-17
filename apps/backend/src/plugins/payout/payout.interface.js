@@ -11,10 +11,6 @@ export default class PayoutPluginInterface {
     throw new Error(`${this.constructor.name} must implement checkBalance()`);
   }
 
-  async verifyAccount(_params) {
-    throw new Error(`${this.constructor.name} must implement verifyAccount()`);
-  }
-
   async payout(_params) {
     throw new Error(`${this.constructor.name} must implement payout()`);
   }

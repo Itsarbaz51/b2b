@@ -1,119 +1,163 @@
 import Prisma from "../../db/db.js";
 import { getPayoutPlugin } from "../../plugin_registry/payout/pluginRegistry.js";
-import WalletEngine from "../../engines/wallet.engine.js";
 import TransactionService from "../transaction.service.js";
-import LedgerEngine from "../../engines/ledger.engine.js";
+import SettlementEngine from "../../engines/settlement.engine.js";
+import Helper from "../../utils/helper.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { CommissionSettingService } from "../commission.service.js";
 
 export default class WonderpayPayoutService {
   static getPlugin(provider, mapping) {
     return getPayoutPlugin(provider.code, mapping.config);
   }
 
-  static async checkBalance(serviceProviderMapping, provider, actor, payload) {
-    const plugin = this.getPlugin(provider, serviceProviderMapping);
-    return plugin.checkBalance();
-  }
-
-  static async verifyAccount(serviceProviderMapping, provider, payload, actor) {
-    const { number, accountNo, ifscCode, clientOrderId } = payload;
+  static async transfer(serviceProviderMapping, provider, payload, actor) {
     const plugin = this.getPlugin(provider, serviceProviderMapping);
 
-    await CommissionSettingService.checkUserPricingRule(
-      userId,
-      serviceProviderMapping.id
-    );
+    return Prisma.$transaction(async (tx) => {
+      const { transaction, wallet, pricing, isDuplicate } =
+        await SettlementEngine.execute({
+          tx,
+          actor,
+          payload,
+          serviceProviderMapping,
+        });
 
-    return plugin.verifyAccount({
-      number,
-      accountNo,
-      ifscCode,
-      clientOrderId,
+      if (isDuplicate) {
+        return {
+          transactionId: transaction.id,
+          status: transaction.status,
+          clientOrderId: transaction.providerReference,
+        };
+      }
+
+      if (["SUCCESS", "FAILED"].includes(transaction.status)) {
+        return {
+          transactionId: transaction.id,
+          status: transaction.status,
+        };
+      }
+
+      const clientOrderId = Helper.generatePayoutId("PAYOUT");
+
+      try {
+        const response = await plugin.payout({
+          ...payload,
+          amount: pricing.totalDebit,
+          clientOrderId,
+        });
+
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "PENDING",
+          providerReference: clientOrderId,
+          providerResponse: response,
+          requestPayload: { ...payload, clientOrderId },
+        });
+
+        return {
+          transactionId: transaction.id,
+          status: "PENDING",
+          clientOrderId,
+        };
+      } catch (err) {
+        await SettlementEngine.failed({
+          tx,
+          walletId: wallet.id,
+          pricing,
+        });
+
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "FAILED",
+          providerResponse: err.message,
+        });
+
+        throw err;
+      }
     });
   }
 
-  static async transfer(serviceProviderMapping, provider, payload, actor) {
+  static async checkBalance(serviceProviderMapping, provider) {
     const plugin = this.getPlugin(provider, serviceProviderMapping);
-    const {
-      number,
-      amount,
-      transferMode,
-      accountNo,
-      ifscCode,
-      beneficiaryName,
-      clientOrderId,
-    } = payload;
 
-    const amountBigint = BigInt(amount);
+    try {
+      const balance = await plugin.checkBalance();
 
-    await CommissionSettingService.checkUserPricingRule(
-      userId,
-      serviceProviderMapping.id
-    );
+      return {
+        provider: provider.code,
+        balance,
+      };
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async checkStatus(serviceProviderMapping, provider, payload, actor) {
+    const plugin = this.getPlugin(provider, serviceProviderMapping);
+
+    const { clientOrderId } = payload;
 
     return Prisma.$transaction(async (tx) => {
-      const wallet = await WalletEngine.getWallet({
-        tx,
-        userId: actor.id,
-        walletType: "PRIMARY",
+      const transaction = await tx.transaction.findFirst({
+        where: {
+          providerReference: clientOrderId,
+        },
       });
 
-      if (wallet.balance < amountBigint) {
-        throw ApiError.badRequest("Insufficient wallet balance");
+      if (!transaction) {
+        throw ApiError.notFound("Transaction not found");
       }
 
-      await WalletEngine.debit(tx, wallet, amountBigint);
+      if (["SUCCESS", "FAILED"].includes(transaction.status)) {
+        return {
+          status: transaction.status,
+          message: "Already processed",
+        };
+      }
 
-      const { transaction } = await TransactionService.create(tx, {
-        userId: actor.id,
-        walletId: wallet.id,
-        serviceProviderMappingId: serviceProviderMapping.id,
-        amountBigint,
-        requestPayload: payload,
-      });
+      const response = await plugin.checkStatus({ clientOrderId });
 
-      const providerResponse = await plugin.payout({
-        number,
-        amountBigint,
-        transferMode,
-        accountNo,
-        ifscCode,
-        beneficiaryName,
-        clientOrderId,
-      });
+      const status = response.status;
 
-      await LedgerEngine.create(tx, {
-        walletId: wallet.id,
-        transactionId: transaction.id,
-        entryType: "DEBIT",
-        referenceType: "PAYOUT",
-        serviceProviderMappingId: serviceProviderMapping.id,
-        amount,
-        narration: "Payout initiated via Wonderpay",
-        createdBy: actor.id,
-      });
+      // SUCCESS
+      if (status === 1) {
+        await SettlementEngine.success({
+          tx,
+          actor,
+          transaction,
+          pricing: transaction.pricing,
+          serviceProviderMapping,
+        });
 
-      await TransactionService.update(tx, {
-        transactionId: transaction.id,
-        status: "PENDING",
-        providerReference: providerResponse.orderId,
-        providerResponse,
-      });
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "SUCCESS",
+          providerResponse: response,
+        });
+      } else if (status === 0) {
+        await SettlementEngine.failed({
+          tx,
+          walletId: transaction.walletId,
+          pricing: transaction.pricing,
+        });
+
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "FAILED",
+          providerResponse: response,
+        });
+      } else {
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          providerResponse: response,
+        });
+      }
 
       return {
         transactionId: transaction.id,
-        status: "PENDING",
-        providerReference: providerResponse.orderId,
+        status: status || "PENDING",
+        providerResponse: response,
       };
-    });
-  }
-
-  static async checkStatus(payload, serviceProviderMapping, provider) {
-    const plugin = this.getPlugin(provider, serviceProviderMapping);
-
-    return plugin.checkStatus({
-      clientOrderId: payload.clientOrderId,
     });
   }
 }

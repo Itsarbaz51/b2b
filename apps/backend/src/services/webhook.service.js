@@ -1,5 +1,5 @@
-export default class WebhookEngine {
-  // 1️⃣ Store Raw Webhook
+export default class WebhookService {
+  // STORE
   static async store(
     tx,
     {
@@ -22,11 +22,12 @@ export default class WebhookEngine {
         headers,
         signature,
         status: "PENDING",
+        attempts: 0,
       },
     });
   }
 
-  // 2️⃣ Mark Processed
+  // SUCCESS
   static async markProcessed(tx, webhookId, responseData) {
     return await tx.apiWebhook.update({
       where: { id: webhookId },
@@ -39,7 +40,7 @@ export default class WebhookEngine {
     });
   }
 
-  // 3️⃣ Mark Failed
+  // FAILED
   static async markFailed(tx, webhookId, errorData) {
     return await tx.apiWebhook.update({
       where: { id: webhookId },
