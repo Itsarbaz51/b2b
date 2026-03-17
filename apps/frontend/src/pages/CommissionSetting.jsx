@@ -12,6 +12,7 @@ import {
   getCommissionSettingsByCreatedBy,
   clearCommissionError,
   clearCommissionSuccess,
+  createCommissionSlab,
 } from "../redux/slices/commissionSlice";
 import CommissionSettingTable from "../components/tabels/CommissionSettingTable";
 import AddCommissionSlabForm from "../components/forms/AddCommissionSlabForm";
@@ -146,10 +147,23 @@ const CommissionSetting = () => {
     [dispatch, totalPages, limit, search],
   );
   const handleAddSlab = (commission) => {
-    setSelectedCommissionForSlab(commission);
+    setSelectedCommissionForSlab({
+      commission,
+      slab: null,
+    });
     setShowSlabForm(true);
     setOpenMenuId(null);
   };
+
+  const handleEditSlab = (commission, slab) => {
+    setSelectedCommissionForSlab({
+      commission,
+      slab,
+    });
+    setShowSlabForm(true);
+    setOpenMenuId(null);
+  };
+
   const handleFormClose = () => {
     setShowForm(false);
     setSelectedCommission(null);
@@ -252,6 +266,7 @@ const CommissionSetting = () => {
       <CommissionSettingTable
         commissions={filteredCommissions}
         onAddSlab={handleAddSlab}
+        onEditSlab={handleEditSlab}
         isLoading={isLoading}
         search={search}
         currentPage={currentPage}
@@ -283,7 +298,11 @@ const CommissionSetting = () => {
       {showSlabForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <AddCommissionSlabForm
-            commissionSettingId={selectedCommissionForSlab?.id}
+            commissionSettingId={
+              selectedCommissionForSlab?.commission?.id ||
+              selectedCommissionForSlab?.id
+            }
+            editData={selectedCommissionForSlab?.slab}
             onClose={() => {
               setShowSlabForm(false);
               setSelectedCommissionForSlab(null);

@@ -18,7 +18,7 @@ class CommissionValidationSchemas {
 
       applyGST: z.boolean().optional(),
       gstPercent: z.coerce.bigint().min(0).max(100).optional(),
-      supportSlab: z.boolean().optional(),
+      supportsSlab: z.boolean().optional(),
     });
   }
 

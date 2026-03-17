@@ -31,6 +31,12 @@ export default function AddCommissionSlabForm({
         maxAmount: Number(editData.maxAmount) / 100,
         value: Number(editData.value) / 100,
       });
+    } else {
+      setForm({
+        minAmount: "",
+        maxAmount: "",
+        value: "",
+      });
     }
   }, [editData]);
 

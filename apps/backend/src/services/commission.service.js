@@ -16,7 +16,7 @@ export class CommissionSettingService {
       tdsPercent,
       applyGST,
       gstPercent,
-      supportSlab,
+      supportsSlab,
     } = data;
 
     if (!mode || !type || value === undefined || value === null) {
@@ -74,9 +74,15 @@ export class CommissionSettingService {
 
     const payload = {
       scope,
-      roleId: roleId || null,
-      targetUserId: targetUserId || null,
-      serviceProviderMappingId: serviceProviderMappingId || null,
+      role: roleId ? { connect: { id: roleId } } : { disconnect: true },
+
+      targetUser: targetUserId
+        ? { connect: { id: targetUserId } }
+        : { disconnect: true },
+
+      serviceProviderMapping: {
+        connect: { id: serviceProviderMappingId },
+      },
 
       mode,
       type,
@@ -87,10 +93,11 @@ export class CommissionSettingService {
 
       applyGST: applyGST || false,
       gstPercent: gstPercent ? BigInt(gstPercent) : null,
-      supportSlab,
+      supportsSlab,
       createdBy,
       isActive: true,
     };
+    console.log(payload);
 
     let result;
     if (existing) {
@@ -182,7 +189,7 @@ export class CommissionSettingService {
       include: {
         serviceProviderMapping: {
           select: {
-            id: true, // jo chahiye
+            id: true,
             service: {
               select: {
                 id: true,
@@ -205,7 +212,7 @@ export class CommissionSettingService {
             lastName: true,
           },
         },
-        userPricingSlabs: true,
+        commissionSlabs: true,
       },
       orderBy: { createdAt: "desc" },
     });

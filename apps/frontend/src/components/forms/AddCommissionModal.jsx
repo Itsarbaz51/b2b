@@ -40,7 +40,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     tdsPercent: "",
     applyGST: false,
     gstPercent: "",
-    supportSlab: false,
+    supportsSlab: false,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -52,8 +52,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   // Prefill form if editData exists
   useEffect(() => {
     if (editData) {
-      console.log(editData);
-
       setFormData({
         scope: editData.scope || "ROLE",
         roleId: editData.roleId || "",
@@ -69,7 +67,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
         applyGST: editData.applyGST || false,
         gstPercent: editData.gstPercent ?? "",
-        supportSlab: editData.supportSlab ?? false,
+        supportsSlab: editData.supportsSlab ?? false,
       });
 
       // USER scope prefill search input
@@ -212,8 +210,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
     // 🔥 GST validation only if mode = SURCHARGE
     if (formData.mode === "SURCHARGE" && formData.applyGST) {
-      console.log(formData.gstPercent);
-
       if (formData.gstPercent === "" || isNaN(formData.gstPercent)) {
         newErrors.gstPercent = "GST percentage is required";
       } else if (formData.gstPercent < 0 || formData.gstPercent > 100) {
@@ -255,7 +251,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
         applyGST: formData.applyGST,
         gstPercent: formData.applyGST ? formData.gstPercent : undefined,
-        supportSlab: formData.supportSlab,
+        supportsSlab: formData.supportsSlab,
       };
 
       // Add scope-specific field
@@ -525,8 +521,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                   Service *
                 </label>
                 <select
-                  name="serviceProviderMappingId
-"
+                  name="serviceProviderMappingId"
                   value={formData.serviceProviderMappingId}
                   onChange={handleChange}
                   disabled={servicesLoading}
@@ -705,14 +700,14 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
               <div className="flex items-center space-x-3">
                 <input
                   type="checkbox"
-                  id="supportSlab"
-                  name="supportSlab"
-                  checked={formData.supportSlab}
+                  id="supportsSlab"
+                  name="supportsSlab"
+                  checked={formData.supportsSlab}
                   onChange={handleChange}
                   className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label
-                  htmlFor="supportSlab"
+                  htmlFor="supportsSlab"
                   className="block text-sm font-semibold text-gray-700"
                 >
                   support Slab

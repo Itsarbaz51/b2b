@@ -6,6 +6,7 @@ import { paisaToRupee } from "../../utils/lib";
 const CommissionSettingTable = ({
   commissions = [],
   onAddSlab,
+  onEditSlab,
   isLoading = false,
   search = "",
   currentPage = 1,
@@ -47,7 +48,6 @@ const CommissionSettingTable = ({
         },
       },
     ];
-    console.log("onAddSlab prop:", onAddSlab);
     if (commission?.supportsSlab) {
       actions.push({
         icon: Plus,
@@ -196,23 +196,30 @@ const CommissionSettingTable = ({
 
                 <td className="px-6 py-5">
                   {commission.supportsSlab &&
-                  commission.userPricingSlabs?.length > 0 ? (
+                  commission.commissionSlabs?.length > 0 ? (
                     <div className="space-y-1 text-xs">
-                      {commission.userPricingSlabs.map((slab) => (
+                      {commission.commissionSlabs.map((slab) => (
                         <div
                           key={slab.id}
-                          className="bg-gray-100 px-2 py-1 rounded flex justify-between"
+                          className="bg-gray-100 px-2 py-1 rounded flex justify-between items-center"
                         >
                           <span>
                             ₹{paisaToRupee(slab.minAmount)} - ₹
                             {paisaToRupee(slab.maxAmount)}
                           </span>
 
-                          <span className="font-semibold text-blue-600">
-                            {commission.type === "PERCENTAGE"
-                              ? `${paisaToRupee(slab.value)}%`
-                              : `₹${paisaToRupee(slab.value)}`}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-blue-600">
+                              ₹{paisaToRupee(slab.value)}
+                            </span>
+
+                            <button
+                              onClick={() => onEditSlab?.(commission, slab)}
+                              className="text-blue-500 hover:text-blue-700"
+                            >
+                              <Edit size={14} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
