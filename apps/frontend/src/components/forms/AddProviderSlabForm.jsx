@@ -1,11 +1,14 @@
 import { useDispatch } from "react-redux";
-import { createService } from "../../redux/slices/serviceSlice";
 import { useState, useEffect } from "react";
 import { rupeesToPaise } from "../../utils/lib";
 import HeaderSection from "../ui/HeaderSection";
 import InputField from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
 import { DropdownField } from "../ui/DropdownField";
+
+import {
+  createProviderSlab, // ✅ ADD THIS
+} from "../../redux/slices/serviceSlice";
 
 export default function AddProviderSlabForm({
   mappingId,
@@ -16,12 +19,10 @@ export default function AddProviderSlabForm({
   const dispatch = useDispatch();
 
   const [form, setForm] = useState({
-    minAmount: 0,
-    maxAmount: 0,
-    providerCost: 0,
+    minAmount: "",
+    maxAmount: "",
+    providerCost: "",
     sellingPrice: 0,
-    mode: "COMMISSION",
-    pricingValueType: "FLAT",
   });
 
   const [error, setError] = useState("");
@@ -33,8 +34,6 @@ export default function AddProviderSlabForm({
         maxAmount: editData.maxAmount / 100,
         providerCost: editData.providerCost ? editData.providerCost / 100 : "",
         sellingPrice: editData.sellingPrice ? editData.sellingPrice / 100 : "",
-        mode: editData.mode,
-        pricingValueType: editData.pricingValueType,
       });
     }
   }, [editData]);
@@ -44,73 +43,78 @@ export default function AddProviderSlabForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    if (!mappingId) {
-      setError("Mapping not selected");
-      return;
-    }
+    if (!mappingId) return setError("Mapping not selected");
 
     if (Number(form.minAmount) >= Number(form.maxAmount)) {
-      setError("Min amount must be less than max amount");
-      return;
+      return setError("Min < Max required");
     }
 
     const payload = {
-      type: "slab",
-
       serviceProviderMappingId: mappingId,
-
       minAmount: rupeesToPaise(Number(form.minAmount)),
       maxAmount: rupeesToPaise(Number(form.maxAmount)),
-
       providerCost: form.providerCost
         ? rupeesToPaise(Number(form.providerCost))
         : undefined,
-
       sellingPrice:
         form.mode === "COMMISSION"
           ? rupeesToPaise(Number(form.sellingPrice))
           : undefined,
-
-      mode: form.mode,
-      pricingValueType: form.pricingValueType,
     };
 
-    await dispatch(createService(payload));
+    // ✅ UPDATE CASE
+    if (editData?.id) payload.id = editData.id;
 
-    onSuccess?.();
-    onClose();
+    try {
+      await dispatch(createProviderSlab(payload));
+
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    }
   };
-  const modeOptions = [
-    { id: "COMMISSION", label: "Commission" },
-    { id: "SURCHARGE", label: "Surcharge" },
-  ];
 
-  const pricingTypeOptions = [
-    { id: "FLAT", label: "Flat" },
-    { id: "PERCENTAGE", label: "Percentage" },
-  ];
+  // ✅ DELETE BUTTON
+  const handleDelete = async () => {
+    if (!editData?.id) return;
+
+    if (!window.confirm("Delete slab?")) return;
+
+    try {
+      await dispatch(
+        createProviderSlab({
+          id: editData.id,
+          _delete: true,
+        }),
+      );
+
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl">
         <HeaderSection
           title={editData ? "Update Slab" : "Create Slab"}
-          tagLine={"Configure provider pricing slab"}
           isClose={onClose}
         />
 
         <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg">
-                {error}
-              </div>
+              <div className="bg-red-100 text-red-600 p-2 rounded">{error}</div>
             )}
 
             <div className="grid md:grid-cols-2 gap-4">
               <InputField
-                label={"Min Amount (₹)"}
+                label="Min ₹"
                 type="number"
                 value={form.minAmount}
                 onChange={(e) =>
@@ -118,9 +122,8 @@ export default function AddProviderSlabForm({
                 }
               />
 
-              {/* Max Amount */}
               <InputField
-                label={"Max Amount (₹)"}
+                label="Max ₹"
                 type="number"
                 value={form.maxAmount}
                 onChange={(e) =>
@@ -128,36 +131,8 @@ export default function AddProviderSlabForm({
                 }
               />
 
-              {/* Mode */}
-              <DropdownField
-                label="Status"
-                value={form.mode}
-                onChange={(e) => setForm({ ...form, mode: e.target.value })}
-                options={modeOptions.map((type) => ({
-                  id: type.id,
-                  label: type.label,
-                }))}
-              />
-
-              {/* Pricing Type */}
-              <DropdownField
-                label="Pricing Type"
-                value={form.pricingValueType}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    pricingValueType: e.target.value,
-                  })
-                }
-                options={pricingTypeOptions.map((type) => ({
-                  id: type.id,
-                  label: type.label,
-                }))}
-              />
-
-              {/* Provider Cost */}
               <InputField
-                label={"Provider Cost (₹)"}
+                label="Provider Cost ₹"
                 type="number"
                 value={form.providerCost}
                 onChange={(e) =>
@@ -165,10 +140,9 @@ export default function AddProviderSlabForm({
                 }
               />
 
-              {/* Selling Price */}
               {form.mode === "COMMISSION" && (
                 <InputField
-                  label={"Selling Price (₹)"}
+                  label="Selling Price ₹"
                   type="number"
                   value={form.sellingPrice}
                   onChange={(e) =>
@@ -178,23 +152,24 @@ export default function AddProviderSlabForm({
               )}
             </div>
 
-            {/* Margin */}
+            {/* margin */}
             {form.mode === "COMMISSION" && (
-              <div className="text-sm font-semibold">
-                Margin:
-                <span
-                  className={`ml-2 ${
-                    margin >= 0 ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  ₹{margin}
-                </span>
-              </div>
+              <div className="font-semibold">Margin: ₹{margin}</div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              {editData && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="bg-red-500 text-white px-4 py-2 rounded"
+                >
+                  Delete
+                </button>
+              )}
+
               <ButtonField
-                name={editData ? "Update Slab" : "Create Slab"}
+                name={editData ? "Update" : "Create"}
                 type="submit"
               />
             </div>

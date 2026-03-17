@@ -197,3 +197,27 @@ export const getServices =
       throw error;
     }
   };
+
+// Create / Update / Delete Provider Slab
+export const createProviderSlab = (payload) => async (dispatch) => {
+  try {
+    dispatch(serviceRequest());
+
+    const { data } = await axios.post(`/services/slab`, payload);
+
+    dispatch(serviceSuccess(data));
+
+    if (data.message) {
+      toast.success(data.message);
+    }
+
+    return data;
+  } catch (error) {
+    const errMsg = error?.response?.data?.message || error?.message;
+
+    dispatch(serviceFail(errMsg));
+    toast.error(errMsg);
+
+    throw error;
+  }
+};

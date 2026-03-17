@@ -458,37 +458,23 @@ export class MappingService {
 }
 
 export class ProviderSlabService {
-  // CREATE
-  static async create(payload) {
+  static async upsert(payload) {
     const {
+      id,
+      _delete,
       serviceProviderMappingId,
       minAmount,
       maxAmount,
-      mode,
-      pricingValueType,
       providerCost,
-      sellingPrice,
+      sellingPrice = 0,
     } = payload;
 
-    if (!serviceProviderMappingId)
-      throw ApiError.badRequest("Mapping id required");
-
-    if (mode === "SURCHARGE" && sellingPrice)
-      throw ApiError.badRequest("Selling price not allowed in surcharge mode");
-
-    if (mode === "COMMISSION" && !sellingPrice)
-      throw ApiError.badRequest("Selling price required in commission mode");
-
-    const mapping = await Prisma.serviceProviderMapping.findUnique({
-      where: { id: serviceProviderMappingId },
-    });
-
-    if (!mapping) throw ApiError.notFound("Mapping not found");
-
-    if (!mapping.isActive) throw ApiError.badRequest("Mapping is inactive");
-
-    if (!mapping.supportsSlab)
-      throw ApiError.badRequest("Slabs not enabled for this mapping");
+    // DELETE
+    if (_delete && id) {
+      return Prisma.providerSlab.delete({
+        where: { id },
+      });
+    }
 
     const min = BigInt(minAmount);
     const max = BigInt(maxAmount);
@@ -496,93 +482,28 @@ export class ProviderSlabService {
     if (min >= max)
       throw ApiError.badRequest("Min amount must be less than max amount");
 
-    // OVERLAP CHECK
-    const overlap = await Prisma.providerSlab.findFirst({
-      where: {
-        serviceProviderMappingId,
-        minAmount: { lte: max },
-        maxAmount: { gte: min },
-      },
-    });
+    // UPDATE
+    if (id) {
+      return Prisma.providerSlab.update({
+        where: { id },
+        data: {
+          minAmount: min,
+          maxAmount: max,
+          providerCost: providerCost ? BigInt(providerCost) : 0,
+          sellingPrice: sellingPrice ? BigInt(sellingPrice) : 0,
+        },
+      });
+    }
 
-    if (overlap) throw ApiError.conflict("Slab range overlap");
-
+    // CREATE
     return Prisma.providerSlab.create({
       data: {
         serviceProviderMappingId,
-
         minAmount: min,
         maxAmount: max,
-
-        mode: mode ?? "COMMISSION",
-        pricingValueType: pricingValueType ?? "FLAT",
-
-        providerCost:
-          providerCost !== undefined && providerCost !== null
-            ? BigInt(providerCost)
-            : null,
-
-        sellingPrice:
-          sellingPrice !== undefined && sellingPrice !== null
-            ? BigInt(sellingPrice)
-            : null,
+        providerCost: providerCost ? BigInt(providerCost) : 0,
+        sellingPrice: sellingPrice ? BigInt(sellingPrice) : 0,
       },
-    });
-  }
-
-  // UPDATE
-  static async update(id, payload) {
-    const slab = await Prisma.providerSlab.findUnique({
-      where: { id },
-    });
-
-    if (!slab) throw ApiError.notFound("Slab not found");
-    if (payload.mode === "SURCHARGE" && payload.sellingPrice)
-      throw ApiError.badRequest("Selling price not allowed in surcharge mode");
-
-    if (payload.mode === "COMMISSION" && !payload.sellingPrice)
-      throw ApiError.badRequest("Selling price required in commission mode");
-
-    return Prisma.providerSlab.update({
-      where: { id },
-
-      data: {
-        minAmount:
-          payload.minAmount !== undefined
-            ? BigInt(payload.minAmount)
-            : undefined,
-
-        maxAmount:
-          payload.maxAmount !== undefined
-            ? BigInt(payload.maxAmount)
-            : undefined,
-
-        mode: payload.mode,
-        pricingValueType: payload.pricingValueType,
-
-        providerCost:
-          payload.providerCost !== undefined
-            ? BigInt(payload.providerCost)
-            : undefined,
-
-        sellingPrice:
-          payload.sellingPrice !== undefined
-            ? BigInt(payload.sellingPrice)
-            : undefined,
-      },
-    });
-  }
-
-  // DELETE
-  static async delete(id) {
-    const slab = await Prisma.providerSlab.findUnique({
-      where: { id },
-    });
-
-    if (!slab) throw ApiError.notFound("Slab not found");
-
-    return Prisma.providerSlab.delete({
-      where: { id },
     });
   }
 }

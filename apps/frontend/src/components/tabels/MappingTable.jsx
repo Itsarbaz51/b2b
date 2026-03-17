@@ -4,11 +4,12 @@ import { getAllServices } from "../../redux/slices/serviceSlice";
 import AddProviderSlabForm from "../forms/AddProviderSlabForm";
 import ProviderSlabTable from "../tabels/ProviderSlabTable";
 
-import { Search, RefreshCw, Plus } from "lucide-react";
+import { Search, RefreshCw, Plus, Edit } from "lucide-react";
 
 import EmptyState from "../ui/EmptyState";
 import AddMappingForm from "../forms/AddMappingForm";
 import { paisaToRupee } from "../../utils/lib";
+import ActionMenu from "../ui/ActionMenu";
 
 export default function MappingTable() {
   const dispatch = useDispatch();
@@ -23,7 +24,6 @@ export default function MappingTable() {
   const [providerList, setProviderList] = useState([]);
   const [showSlabModal, setShowSlabModal] = useState(false);
   const [selectedMapping, setSelectedMapping] = useState(null);
-  const [openSlabId, setOpenSlabId] = useState(null);
 
   const data = mappings || [];
 
@@ -107,8 +107,8 @@ export default function MappingTable() {
               <th className="px-6 py-3 text-left">Pricing Type</th>
               <th className="px-6 py-3 text-left">Commission Level</th>
               <th className="px-6 py-3 text-left">Provider Cost</th>
-              <th className="px-6 py-3 text-left">Selling Price</th>
-              <th className="px-6 py-3 text-left">Margin</th>
+              {/* <th className="px-6 py-3 text-left">Selling Price</th> */}
+              {/* <th className="px-6 py-3 text-left">Margin</th> */}
               <th className="px-6 py-3 text-left">Slab</th>
               <th className="px-6 py-3 text-left">Status</th>
               <th className="px-6 py-3 text-center">Actions</th>
@@ -144,16 +144,51 @@ export default function MappingTable() {
                       <td className="px-6 py-4">{item.pricingValueType}</td>
 
                       <td className="px-6 py-4">{item.commissionStartLevel}</td>
+                      <td className="px-6 py-5">
+                        {console.log(item.supportsSlab)}
+                        {item.supportsSlab && item.providerSlabs?.length > 0 ? (
+                          <div className="space-y-1 text-xs">
+                            {item.providerSlabs.map((slab) => (
+                              <div
+                                key={slab.id}
+                                className="bg-gray-100 px-2 py-1 rounded flex justify-between items-center"
+                              >
+                                <span>
+                                  ₹{paisaToRupee(slab.minAmount)} - ₹
+                                  {paisaToRupee(slab.maxAmount)}
+                                </span>
 
-                      <td className="px-6 py-4 text-red-500">
-                        ₹{paisaToRupee(item.providerCost)}
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-blue-600">
+                                    ₹{paisaToRupee(slab.providerCost)}
+                                  </span>
+
+                                  <button
+                                    onClick={() => {
+                                      setSelectedMapping(item);
+                                      setEditData(slab);
+                                      setShowSlabModal(true);
+                                    }}
+                                    className="text-blue-500 hover:text-blue-700"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm font-semibold text-red-500">
+                            ₹{paisaToRupee(item.providerCost)}
+                          </div>
+                        )}
                       </td>
 
-                      <td className="px-6 py-4 text-green-600">
+                      {/* <td className="px-6 py-4 text-green-600">
                         ₹{paisaToRupee(item.sellingPrice)}
                       </td>
 
-                      <td className="px-6 py-4">₹{margin.toFixed(2)}</td>
+                      <td className="px-6 py-4">₹{margin.toFixed(2)}</td> */}
 
                       <td className="px-6 py-4">
                         {item.supportsSlab ? "Yes" : "No"}
@@ -163,69 +198,35 @@ export default function MappingTable() {
                         {item.isActive ? "Active" : "Inactive"}
                       </td>
 
-                      <td className="px-6 py-4 flex gap-3">
-                        <button
-                          onClick={() =>
-                            setOpenSlabId(
-                              openSlabId === item.id ? null : item.id,
-                            )
-                          }
-                          className="text-indigo-600"
-                        >
-                          {openSlabId === item.id ? "Hide Slabs" : "View Slabs"}
-                        </button>
+                      <td className="px-6 py-4">
+                        <ActionMenu
+                          items={[
+                            {
+                              icon: Edit,
+                              label: "Edit",
+                              onClick: () => {
+                                setEditData(item);
+                                setShowModal(true);
+                              },
+                            },
 
-                        <button
-                          onClick={() => {
-                            setEditData(item);
-                            setShowModal(true);
-                          }}
-                          className="text-blue-600"
-                        >
-                          Edit
-                        </button>
+                            ...(item.supportsSlab
+                              ? [
+                                  {
+                                    icon: Plus,
+                                    label: "Add Slab",
+                                    onClick: () => {
+                                      setSelectedMapping(item);
+                                      setEditData(null);
+                                      setShowSlabModal(true);
+                                    },
+                                  },
+                                ]
+                              : []),
+                          ]}
+                        />
                       </td>
                     </tr>
-
-                    {openSlabId === item.id && (
-                      <tr>
-                        <td
-                          colSpan="12"
-                          className="bg-gray-50 px-12 py-6 border-t border-gray-200"
-                        >
-                          <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-semibold text-gray-700">
-                              Provider Slabs
-                            </h3>
-
-                            <button
-                              onClick={() => {
-                                setSelectedMapping(item);
-                                setShowSlabModal(true);
-                              }}
-                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                            >
-                              Add Slab
-                            </button>
-                          </div>
-
-                          {item.providerSlabs?.length > 0 ? (
-                            <ProviderSlabTable
-                              slabs={item.providerSlabs}
-                              onEdit={(slab) => {
-                                setSelectedMapping(item);
-                                setEditData(slab);
-                                setShowSlabModal(true);
-                              }}
-                            />
-                          ) : (
-                            <div className="text-gray-500 text-sm">
-                              No slabs configured
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )}
                   </Fragment>
                 );
               })
@@ -251,8 +252,6 @@ export default function MappingTable() {
       {showSlabModal && selectedMapping && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-125">
-            <h2 className="text-xl font-semibold mb-4">Add Slab</h2>
-
             <AddProviderSlabForm
               mappingId={selectedMapping.id}
               editData={editData}

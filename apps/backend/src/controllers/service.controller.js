@@ -31,10 +31,6 @@ class ServiceProviderController {
         result = await MappingService.create(req.body);
         break;
 
-      case "slab":
-        result = await ProviderSlabService.create(req.body);
-        break;
-
       default:
         throw ApiError.badRequest("Invalid type");
     }
@@ -65,10 +61,6 @@ class ServiceProviderController {
 
       case "mapping":
         result = await MappingService.update(id, req.body);
-        break;
-
-      case "slab":
-        result = await ProviderSlabService.update(id, req.body);
         break;
 
       default:
@@ -153,10 +145,6 @@ class ServiceProviderController {
         result = await MappingService.delete(id);
         break;
 
-      case "slab":
-        result = await ProviderSlabService.delete(id);
-        break;
-
       default:
         throw ApiError.badRequest("Invalid type");
     }
@@ -166,6 +154,22 @@ class ServiceProviderController {
         Helper.serializeBigInt(result),
         `${type} deleted successfully`
       )
+    );
+  });
+
+  // slab
+  static slab = asyncHandler(async (req, res) => {
+    const payload = req.body;
+
+    const result = await ProviderSlabService.upsert(payload);
+
+    let message = "Slab created successfully";
+
+    if (payload._delete) message = "Slab deleted successfully";
+    else if (payload.id) message = "Slab updated successfully";
+
+    return res.json(
+      ApiResponse.success(Helper.serializeBigInt(result), message)
     );
   });
 

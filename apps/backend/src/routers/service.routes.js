@@ -42,4 +42,11 @@ serviceRoutes.get(
   ServiceProviderController.getServices
 );
 
+serviceRoutes.post(
+  "/slab",
+  AuthMiddleware.isAuthenticated,
+  AuthMiddleware.authorize(["ADMIN", "employee"]),
+  ServiceProviderController.slab
+);
+
 export default serviceRoutes;
