@@ -17,22 +17,29 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
   }
 
   encrypt(data) {
-    const key = Buffer.from(this.config.encryptionKey, "hex");
-    const iv = Buffer.alloc(16, 0);
+    const key = Buffer.from(this.config.encryptionKey, "utf8");
+    const iv = Buffer.from(this.config.saltKey, "utf8");
 
-    const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
+    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+
     let encrypted = cipher.update(JSON.stringify(data), "utf8", "base64");
     encrypted += cipher.final("base64");
 
-    return encrypted;
+    const authTag = cipher.getAuthTag().toString("base64");
+
+    return encrypted + ":" + authTag;
   }
 
   decrypt(encData) {
-    const key = Buffer.from(this.config.encryptionKey, "hex");
-    const iv = Buffer.alloc(16, 0);
+    const [encrypted, authTag] = encData.split(":");
 
-    const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
-    let decrypted = decipher.update(encData, "base64", "utf8");
+    const key = Buffer.from(this.config.encryptionKey, "utf8");
+    const iv = Buffer.from(this.config.saltKey, "utf8");
+
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(Buffer.from(authTag, "base64"));
+
+    let decrypted = decipher.update(encrypted, "base64", "utf8");
     decrypted += decipher.final("utf8");
 
     return JSON.parse(decrypted);
