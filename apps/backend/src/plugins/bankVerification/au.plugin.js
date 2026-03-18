@@ -10,41 +10,55 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
     this.client = axios.create({
       baseURL: this.config.baseUrl,
       timeout: 15000,
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
 
     this.accessToken = null;
     this.tokenExpiry = null;
   }
 
+  // 🔐 AES-256-GCM (AU COMPATIBLE)
   encrypt(data) {
     const key = Buffer.from(this.config.encryptionKey, "utf8");
     const iv = Buffer.from(this.config.saltKey, "utf8");
 
     const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
 
-    let encrypted = cipher.update(JSON.stringify(data), "utf8", "base64");
-    encrypted += cipher.final("base64");
+    const encrypted = Buffer.concat([
+      cipher.update(JSON.stringify(data), "utf8"),
+      cipher.final(),
+    ]);
 
-    const authTag = cipher.getAuthTag().toString("base64");
+    const authTag = cipher.getAuthTag();
 
-    return encrypted + ":" + authTag;
+    const finalBuffer = Buffer.concat([encrypted, authTag]);
+
+    return finalBuffer.toString("base64");
   }
 
   decrypt(encData) {
-    const [encrypted, authTag] = encData.split(":");
-
     const key = Buffer.from(this.config.encryptionKey, "utf8");
     const iv = Buffer.from(this.config.saltKey, "utf8");
 
+    const data = Buffer.from(encData, "base64");
+
+    const authTag = data.slice(data.length - 16);
+    const encrypted = data.slice(0, data.length - 16);
+
     const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
-    decipher.setAuthTag(Buffer.from(authTag, "base64"));
+    decipher.setAuthTag(authTag);
 
-    let decrypted = decipher.update(encrypted, "base64", "utf8");
-    decrypted += decipher.final("utf8");
+    const decrypted = Buffer.concat([
+      decipher.update(encrypted),
+      decipher.final(),
+    ]);
 
-    return JSON.parse(decrypted);
+    return JSON.parse(decrypted.toString("utf8"));
   }
 
+  // 🔑 TOKEN (with caching)
   async getAccessToken() {
     if (this.accessToken && Date.now() < this.tokenExpiry) {
       return this.accessToken;
@@ -70,8 +84,9 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
     }
   }
 
+  // 🔥 MAIN ENTRY
   async verifyAccount(params) {
-    const method = this.config.verificationMethod;
+    const method = this.config.verificationMethod || "PENNILESS";
 
     switch (method) {
       case "PENNILESS":
@@ -85,6 +100,7 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
     }
   }
 
+  // ✅ PENNILESS API
   async verifyPenniless({ accountNo, ifsc, requestId }) {
     try {
       const token = await this.getAccessToken();
@@ -95,7 +111,7 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
         BeneficiaryIFSCCode: ifsc,
         RequestId: requestId,
         ReferenceNumber: requestId,
-        OriginatingChannel: this.config.channel,
+        OriginatingChannel: this.config.channel, // 🔥 YAHI USE HO RAHA
         Remarks: "Account Verification",
         PaymentMethod: "P2A",
         FlgIntraBankAllowed: "N",
@@ -110,7 +126,7 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
         { encvalue: encrypted },
         {
           headers: {
-            Authentication: `Bearer ${token}`,
+            "Key-Authentication": `Bearer ${token}`, // 🔥 FIXED HEADER
           },
         }
       );
