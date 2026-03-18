@@ -19,7 +19,7 @@ fundRequestRoutes.post(
 
 // VERIFY (ADMIN / EMPLOYEE)
 fundRequestRoutes.patch(
-  "/verify/:transactionId",
+  "/verify",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorizeRoleTypes(["ADMIN", "employee", "business"]),
   validateRequest({ body: FundRequestValidationSchemas.VerifyFundRequest }),

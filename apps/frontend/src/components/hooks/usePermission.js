@@ -4,7 +4,12 @@ export const usePermissions = (serviceCode) => {
   const { currentUser } = useSelector((s) => s.auth);
 
   if (!currentUser) {
-    return { canView: false, canProcess: false, serviceId: null };
+    return {
+      canView: false,
+      canProcess: false,
+      providers: [],
+      defaultProvider: null,
+    };
   }
 
   const roleType = currentUser?.role?.type;
@@ -15,10 +20,13 @@ export const usePermissions = (serviceCode) => {
       (p) => p?.service?.code === serviceCode,
     );
 
+    const providers = permission?.providers || [];
+
     return {
       canView: permission?.canView || false,
       canProcess: permission?.canProcess || false,
-      serviceId: permission?.service?.id || null,
+      providers, // 🔥 ALL providers
+      defaultProvider: providers[0] || null, // 🔥 first / priority
     };
   }
 
@@ -31,13 +39,15 @@ export const usePermissions = (serviceCode) => {
     return {
       canView: allowed,
       canProcess: allowed,
-      serviceId: null,
+      providers: [],
+      defaultProvider: null,
     };
   }
 
   return {
     canView: false,
     canProcess: false,
-    serviceId: null,
+    providers: [],
+    defaultProvider: null,
   };
 };

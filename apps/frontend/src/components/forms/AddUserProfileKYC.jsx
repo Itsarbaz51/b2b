@@ -96,13 +96,13 @@ export default function AddUserProfileKYC() {
   const {
     canView: canViewAadhaar,
     canProcess: canProcessAadhaar,
-    serviceId: aadhaarServiceId,
+    serviceProviderMappingId: aadhaarServiceId,
   } = usePermissions(SERVICES.AADHAAR);
 
   const {
     canView: canViewPan,
     canProcess: canProcessPan,
-    serviceId: panServiceId,
+    serviceProviderMappingId: panServiceId,
   } = usePermissions(SERVICES.PAN);
 
   // Logout handler
@@ -1084,7 +1084,7 @@ export default function AddUserProfileKYC() {
       {showAadhaarModal && (
         <AadhaarVerificationModal
           aadhaarNumber={formData.aadhaarNumber}
-          serviceId={aadhaarServiceId}
+          serviceProviderMappingId={aadhaarServiceId}
           onClose={() => setShowAadhaarModal(false)}
           onSuccess={(data) => {
             setKycType("API");
@@ -1188,7 +1188,7 @@ export default function AddUserProfileKYC() {
       {showPanModal && (
         <PANVerificationModal
           panNumber={formData.panNumber}
-          serviceId={panServiceId}
+          serviceProviderMappingId={panServiceId}
           onClose={() => setShowPanModal(false)}
           onSuccess={(data) => {
             const fullName = data?.name || "";

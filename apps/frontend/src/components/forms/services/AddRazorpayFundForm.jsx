@@ -11,21 +11,24 @@ import HeaderSection from "../../ui/HeaderSection";
 import InputField from "../../ui/InputField";
 import ButtonField from "../../ui/ButtonField";
 
-const AddRazorpayFundForm = ({ resetForm, onSuccess, serviceId }) => {
+const AddRazorpayFundForm = ({
+  resetForm,
+  onSuccess,
+  serviceProviderMappingId,
+}) => {
   const [amount, setAmount] = useState("");
   const dispatch = useDispatch();
   const [idempotencyKey] = useState(uuidv4());
 
   const handleSubmit = async () => {
     if (!amount) return alert("Amount required");
-    if (!serviceId) return alert("Service permission missing");
+    if (!serviceProviderMappingId) return alert("Service permission missing");
 
     try {
       const res = await dispatch(
         createFundRequest({
-          provider: "RAZORPAY",
-          serviceId,
-          amount: amount * 100,
+          serviceProviderMappingId,
+          amount: Number(amount) * 100,
           idempotencyKey,
         }),
       );
@@ -39,17 +42,24 @@ const AddRazorpayFundForm = ({ resetForm, onSuccess, serviceId }) => {
         order_id: res?.data?.orderId,
 
         handler: async function (response) {
-          const verifiedRes = await dispatch(
-            verifyFundRequest(res?.data?.transactionId, "VERIFY", {
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-            }),
-          );
+          try {
+            const verifiedRes = await dispatch(
+              verifyFundRequest({
+                transactionId: res?.data?.transactionId,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                pricing: res?.data?.pricing,
+                serviceProviderMappingId,
+              }),
+            );
 
-          if (verifiedRes?.success) {
-            onSuccess?.();
-            resetForm();
+            if (verifiedRes?.status === "SUCCESS") {
+              onSuccess?.();
+              resetForm();
+            }
+          } catch (err) {
+            console.error(err);
           }
         },
 
@@ -59,11 +69,34 @@ const AddRazorpayFundForm = ({ resetForm, onSuccess, serviceId }) => {
           },
         },
 
+        modal: {
+          ondismiss: async function () {
+            await dispatch(
+              verifyFundRequest({
+                transactionId: res?.data?.transactionId,
+                action: "FAILED",
+                reason: "User closed payment",
+                serviceProviderMappingId,
+              }),
+            );
+          },
+        },
+
         theme: { color: "#2563eb" },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
+      rzp.on("payment.failed", async function (response) {
+        await dispatch(
+          verifyFundRequest({
+            transactionId: res?.data?.transactionId,
+            action: "FAILED",
+            reason: response.error.description,
+            serviceProviderMappingId,
+          }),
+        );
+      });
     } catch (err) {
       console.error(err);
     }

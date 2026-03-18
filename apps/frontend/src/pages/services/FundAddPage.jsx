@@ -40,8 +40,14 @@ const FundAddPage = () => {
   }, []);
 
   // permission hook
-  const { canView, canProcess, serviceId } = usePermissions(
+  const { canView, canProcess, providers, defaultProvider } = usePermissions(
     SERVICES.FUND_REQUEST,
+  );
+
+  const razorpayProvider = providers.find((p) => p.providerCode === "RAZORPAY");
+
+  const bankProvider = providers.find(
+    (p) => p.providerCode === "BANK_TRANSFER",
   );
 
   if (!canView) {
@@ -155,7 +161,9 @@ const FundAddPage = () => {
             <AddRazorpayFundForm
               resetForm={resetForm}
               onSuccess={fetchRequests}
-              serviceId={serviceId}
+              serviceProviderMappingId={
+                razorpayProvider?.serviceProviderMappingId
+              }
             />
           </div>
         )}
@@ -175,7 +183,7 @@ const FundAddPage = () => {
               onSubmit={handleBankSubmit}
               resetForm={resetForm}
               isProcessing={processing}
-              serviceId={serviceId}
+              serviceProviderMappingId={bankProvider?.serviceProviderMappingId}
             />
           </div>
         )}

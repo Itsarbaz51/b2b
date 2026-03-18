@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const CreateFundRequest = z
   .object({
-    serviceId: z.string().uuid(),
+    serviceProviderMappingId: z.string().uuid(),
 
     provider: z.enum(["BANK_TRANSFER", "RAZORPAY"]),
 

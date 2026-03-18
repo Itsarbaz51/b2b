@@ -2,54 +2,39 @@ import Prisma from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 
 export default class ProviderResolver {
-  static async resolveProvider(serviceId, providerCode = null) {
-    if (!serviceId) throw ApiError.badRequest("ServiceId required");
-
-    const whereMapping = {
-      isActive: true,
-    };
-
-    if (providerCode) {
-      whereMapping.provider = {
-        code: providerCode,
-        isActive: true,
-      };
+  static async resolveByMappingId(mappingId) {
+    if (!mappingId) {
+      throw ApiError.badRequest("MappingId required");
     }
 
-    const service = await Prisma.service.findUnique({
-      where: { id: serviceId },
+    const mapping = await Prisma.serviceProviderMapping.findUnique({
+      where: { id: mappingId },
       include: {
-        mappings: {
-          where: whereMapping,
-          include: {
-            provider: true,
-          },
-          orderBy: {
-            priority: "desc",
-          },
-        },
+        provider: true,
+        service: true,
       },
     });
 
-    if (!service) throw ApiError.notFound("Service not found");
+    if (!mapping) {
+      throw ApiError.notFound("Service Provider Mapping not found");
+    }
 
-    if (!service.mappings.length)
-      throw ApiError.badRequest("No active provider mapping found");
+    if (!mapping.isActive) {
+      throw ApiError.forbidden("Mapping is inactive");
+    }
 
-    // Highest priority mapping
-    const serviceProviderMapping = service.mappings.find(
-      (m) => m.provider && m.provider.isActive
-    );
+    if (!mapping.provider || !mapping.provider.isActive) {
+      throw ApiError.forbidden("Provider is inactive");
+    }
 
-    if (!serviceProviderMapping)
-      throw ApiError.badRequest("No active provider available");
-
-    const provider = serviceProviderMapping.provider;
+    if (!mapping.service || !mapping.service.isActive) {
+      throw ApiError.forbidden("Service is inactive");
+    }
 
     return {
-      service,
-      provider,
-      serviceProviderMapping,
+      service: mapping.service,
+      provider: mapping.provider,
+      serviceProviderMapping: mapping,
     };
   }
 }

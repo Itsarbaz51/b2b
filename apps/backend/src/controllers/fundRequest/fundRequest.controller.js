@@ -22,13 +22,20 @@ class FundRequestController {
 
   static verify = asyncHandler(async (req, res) => {
     const payload = {
-      transactionId: req.params.transactionId,
-      action: req.body.action,
+      // BANK
+      transactionId: req.body?.transactionId,
+      action: req.body?.action,
       reason: req.body?.reason,
 
+      // RAZORPAY
       razorpay_payment_id: req.body?.razorpay_payment_id,
       razorpay_order_id: req.body?.razorpay_order_id,
       razorpay_signature: req.body?.razorpay_signature,
+
+      // 🔥 MAIN
+      serviceProviderMappingId: req.body.serviceProviderMappingId,
+      pricing: req.body.pricing,
+      idempotencyKey: req.body.idempotencyKey,
     };
 
     const result = await FundRequestService.verify(payload, req.user);
@@ -36,7 +43,7 @@ class FundRequestController {
     return res.json(
       ApiResponse.success(
         Helper.serializeBigInt(result),
-        `${payload?.action} success`
+        "Verification success"
       )
     );
   });

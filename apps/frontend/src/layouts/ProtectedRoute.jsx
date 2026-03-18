@@ -42,7 +42,7 @@ const ProtectedRoute = ({ children }) => {
   // ---------------- WALLET CHECK ----------------
   if (
     isBusinessUser &&
-    walletBalance <= 0 &&
+    walletBalance === 0 &&
     !currentUser?.isKycVerified &&
     !["/add-fund"].includes(currentPath)
   ) {
@@ -52,7 +52,7 @@ const ProtectedRoute = ({ children }) => {
   // ---------------- KYC CHECK ----------------
   if (
     isBusinessUser &&
-    walletBalance >= 0 &&
+    walletBalance > 0 &&
     !currentUser?.isKycVerified &&
     !["/kyc-submit"].includes(currentPath)
   ) {

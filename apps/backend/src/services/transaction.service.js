@@ -131,7 +131,7 @@ export default class TransactionService {
     search,
     date,
     role,
-    userId, 
+    userId,
   }) {
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;

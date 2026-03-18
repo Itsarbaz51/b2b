@@ -58,7 +58,6 @@ export default class RazorpayFundRequestService {
       amount: Number(finalAmount),
       userId: actor.id,
     });
-    console.log("init", providerResponse);
 
     return Prisma.$transaction(async (tx) => {
       const wallet = await WalletEngine.getWallet({
@@ -71,7 +70,7 @@ export default class RazorpayFundRequestService {
         userId: actor.id,
         walletId: wallet.id,
         serviceProviderMappingId: serviceProviderMapping.id,
-        amount: finalAmount,
+        amount: amount,
         providerReference: providerResponse.orderId,
         pricing: {
           amount,
@@ -111,6 +110,19 @@ export default class RazorpayFundRequestService {
     // duplicate protection
     if (transaction.status === "SUCCESS") {
       return { status: "SUCCESS" };
+    }
+
+    // MANUAL FAIL HANDLE (from frontend)
+    if (payload.action === "FAILED") {
+      await Prisma.transaction.update({
+        where: { id: payload.transactionId },
+        data: {
+          status: "FAILED",
+          providerResponse: { message: payload.reason || "Payment failed" },
+        },
+      });
+
+      return { status: "FAILED" };
     }
 
     if (transaction.status !== "PENDING") {

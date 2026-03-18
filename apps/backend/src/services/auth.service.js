@@ -213,14 +213,11 @@ class AuthServices {
               },
             },
           },
-
           kycs: {
             orderBy: { createdAt: "desc" },
             take: 1,
           },
-
           wallets: true,
-
           userPermissions: {
             include: {
               service: {
@@ -238,9 +235,32 @@ class AuthServices {
 
       if (!user) throw ApiError.notFound("User not found");
 
+      const mappings = await Prisma.serviceProviderMapping.findMany({
+        where: {
+          isActive: true,
+          provider: { isActive: true },
+        },
+        include: {
+          service: true,
+          provider: true,
+        },
+        orderBy: {
+          priority: "asc",
+        },
+      });
+
+      const mappingMap = new Map();
+
+      for (const m of mappings) {
+        if (!mappingMap.has(m.serviceId)) {
+          mappingMap.set(m.serviceId, []);
+        }
+        mappingMap.get(m.serviceId).push(m);
+      }
+
       let finalPermissions = [];
 
-      // ---------------- ADMIN BYPASS ----------------
+      // ---------------- ADMIN ----------------
       if (user.role.name === "ADMIN") {
         const services = await Prisma.service.findMany({
           where: { isActive: true },
@@ -254,6 +274,7 @@ class AuthServices {
 
         finalPermissions = services.map((service) => ({
           service,
+          serviceProviderMappingId: mappingMap.get(service.id)?.id || null,
           canView: true,
           canProcess: true,
         }));
@@ -266,28 +287,31 @@ class AuthServices {
         );
       }
 
-      // ---------------- BUSINESS USERS ----------------
+      // ---------------- BUSINESS ----------------
       else {
         const rolePermissions = user.role.rolePermissions || [];
         const userPermissions = user.userPermissions || [];
 
         const permissionMap = new Map();
 
-        for (const perm of rolePermissions) {
-          permissionMap.set(perm.service.code.toUpperCase(), {
-            service: perm.service,
-            canView: perm.canView,
-            canProcess: perm.canProcess,
-          });
-        }
+        const applyPermission = (perm) => {
+          const mappingList = mappingMap.get(perm.service.id) || [];
 
-        for (const perm of userPermissions) {
+          if (!mappingList.length) return;
+
           permissionMap.set(perm.service.code.toUpperCase(), {
             service: perm.service,
+            providers: mappingList.map((m) => ({
+              serviceProviderMappingId: m.id,
+              providerCode: m.provider?.code,
+            })),
             canView: perm.canView,
             canProcess: perm.canProcess,
           });
-        }
+        };
+
+        rolePermissions.forEach(applyPermission);
+        userPermissions.forEach(applyPermission);
 
         finalPermissions = Array.from(permissionMap.values());
       }
@@ -321,6 +345,7 @@ class AuthServices {
 
       let safeUser = { ...serialized };
 
+      // 🔐 ADMIN ONLY DECRYPT
       if (isAdmin) {
         try {
           if (user.password) {

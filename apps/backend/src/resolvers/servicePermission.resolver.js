@@ -2,50 +2,43 @@ import Prisma from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 
 export default class ServicePermissionResolver {
-  static async validateHierarchyServiceAccess(userId, serviceId) {
-    if (!userId || !serviceId)
-      throw ApiError.badRequest("UserId and ServiceId required");
+  static async validateByMappingId(userId, mappingId) {
+    if (!userId || !mappingId) {
+      throw ApiError.badRequest("UserId and MappingId required");
+    }
 
-    // SERVICE + PROVIDER VALIDATION
-    const service = await Prisma.service.findUnique({
-      where: { id: serviceId },
+    // 🔥 STEP 1: mapping fetch
+    const mapping = await Prisma.serviceProviderMapping.findUnique({
+      where: { id: mappingId },
       include: {
-        mappings: {
-          include: {
-            provider: true,
-          },
-        },
+        provider: true,
+        service: true,
       },
     });
 
-    if (!service) throw ApiError.notFound("Service not found");
+    if (!mapping) {
+      throw ApiError.notFound("Mapping not found");
+    }
 
-    if (!service.isActive)
-      throw ApiError.forbidden("Service is inactive contact your admin");
+    if (!mapping.isActive || !mapping.provider?.isActive) {
+      throw ApiError.forbidden("Inactive provider mapping");
+    }
 
-    if (!service.mappings || service.mappings.length === 0)
-      throw ApiError.forbidden("Service provider mapping missing");
+    if (!mapping.service?.isActive) {
+      throw ApiError.forbidden("Service is inactive");
+    }
 
-    // ✅ Get active provider mapping (priority supported)
-    const activeMapping = service.mappings
-      .filter((m) => m.isActive && m.provider?.isActive)
-      .sort((a, b) => a.priority - b.priority)[0];
+    const serviceId = mapping.serviceId;
 
-    if (!activeMapping)
-      throw ApiError.forbidden(
-        "No active provider mapping available contact admin"
-      );
-
-    // ===========================
-    // HIERARCHY PERMISSION CHECK
-    // ===========================
-
+    // 🔥 STEP 2: hierarchy permission check
     let currentUser = await Prisma.user.findUnique({
       where: { id: userId },
       include: { role: true },
     });
 
-    if (!currentUser) throw ApiError.notFound("User not found");
+    if (!currentUser) {
+      throw ApiError.notFound("User not found");
+    }
 
     while (currentUser) {
       const userPermission = await Prisma.userPermission.findUnique({
@@ -58,10 +51,11 @@ export default class ServicePermissionResolver {
       });
 
       if (userPermission) {
-        if (!userPermission.canProcess)
+        if (!userPermission.canProcess) {
           throw ApiError.forbidden(
             `Service blocked at user level (${currentUser.id})`
           );
+        }
       } else {
         const rolePermission = await Prisma.rolePermission.findUnique({
           where: {
@@ -72,10 +66,11 @@ export default class ServicePermissionResolver {
           },
         });
 
-        if (rolePermission && !rolePermission.canProcess)
+        if (rolePermission && !rolePermission.canProcess) {
           throw ApiError.forbidden(
             `Service blocked at role level (${currentUser.roleId})`
           );
+        }
       }
 
       if (!currentUser.parentId) break;
@@ -86,7 +81,7 @@ export default class ServicePermissionResolver {
       });
     }
 
-    // ✅ Return mapping for execution layer
-    return activeMapping;
+    // ✅ return full mapping (IMPORTANT 🔥)
+    return mapping;
   }
 }

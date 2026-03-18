@@ -125,29 +125,24 @@ VERIFY FUND REQUEST
 --------------------------------
 */
 
-export const verifyFundRequest =
-  (id, action, payload = {}) =>
-  async (dispatch) => {
-    try {
-      dispatch(fundRequest());
+export const verifyFundRequest = (payload) => async (dispatch) => {
+  try {
+    dispatch(fundRequest());
 
-      const { data } = await axios.patch(`/fund-req/verify/${id}`, {
-        action,
-        ...payload,
-      });
+    const { data } = await axios.patch(`/fund-req/verify`, payload);
 
-      dispatch(fundSuccess(data));
-      toast.success(data.message);
+    dispatch(fundSuccess(data));
+    toast.success(data.message);
 
-      return data;
-    } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
+    return data;
+  } catch (error) {
+    const errMsg = error?.response?.data?.message || error?.message;
 
-      dispatch(fundFail(errMsg));
-      toast.error(errMsg);
+    dispatch(fundFail(errMsg));
+    toast.error(errMsg);
 
-      throw error;
-    }
-  };
+    throw error;
+  }
+};
 
 export default fundSlice.reducer;

@@ -19,7 +19,7 @@ export default class LedgerEngine {
     if (!walletId) throw ApiError.badRequest("Wallet ID required");
     if (!entryType) throw ApiError.badRequest("Entry type required");
 
-    const amt = BigInt(amount);
+    const amt = typeof amount == "bigint" ? amount : BigInt(amount);
 
     // 🔒 Idempotency Check
     if (idempotencyKey) {

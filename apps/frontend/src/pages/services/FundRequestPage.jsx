@@ -41,7 +41,9 @@ const FundRequestPage = () => {
     currentUser?.role?.name === "ADMIN" ||
     currentUser?.role?.type === "employee";
 
-  const { canProcess, serviceId } = usePermissions(SERVICES.FUND_REQUEST);
+  const { canProcess, serviceProviderMappingId } = usePermissions(
+    SERVICES.FUND_REQUEST,
+  );
 
   const fetchRequests = () => {
     dispatch(
@@ -215,7 +217,7 @@ const FundRequestPage = () => {
         <AddRazorpayFundForm
           resetForm={resetForm}
           onSuccess={fetchRequests}
-          serviceId={serviceId}
+          serviceProviderMappingId={serviceProviderMappingId}
         />
       )}
 
@@ -224,7 +226,7 @@ const FundRequestPage = () => {
           onSubmit={handleBankSubmit}
           resetForm={resetForm}
           isProcessing={processing}
-          serviceId={serviceId}
+          serviceProviderMappingId={serviceProviderMappingId}
         />
       )}
 

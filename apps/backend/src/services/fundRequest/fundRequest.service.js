@@ -2,14 +2,33 @@ import ProviderResolver from "../../resolvers/Provider.resolver.js";
 import BankFundRequestService from "./fundRequest.bank.service.js";
 import RazorpayFundRequestService from "./fundRequest.razorpay.service.js";
 import { ApiError } from "../../utils/ApiError.js";
-import Prisma from "../../db/db.js";
+import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
 
 export default class FundRequestService {
-  static async create(payload, actor) {
-    const { serviceId, provider } = payload;
+  static async checkPermission(userId, mappingId) {
+    await ServicePermissionResolver.validateByMappingId(userId, mappingId);
+  }
 
+  static async resolveProvider(mappingId) {
     const { provider: providerData, serviceProviderMapping } =
-      await ProviderResolver.resolveProvider(serviceId, provider);
+      await ProviderResolver.resolveByMappingId(mappingId);
+
+    if (serviceProviderMapping.commissionStartLevel === "NONE") {
+      throw ApiError.badRequest("Surcharge disabled for this service (NONE)");
+    }
+
+    return { providerData, serviceProviderMapping };
+  }
+
+  // ---------------- CREATE ----------------
+  static async create(payload, actor) {
+    const { serviceProviderMappingId } = payload;
+
+    await this.checkPermission(actor.id, serviceProviderMappingId);
+
+    const { providerData, serviceProviderMapping } = await this.resolveProvider(
+      serviceProviderMappingId
+    );
 
     switch (providerData.code) {
       case "BANK_TRANSFER":
@@ -33,28 +52,27 @@ export default class FundRequestService {
     }
   }
 
+  // ---------------- VERIFY ----------------
   static async verify(payload, actor) {
-    const transaction = await Prisma.transaction.findUnique({
-      where: { id: payload.transactionId },
-      include: {
-        serviceProviderMapping: {
-          include: { provider: true },
-        },
-      },
-    });
+    const { serviceProviderMappingId } = payload;
 
-    if (!transaction) {
-      throw ApiError.notFound("Transaction not found");
-    }
+    await this.checkPermission(actor.id, serviceProviderMappingId);
 
-    const providerCode = transaction.serviceProviderMapping.provider.code;
+    const { providerData, serviceProviderMapping } = await this.resolveProvider(
+      serviceProviderMappingId
+    );
 
-    switch (providerCode) {
+    switch (providerData.code) {
       case "BANK_TRANSFER":
         return BankFundRequestService.verifyRequest(payload, actor);
 
       case "RAZORPAY":
-        return RazorpayFundRequestService.verifyRequest(payload, actor);
+        return RazorpayFundRequestService.verifyRequest(
+          payload,
+          actor,
+          providerData,
+          serviceProviderMapping
+        );
 
       default:
         throw ApiError.badRequest("Unsupported provider");

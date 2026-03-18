@@ -40,7 +40,9 @@ const PayoutPage = () => {
     currentUser?.role?.name === "ADMIN" ||
     currentUser?.role?.type === "employee";
 
-  const { canProcess, serviceId } = usePermissions(SERVICES.PAYOUT);
+  const { canProcess, serviceProviderMappingId } = usePermissions(
+    SERVICES.PAYOUT,
+  );
 
   const fetchRequests = () => {
     dispatch(
@@ -74,7 +76,7 @@ const PayoutPage = () => {
       const res = await dispatch(
         verifyPayoutAccount({
           provider: "WONDERPAY",
-          serviceId,
+          serviceProviderMappingId,
           number: form.mobile,
           accountNo: form.accountNo,
           ifscCode: form.ifscCode,
