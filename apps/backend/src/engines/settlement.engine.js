@@ -39,7 +39,7 @@ export default class SettlementEngine {
     }
 
     // ✅ HOLD (atomic)
-    await WalletEngine.hold(tx, wallet.id, pricing.totalDebit);
+    await WalletEngine.hold(tx, wallet, pricing.totalDebit);
 
     const { transaction } = await TransactionService.create(tx, {
       userId,
@@ -59,12 +59,14 @@ export default class SettlementEngine {
     tx,
     actor,
     transaction,
+    wallet,
     pricing,
     serviceProviderMapping,
   }) {
     const walletId = transaction.walletId;
+    console.log(wallet);
 
-    await WalletEngine.captureHold(tx, walletId, pricing.totalDebit);
+    await WalletEngine.captureHold(tx, wallet, pricing.totalDebit);
 
     await LedgerEngine.create(tx, {
       walletId,

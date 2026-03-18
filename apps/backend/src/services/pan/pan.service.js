@@ -9,18 +9,18 @@ import { ApiError } from "../../utils/ApiError.js";
 
 export default class PanService {
   static async verifyPan(payload, actor) {
-    const { panNumber, serviceId, idempotencyKey } = payload;
+    const { panNumber, serviceProviderMappingId, idempotencyKey } = payload;
     const userId = actor.id;
 
     await TransactionService.checkDuplicate(idempotencyKey);
 
-    await ServicePermissionResolver.validateHierarchyServiceAccess(
+    await ServicePermissionResolver.validateByMappingId(
       userId,
-      serviceId
+      serviceProviderMappingId
     );
 
     const { provider, serviceProviderMapping } =
-      await ProviderResolver.resolveProvider(serviceId);
+      await ProviderResolver.resolveByMappingId(serviceProviderMappingId);
 
     if (serviceProviderMapping.commissionStartLevel === "NONE") {
       throw ApiError.badRequest("Surcharge disabled for this service");
@@ -44,6 +44,12 @@ export default class PanService {
         actor,
         payload,
         serviceProviderMapping,
+      });
+
+      console.log("SETTLEMENT RESPONSE:", {
+        transaction,
+        wallet,
+        pricing,
       });
 
       // CALL PROVIDER

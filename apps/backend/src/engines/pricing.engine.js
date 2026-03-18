@@ -91,7 +91,7 @@ export default class PricingEngine {
 
     if (rule?.applyGST && rule.gstPercent) {
       const percent = BigInt(rule.gstPercent);
-      gst = (surcharge * percent) / 100n;
+      gst = (surcharge * percent) / 10000n;
     }
 
     //  FINAL AMOUNT

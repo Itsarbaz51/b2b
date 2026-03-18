@@ -8,13 +8,13 @@ export const usePermissions = (serviceCode) => {
       canView: false,
       canProcess: false,
       providers: [],
+      getProviderByCode: () => null,
       defaultProvider: null,
     };
   }
 
   const roleType = currentUser?.role?.type;
 
-  // ---------------- BUSINESS USER ----------------
   if (roleType === "business") {
     const permission = currentUser?.permissions?.find(
       (p) => p?.service?.code === serviceCode,
@@ -22,15 +22,19 @@ export const usePermissions = (serviceCode) => {
 
     const providers = permission?.providers || [];
 
+    // 🔥 helper
+    const getProviderByCode = (code) =>
+      providers.find((p) => p.providerCode === code);
+
     return {
       canView: permission?.canView || false,
       canProcess: permission?.canProcess || false,
-      providers, // 🔥 ALL providers
-      defaultProvider: providers[0] || null, // 🔥 first / priority
+      providers,
+      defaultProvider: providers[0] || null,
+      getProviderByCode,
     };
   }
 
-  // ---------------- EMPLOYEE USER ----------------
   if (roleType === "employee") {
     const allowed = currentUser?.permissions?.includes(
       serviceCode?.toLowerCase(),
@@ -40,6 +44,7 @@ export const usePermissions = (serviceCode) => {
       canView: allowed,
       canProcess: allowed,
       providers: [],
+      getProviderByCode: () => null,
       defaultProvider: null,
     };
   }
@@ -48,6 +53,7 @@ export const usePermissions = (serviceCode) => {
     canView: false,
     canProcess: false,
     providers: [],
+    getProviderByCode: () => null,
     defaultProvider: null,
   };
 };

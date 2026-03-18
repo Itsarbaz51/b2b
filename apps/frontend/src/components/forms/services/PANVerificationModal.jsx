@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export default function PANVerificationModal({
   panNumber,
-  serviceId,
+  serviceProviderMappingId,
   onSuccess,
   onClose,
 }) {
@@ -31,7 +31,7 @@ export default function PANVerificationModal({
         return;
       }
 
-      if (!serviceId) {
+      if (!serviceProviderMappingId) {
         toast.error("PAN service not available");
         return;
       }
@@ -41,7 +41,7 @@ export default function PANVerificationModal({
       const res = await dispatch(
         verifyPan({
           panNumber: cleanPan,
-          serviceId,
+          serviceProviderMappingId,
           idempotencyKey,
         }),
       );

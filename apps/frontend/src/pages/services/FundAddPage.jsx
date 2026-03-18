@@ -40,7 +40,7 @@ const FundAddPage = () => {
   }, []);
 
   // permission hook
-  const { canView, canProcess, providers, defaultProvider } = usePermissions(
+  const { canView, canProcess, providers } = usePermissions(
     SERVICES.FUND_REQUEST,
   );
 
