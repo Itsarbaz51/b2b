@@ -6,6 +6,7 @@ import SurchargeEngine from "../../engines/surcharge.engine.js";
 import LedgerEngine from "../../engines/ledger.engine.js";
 import PricingEngine from "../../engines/pricing.engine.js";
 import { ApiError } from "../../utils/ApiError.js";
+import Helper from "../../utils/helper.js";
 
 export default class RazorpayFundRequestService {
   static async create(payload, actor, serviceProviderMapping, provider) {
@@ -25,21 +26,53 @@ export default class RazorpayFundRequestService {
     });
 
     const finalAmount = pricing.totalDebit;
+    const receiptId = Helper.generateTxnId("RAZ");
 
-    const providerResponse = await plugin.createRequest({
-      amount: Number(finalAmount),
-      userId: actor.id,
-      notes: {},
+    return Prisma.$transaction(async (tx) => {
+      const wallet = await WalletEngine.getWallet({
+        tx,
+        userId: actor.id,
+        walletType: "PRIMARY",
+      });
+
+      // ✅ CREATE TXN FIRST (PENDING)
+      const { transaction } = await TransactionService.create(tx, {
+        txnId: receiptId,
+        userId: actor.id,
+        walletId: wallet.id,
+        serviceProviderMappingId: serviceProviderMapping.id,
+        amount,
+        pricing,
+        idempotencyKey: payload.idempotencyKey,
+        requestPayload: payload,
+      });
+
+      // ✅ CREATE RAZORPAY ORDER
+      const providerResponse = await plugin.createRequest({
+        amount: Number(finalAmount),
+        userId: actor.id,
+        notes: {
+          actualAmount: amount.toString(),
+          idempotencyKey: payload.idempotencyKey,
+        },
+        receiptId,
+      });
+
+      // ✅ SAVE ORDER ID
+      await tx.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          providerReference: providerResponse.orderId,
+        },
+      });
+
+      return {
+        transactionId: transaction.id,
+        orderId: providerResponse.orderId,
+        amount: Number(finalAmount) / 100,
+        key: serviceProviderMapping.config.keyId,
+      };
     });
-
-    return {
-      orderId: providerResponse.orderId,
-      amount: Number(finalAmount) / 100,
-      key: serviceProviderMapping.config.keyId,
-      notes: {
-        actualAmount: amount.toString(),
-      },
-    };
   }
 
   static async verifyRequest(
@@ -60,54 +93,48 @@ export default class RazorpayFundRequestService {
     });
 
     const paymentStatus = verifyResponse.status;
+    const totalAmount = BigInt(verifyResponse.raw.amount);
 
-    const existing = await Prisma.transaction.findFirst({
+    // ✅ FIND EXISTING TXN (BY ORDER ID)
+    const transaction = await Prisma.transaction.findFirst({
       where: {
-        providerReference: verifyResponse.paymentId,
+        providerReference: payload.razorpay_order_id,
       },
     });
 
-    if (existing && existing.status === "SUCCESS") {
+    if (!transaction) {
+      throw ApiError.badRequest("Transaction not found");
+    }
+
+    // ✅ DUPLICATE SAFE
+    if (transaction.status === "SUCCESS") {
       return { status: "SUCCESS" };
     }
 
-    const actualAmount = BigInt(verifyResponse.raw.notes?.actualAmount || 0);
+    const actualAmount = verifyResponse.raw.notes?.actualAmount
+      ? BigInt(verifyResponse.raw.notes.actualAmount)
+      : totalAmount;
 
     if (actualAmount <= 0n) {
-      throw ApiError.badRequest("Invalid amount from provider");
-    }
-
-    if (verifyResponse.orderId !== payload.razorpay_order_id) {
-      throw ApiError.badRequest("Order mismatch");
+      throw ApiError.badRequest("Invalid amount");
     }
 
     return Prisma.$transaction(async (tx) => {
       const wallet = await WalletEngine.getWallet({
         tx,
-        userId: actor.id,
+        userId: transaction.userId,
         walletType: "PRIMARY",
       });
 
       const pricing = await PricingEngine.calculateSurcharge(tx, {
-        userId: actor.id,
-        serviceProviderMappingId: serviceProviderMapping.id,
+        userId: transaction.userId,
+        serviceProviderMappingId: transaction.serviceProviderMappingId,
         amount: actualAmount,
       });
 
       if (pricing.totalDebit !== totalAmount) {
         throw ApiError.badRequest("Amount mismatch");
       }
-
-      const { transaction } = await TransactionService.create(tx, {
-        userId: actor.id,
-        walletId: wallet.id,
-        serviceProviderMappingId: serviceProviderMapping.id,
-        amount: actualAmount,
-        providerReference: verifyResponse.paymentId,
-        pricing,
-        idempotencyKey: verifyResponse.paymentId,
-        requestPayload: payload,
-      });
 
       if (paymentStatus === "failed") {
         await TransactionService.update(tx, {
@@ -130,10 +157,11 @@ export default class RazorpayFundRequestService {
 
         return {
           status: "PENDING",
-          message: "Payment authorized but not captured",
+          message: "Authorized but not captured",
         };
       }
 
+      // ✅ SUCCESS
       if (paymentStatus === "captured") {
         await WalletEngine.credit(tx, wallet, actualAmount);
 
@@ -142,7 +170,7 @@ export default class RazorpayFundRequestService {
           transactionId: transaction.id,
           entryType: "CREDIT",
           referenceType: "FUND_REQUEST",
-          serviceProviderMappingId: serviceProviderMapping.id,
+          serviceProviderMappingId: transaction.serviceProviderMappingId,
           amount: actualAmount,
           narration: "Fund added via Razorpay",
           createdBy: actor.id,
@@ -150,8 +178,8 @@ export default class RazorpayFundRequestService {
 
         await SurchargeEngine.distribute(tx, {
           transactionId: transaction.id,
-          userId: actor.id,
-          serviceProviderMappingId: serviceProviderMapping.id,
+          userId: transaction.userId,
+          serviceProviderMappingId: transaction.serviceProviderMappingId,
           createdBy: actor.id,
           pricing,
         });
@@ -162,7 +190,16 @@ export default class RazorpayFundRequestService {
           providerReference: verifyResponse.paymentId,
           providerResponse: verifyResponse,
         });
+
+        return {
+          status: "SUCCESS",
+          transactionId: transaction.id,
+          paymentId: verifyResponse.paymentId,
+          amount: actualAmount,
+        };
       }
+
+      throw ApiError.badRequest("Unhandled payment status");
     });
   }
 }

@@ -107,6 +107,7 @@ export default function MappingTable() {
               <th className="px-6 py-3 text-left">Pricing Type</th>
               <th className="px-6 py-3 text-left">Commission Level</th>
               <th className="px-6 py-3 text-left">Provider Cost</th>
+              <th className="px-6 py-3 text-left">GST/TDS</th>
               {/* <th className="px-6 py-3 text-left">Selling Price</th> */}
               {/* <th className="px-6 py-3 text-left">Margin</th> */}
               <th className="px-6 py-3 text-left">Slab</th>
@@ -181,6 +182,21 @@ export default function MappingTable() {
                             ₹{paisaToRupee(item.providerCost)}
                           </div>
                         )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          {item.mode === "COMMISSION" && item.applyTDS && (
+                            <div>TDS: {item.tdsPercent}%</div>
+                          )}
+
+                          {item.mode === "SURCHARGE" && item.applyGST && (
+                            <div>GST: {item.gstPercent}%</div>
+                          )}
+
+                          {!item.applyTDS && !item.applyGST && (
+                            <div className="text-gray-400">-</div>
+                          )}
+                        </div>
                       </td>
 
                       {/* <td className="px-6 py-4 text-green-600">

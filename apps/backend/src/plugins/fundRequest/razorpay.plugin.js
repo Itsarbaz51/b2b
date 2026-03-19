@@ -13,14 +13,17 @@ class RazorpayFundRequestPlugin extends FundRequestInterface {
     });
   }
 
-  async createRequest({ amount, userId, notes }) {
+  async createRequest({ amount, userId, notes, receiptId }) {
     const order = await this.client.orders.create({
-      amount: amount,
+      amount: Number(amount),
       currency: "INR",
-      receipt: `fund_${Date.now()}`,
+      receipt: receiptId,
       notes: {
-        userId,
-        actualAmount: notes?.actualAmount,
+        userId: String(userId),
+        receipt: String(receiptId),
+        actualAmount: notes?.actualAmount
+          ? String(notes.actualAmount)
+          : undefined,
       },
     });
 
@@ -28,6 +31,7 @@ class RazorpayFundRequestPlugin extends FundRequestInterface {
       provider: "RAZORPAY",
       orderId: order.id,
       amount: order.amount / 100,
+      receipt: order.receipt,
     };
   }
 

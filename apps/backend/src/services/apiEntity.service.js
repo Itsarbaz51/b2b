@@ -7,8 +7,8 @@ export default class ApiEntityService {
     tx,
     { userId, serviceProviderMappingId, requestPayload, reference = null }
   ) {
-    if (!userId || !serviceProviderMappingId)
-      throw ApiError.badRequest("userId & serviceProviderMappingId required");
+    if (!userId)
+      throw ApiError.badRequest("userId required");
 
     return await tx.apiEntity.create({
       data: {

@@ -142,9 +142,9 @@ model ApiEntity {
   id        String @id @default(uuid())
   reference String @unique
 
-  userId                   String @map("user_id")
-  serviceProviderMappingId String @map("service_provider_mapping_id")
-  status                   String @default("PENDING")
+  userId                   String  @map("user_id")
+  serviceProviderMappingId String? @map("service_provider_mapping_id")
+  status                   String  @default("PENDING")
 
   requestPayload    Json? @map("request_payload")
   providerInitData  Json? @map("provider_init_data")
@@ -155,8 +155,8 @@ model ApiEntity {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   completedAt DateTime? @map("completed_at")
 
-  serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
-  user                   User                   @relation(fields: [userId], references: [id])
+  serviceProviderMapping ServiceProviderMapping? @relation(fields: [serviceProviderMappingId], references: [id])
+  user                   User                    @relation(fields: [userId], references: [id])
 
   transaction Transaction?
   apiWebhooks ApiWebhook[]
@@ -556,8 +556,8 @@ model SystemSetting {
   linkedinUrl   String    @map("linkedin_url")
   websiteUrl    String    @map("website_url")
   settings      Json?
-  createdAt     DateTime  @map("created_at") @db.Timestamp(0)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
   user          User?     @relation(fields: [userId], references: [id])
 
@@ -573,8 +573,8 @@ model Transaction {
   amount    BigInt
   netAmount BigInt @map("net_amount")
 
-  status                   String @default("PENDING")
-  serviceProviderMappingId String @map("service_provider_mapping_id")
+  status                   String  @default("PENDING")
+  serviceProviderMappingId String? @map("service_provider_mapping_id")
   pricing                  Json?
 
   userId      String @map("user_id")
@@ -595,7 +595,7 @@ model Transaction {
   user   User   @relation(fields: [userId], references: [id])
   wallet Wallet @relation(fields: [walletId], references: [id])
 
-  serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
+  serviceProviderMapping ServiceProviderMapping? @relation(fields: [serviceProviderMappingId], references: [id])
 
   apiEntity   ApiEntity    @relation(fields: [apiEntityId], references: [id])
   apiWebhooks ApiWebhook[]

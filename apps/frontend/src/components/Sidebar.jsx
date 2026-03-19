@@ -17,12 +17,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/slices/authSlice";
 import { BUSINESS_ROLES, PERMISSIONS, SERVICES } from "../utils/constants";
 import { usePermissions } from "./hooks/usePermission";
+import {} from "../utils/lib";
+import TransferCommissionForm from "./forms/TransferCommissionForm";
+import { useState } from "react";
 
 const Sidebar = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
-
+  const [openTransfer, setOpenTransfer] = useState(false);
   const handleLogout = () => {
     dispatch(logout());
   };
@@ -260,7 +263,22 @@ const Sidebar = () => {
   const lastName = userData.lastName || "";
   const username = userData.username || "";
   const profileImage = userData.profileImage || "";
-  const walletBalance = userData.wallets?.[0]?.balance || 0;
+  const wallets = userData.wallets || [];
+
+  // helper
+  const getWallet = (type) => wallets.find((w) => w.walletType === type);
+
+  // role based wallets
+  const isAdmin = role === "ADMIN";
+
+  const primaryWallet = getWallet("PRIMARY");
+  const commissionWallet = getWallet("COMMISSION");
+  const gstWallet = getWallet("GST");
+  const tdsWallet = getWallet("TDS");
+
+  const getAvailableBalance = (balance = 0, hold = 0) => {
+    return Number(balance || 0) - Number(hold || 0);
+  };
 
   // Get initials for avatar
   const initials = firstName
@@ -351,16 +369,101 @@ const Sidebar = () => {
             </div>
           </div>
 
-          {/* Wallet Section - Only show for business users */}
+          {/* Wallet Section */}
           {BUSINESS_ROLE_LIST.includes(role) && (
-            <div className="bg-gray-100 rounded-lg p-2">
+            <div className="bg-gray-100 rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600">Wallet Balance</span>
+                <span className="text-xs text-gray-600 font-medium">
+                  Wallets
+                </span>
                 <Wallet className="h-3 w-3 text-gray-500" />
               </div>
-              <p className="text-sm font-semibold mt-1 text-gray-800">
-                ₹{walletBalance.toLocaleString()}
-              </p>
+
+              {/* USER VIEW */}
+              {!isAdmin && (
+                <>
+                  {/* PRIMARY */}
+                  <div className="flex flex-col text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Primary</span>
+                      <span className="font-semibold text-gray-800">
+                        ₹
+                        {getAvailableBalance(
+                          primaryWallet?.balance,
+                          primaryWallet?.holdBalance,
+                        )}
+                      </span>
+                    </div>
+
+                    {/* HOLD */}
+                    {Number(primaryWallet?.holdBalance) > 0 && (
+                      <div className="flex justify-between text-[10px] text-red-500">
+                        <span>Hold</span>
+                        <span>
+                          ₹{getAvailableBalance(primaryWallet?.holdBalance)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* COMMISSION */}
+                  <div className="flex flex-col text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Commission</span>
+                      <span className="font-semibold text-gray-800">
+                        ₹
+                        {getAvailableBalance(
+                          commissionWallet?.balance,
+                          commissionWallet?.holdBalance,
+                        )}
+                      </span>
+                    </div>
+
+                    {/* HOLD */}
+                    {Number(commissionWallet?.holdBalance) > 0 && (
+                      <div className="flex justify-between text-[10px] text-red-500">
+                        <span>Hold</span>
+                        <span>
+                          ₹{getAvailableBalance(commissionWallet?.holdBalance)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setOpenTransfer(true)}
+                    className="text-xs text-blue-600 mt-1 hover:underline"
+                  >
+                    Transfer to Primary
+                  </button>
+                </>
+              )}
+
+              {/* ADMIN VIEW */}
+              {isAdmin && (
+                <>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">Commission</span>
+                    <span className="font-semibold">
+                      ₹{getAvailableBalance(commissionWallet?.balance)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">GST</span>
+                    <span className="font-semibold">
+                      ₹{getAvailableBalance(gstWallet?.balance)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">TDS</span>
+                    <span className="font-semibold">
+                      ₹{getAvailableBalance(tdsWallet?.balance)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -387,6 +490,13 @@ const Sidebar = () => {
           <span className="font-medium text-red-600">Logout</span>
         </button>
       </div>
+
+      {openTransfer && (
+        <TransferCommissionForm
+          onClose={() => setOpenTransfer(false)}
+          commissionWallet={commissionWallet}
+        />
+      )}
     </div>
   );
 };

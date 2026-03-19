@@ -38,8 +38,7 @@ export default class LedgerEngine {
     if (!wallet) throw ApiError.notFound("Wallet not found");
 
     // Calculate running balance
-    const balanceAfter =
-      entryType === "CREDIT" ? wallet.balance + amt : wallet.balance - amt;
+    const balanceAfter = wallet.balance;
 
     // // 🚨 Optional Safety Check
     // if (entryType === "DEBIT" && wallet.balance < amt) {

@@ -8,6 +8,7 @@ export default class TransactionService {
   static async create(
     tx,
     {
+      txnId,
       userId,
       walletId,
       serviceProviderMappingId,
@@ -18,8 +19,8 @@ export default class TransactionService {
       pricing,
     }
   ) {
-    if (!userId || !walletId || !serviceProviderMappingId)
-      throw ApiError.badRequest("Required fields missing");
+    if (!userId || !walletId)
+      throw ApiError.badRequest("userId & walletId required");
 
     // Idempotency Check
     if (idempotencyKey) {
@@ -35,8 +36,6 @@ export default class TransactionService {
         };
       }
     }
-
-    const txnId = `TXN-${Date.now()}-${crypto.randomUUID().slice(0, 6)}`;
 
     const apiEntity = await ApiEntityService.create(tx, {
       userId,

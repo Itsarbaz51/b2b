@@ -141,88 +141,9 @@ async function main() {
     },
   });
 
-  console.log("\n👤 Creating State Head user...");
-
-  const shPassword = CryptoService.encrypt("User@123");
-  const shPin = CryptoService.encrypt("1234");
-
-  const stateHead = await prisma.user.upsert({
-    where: { email: "statehead@gmail.com" },
-    update: {},
-    create: {
-      username: "state_head_1",
-      firstName: "State",
-      lastName: "Head",
-      profileImage: "",
-      email: "statehead@gmail.com",
-      phoneNumber: "9999999992",
-      password: shPassword,
-      transactionPin: shPin,
-      roleId: createdRoles[1].id,
-      hierarchyLevel: 1,
-      hierarchyPath: "0/1",
-      parentId: admin.id,
-      status: "ACTIVE",
-      isKycVerified: true,
-    },
-  });
-
-  console.log(`✅ State Head created: ${stateHead.username}`);
-
-  console.log("\n👨‍💼 Creating HR Employee...");
-
-  const hrPassword = CryptoService.encrypt("Hr@123");
-  // Employees don't need transaction pin since they don't have wallets
-  const hrPin = CryptoService.encrypt("0000"); // Optional minimal pin
-
-  const hrEmployee = await prisma.user.upsert({
-    where: { email: "hr@gmail.com" },
-    update: {},
-    create: {
-      username: "hr_employee",
-      firstName: "HR",
-      lastName: "Manager",
-      profileImage: "",
-      email: "hr@gmail.com",
-      phoneNumber: "9999999993",
-      password: hrPassword,
-      transactionPin: hrPin, // Optional for employees
-      roleId: createdRoles[5].id, // HR role
-      hierarchyLevel: 1,
-      hierarchyPath: "0/1",
-      parentId: admin.id,
-      status: "ACTIVE",
-      isKycVerified: true,
-    },
-  });
-
-  console.log(`✅ HR Employee created: ${hrEmployee.username}`);
-  console.log("\n💰 Creating wallets for business users only...");
-
-  // Only create wallets for business users (Admin and State Head)
-  const businessUsers = [admin, stateHead];
+  const businessUsers = [admin];
 
   for (const user of businessUsers) {
-    // PRIMARY
-    await prisma.wallet.upsert({
-      where: {
-        userId_walletType: {
-          userId: user.id,
-          walletType: "PRIMARY",
-        },
-      },
-      update: {},
-      create: {
-        userId: user.id,
-        walletType: "PRIMARY",
-        balance: BigInt(100000),
-        holdBalance: BigInt(0),
-        currency: "INR",
-        isActive: true,
-        version: 1,
-      },
-    });
-
     // COMMISSION
     await prisma.wallet.upsert({
       where: {
@@ -284,8 +205,6 @@ async function main() {
 
     console.log(`💳 PRIMARY + COMMISSION wallet created for ${user.username}`);
   }
-
-  console.log("⏭️ Skipping wallet creation for HR employee (employee role)");
 
   console.log("\n🎉 Seeding completed successfully!");
 }
