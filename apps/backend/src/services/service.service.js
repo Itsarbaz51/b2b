@@ -278,6 +278,10 @@ export class MappingService {
       config,
       priority,
       isActive,
+      applyTDS,
+      tdsPercent,
+      applyGST,
+      gstPercent,
     } = payload;
 
     if (!serviceId || !providerId) {
@@ -293,6 +297,25 @@ export class MappingService {
 
     if (mode === "COMMISSION" && !sellingPrice)
       throw ApiError.badRequest("Selling price required in commission mode");
+
+    // GST
+    if (applyGST && (!gstPercent || gstPercent <= 0)) {
+      throw ApiError.badRequest("GST percent required");
+    }
+
+    // TDS
+    if (applyTDS && (!tdsPercent || tdsPercent <= 0)) {
+      throw ApiError.badRequest("TDS percent required");
+    }
+
+    // Mode rule
+    if (mode === "SURCHARGE" && applyTDS) {
+      throw ApiError.badRequest("TDS not allowed in surcharge mode");
+    }
+
+    if (mode === "COMMISSION" && applyGST) {
+      throw ApiError.badRequest("GST not allowed in commission mode");
+    }
 
     const exists = await Prisma.serviceProviderMapping.findUnique({
       where: {
@@ -320,7 +343,11 @@ export class MappingService {
         commissionStartLevel: commissionStartLevel,
 
         supportsSlab: supportsSlab ?? false,
+        applyTDS: applyTDS ?? false,
+        tdsPercent: applyTDS ? BigInt(tdsPercent) : null,
 
+        applyGST: applyGST ?? false,
+        gstPercent: applyGST ? BigInt(gstPercent) : null,
         config: config,
         priority: priority ?? 1,
         isActive: isActive ?? true,
@@ -340,42 +367,103 @@ export class MappingService {
       where: { id },
     });
 
-    if (payload.supportsSlab && (payload.providerCost || payload.sellingPrice))
+    if (!mapping) throw ApiError.notFound("Mapping not found");
+
+    const {
+      mode,
+      pricingValueType,
+      sellingPrice,
+      providerCost,
+      commissionStartLevel,
+      supportsSlab,
+      config,
+      priority,
+      isActive,
+      applyTDS,
+      tdsPercent,
+      applyGST,
+      gstPercent,
+    } = payload;
+
+    // =========================
+    // VALIDATIONS
+    // =========================
+
+    if (supportsSlab && (providerCost || sellingPrice)) {
       throw ApiError.badRequest(
         "Remove providerCost and sellingPrice when slabs enabled"
       );
+    }
 
-    if (payload.mode === "SURCHARGE" && payload.sellingPrice)
+    if (mode === "SURCHARGE" && sellingPrice) {
       throw ApiError.badRequest("Selling price not allowed in surcharge mode");
+    }
 
-    if (payload.mode === "COMMISSION" && !payload.sellingPrice)
+    if (mode === "COMMISSION" && !sellingPrice) {
       throw ApiError.badRequest("Selling price required in commission mode");
+    }
 
-    if (!mapping) throw ApiError.notFound("Mapping not found");
+    // GST
+    if (applyGST && (!gstPercent || gstPercent <= 0)) {
+      throw ApiError.badRequest("GST percent required");
+    }
+
+    // TDS
+    if (applyTDS && (!tdsPercent || tdsPercent <= 0)) {
+      throw ApiError.badRequest("TDS percent required");
+    }
+
+    // Mode rules
+    if (mode === "SURCHARGE" && applyTDS) {
+      throw ApiError.badRequest("TDS not allowed in surcharge mode");
+    }
+
+    if (mode === "COMMISSION" && applyGST) {
+      throw ApiError.badRequest("GST not allowed in commission mode");
+    }
+
+    // =========================
+    // UPDATE
+    // =========================
 
     return Prisma.serviceProviderMapping.update({
       where: { id },
 
       data: {
-        mode: payload.mode,
-        pricingValueType: payload.pricingValueType,
+        mode: mode ?? mapping.mode,
+        pricingValueType: pricingValueType ?? mapping.pricingValueType,
 
         sellingPrice:
-          payload.sellingPrice !== undefined
-            ? BigInt(payload.sellingPrice)
-            : undefined,
+          sellingPrice !== undefined ? BigInt(sellingPrice) : undefined,
 
         providerCost:
-          payload.providerCost !== undefined
-            ? BigInt(payload.providerCost)
-            : undefined,
+          providerCost !== undefined ? BigInt(providerCost) : undefined,
 
-        commissionStartLevel: payload.commissionStartLevel,
-        supportsSlab: payload.supportsSlab,
+        commissionStartLevel:
+          commissionStartLevel ?? mapping.commissionStartLevel,
 
-        config: payload.config,
-        priority: payload.priority,
-        isActive: payload.isActive,
+        supportsSlab: supportsSlab ?? mapping.supportsSlab,
+
+        // 🔥 GST / TDS FIX
+        applyTDS: applyTDS ?? mapping.applyTDS,
+        tdsPercent:
+          applyTDS === true
+            ? BigInt(tdsPercent)
+            : applyTDS === false
+              ? null
+              : undefined,
+
+        applyGST: applyGST ?? mapping.applyGST,
+        gstPercent:
+          applyGST === true
+            ? BigInt(gstPercent)
+            : applyGST === false
+              ? null
+              : undefined,
+
+        config: config ?? mapping.config,
+        priority: priority ?? mapping.priority,
+        isActive: isActive ?? mapping.isActive,
       },
 
       include: {

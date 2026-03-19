@@ -29,6 +29,10 @@ export default function AddMappingForm({
     sellingPrice: 0,
     providerCost: 0,
     isActive: true,
+    applyTDS: false,
+    tdsPercent: "",
+    applyGST: false,
+    gstPercent: "",
   });
 
   const [config, setConfig] = useState("{}");
@@ -46,6 +50,11 @@ export default function AddMappingForm({
         sellingPrice: paisaToRupee(editData.sellingPrice),
         providerCost: paisaToRupee(editData.providerCost),
         isActive: editData.isActive ?? true,
+        applyTDS: editData.applyTDS,
+        tdsPercent: editData.tdsPercent,
+
+        applyGST: editData.applyGST,
+        gstPercent: editData.gstPercent,
       });
 
       setConfig(JSON.stringify(editData.config || {}, null, 2));
@@ -88,6 +97,11 @@ export default function AddMappingForm({
       providerCost: rupeesToPaise(Number(form.providerCost || 0)),
       isActive: form.isActive,
       config: parsedConfig,
+      applyTDS: form.applyTDS,
+      tdsPercent: form.applyTDS ? form.tdsPercent : undefined,
+
+      applyGST: form.applyGST,
+      gstPercent: form.applyGST ? form.gstPercent : undefined,
     };
 
     if (editData) {
@@ -214,21 +228,22 @@ export default function AddMappingForm({
                   min={0}
                 />
               )}
+              <div>
+                <InputField
+                  label={"Provider Cost (₹)"}
+                  type="number"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                  value={form.providerCost}
+                  onChange={(e) =>
+                    setForm({ ...form, providerCost: e.target.value })
+                  }
+                  min={0}
+                />
 
-              <InputField
-                label={"Provider Cost (₹)"}
-                type="number"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                value={form.providerCost}
-                onChange={(e) =>
-                  setForm({ ...form, providerCost: e.target.value })
-                }
-                min={0}
-              />
-
-              <p className="text-xs text-gray-500 mt-1">
-                Stored: {(Number(providerCost) * 100).toFixed(0)} paisa
-              </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Stored: {(Number(providerCost) * 100).toFixed(0)} paisa
+                </p>
+              </div>
 
               <DropdownField
                 label="Status Type"
@@ -245,6 +260,54 @@ export default function AddMappingForm({
                 }))}
                 placeholder="Select status type"
               />
+
+              {form.mode === "COMMISSION" && (
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    checked={form.applyTDS}
+                    onChange={(e) =>
+                      setForm({ ...form, applyTDS: e.target.checked })
+                    }
+                  />
+                  <span>Apply TDS</span>
+
+                  {form.applyTDS && (
+                    <input
+                      type="number"
+                      placeholder="TDS %"
+                      value={form.tdsPercent}
+                      onChange={(e) =>
+                        setForm({ ...form, tdsPercent: e.target.value })
+                      }
+                    />
+                  )}
+                </div>
+              )}
+
+              {form.mode === "SURCHARGE" && (
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    checked={form.applyGST}
+                    onChange={(e) =>
+                      setForm({ ...form, applyGST: e.target.checked })
+                    }
+                  />
+                  <span>Apply GST</span>
+
+                  {form.applyGST && (
+                    <input
+                      type="number"
+                      placeholder="GST %"
+                      value={form.gstPercent}
+                      onChange={(e) =>
+                        setForm({ ...form, gstPercent: e.target.value })
+                      }
+                    />
+                  )}
+                </div>
+              )}
 
               <div className="flex items-center mt-6">
                 <input
