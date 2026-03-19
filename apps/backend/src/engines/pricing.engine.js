@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 export default class PricingEngine {
   static async calculateSurcharge(
     tx,
-    { userId, serviceProviderMappingId, amount }
+    { userId, serviceProviderMappingId, amount = 0 }
   ) {
     const txnAmount = BigInt(amount);
 

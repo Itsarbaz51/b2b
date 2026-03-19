@@ -21,7 +21,7 @@ export default class WalletEngine {
 
   // ➖ Debit
   static async debit(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+    const amt = BigInt(amount);
 
     const available = wallet.balance - wallet.holdBalance;
 
@@ -43,7 +43,7 @@ export default class WalletEngine {
 
   // ➕ Credit
   static async credit(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+    const amt = BigInt(amount);
 
     await tx.wallet.update({
       where: { id: wallet.id },
@@ -56,17 +56,17 @@ export default class WalletEngine {
 
   // Hold
   static async hold(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+    const amt = BigInt(amount);
 
     const available = wallet.balance - wallet.holdBalance;
 
     if (available < amt)
       throw ApiError.badRequest("Insufficient balance to hold");
 
-    await tx.wallet.update({
+    return await tx.wallet.update({
       where: { id: wallet.id },
       data: {
-        holdBalance: wallet.holdBalance + amt,
+        holdBalance: { increment: amt },
         version: { increment: 1 },
       },
     });
@@ -74,7 +74,7 @@ export default class WalletEngine {
 
   // Release Hold
   static async releaseHold(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+    const amt = BigInt(amount);
 
     if (wallet.holdBalance < amt)
       throw ApiError.badRequest("Invalid hold release");
@@ -82,7 +82,7 @@ export default class WalletEngine {
     await tx.wallet.update({
       where: { id: wallet.id },
       data: {
-        holdBalance: wallet.holdBalance - amt,
+        holdBalance: { decrement: amt },
         version: { increment: 1 },
       },
     });
@@ -90,7 +90,7 @@ export default class WalletEngine {
 
   // Move Hold → Debit (On Success)
   static async captureHold(tx, wallet, amount) {
-    const amt = typeof amount === "bigint" ? amount : BigInt(amount);
+    const amt = BigInt(amount);
 
     if (wallet.holdBalance < amt)
       throw ApiError.badRequest("Invalid hold capture");
@@ -98,8 +98,8 @@ export default class WalletEngine {
     await tx.wallet.update({
       where: { id: wallet.id },
       data: {
-        holdBalance: wallet.holdBalance - amt,
-        balance: wallet.balance - amt,
+        holdBalance: { decrement: amt },
+        balance: { decrement: amt },
         version: { increment: 1 },
       },
     });

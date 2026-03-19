@@ -18,10 +18,8 @@ export default class SettlementEngine {
     const pricing = await PricingEngine.calculateSurcharge(tx, {
       userId,
       serviceProviderMappingId: serviceProviderMapping.id,
-      amount: payload.amount || 0,
     });
 
-    // ✅ Idempotency check
     const existingTxn = await tx.transaction.findFirst({
       where: {
         idempotencyKey: payload.idempotencyKey,
@@ -38,8 +36,7 @@ export default class SettlementEngine {
       };
     }
 
-    // ✅ HOLD (atomic)
-    await WalletEngine.hold(tx, wallet, pricing.totalDebit);
+    const holdWallet = await WalletEngine.hold(tx, wallet, pricing.totalDebit);
 
     const { transaction } = await TransactionService.create(tx, {
       userId,
@@ -51,7 +48,7 @@ export default class SettlementEngine {
       requestPayload: payload,
     });
 
-    return { transaction, wallet, pricing };
+    return { transaction, wallet: holdWallet, pricing };
   }
 
   // ✅ SUCCESS
@@ -88,7 +85,7 @@ export default class SettlementEngine {
   }
 
   // ❌ FAILED
-  static async failed({ tx, walletId, pricing }) {
-    await WalletEngine.releaseHold(tx, walletId, pricing.totalDebit);
+  static async failed({ tx, wallet, pricing }) {
+    await WalletEngine.releaseHold(tx, wallet, pricing.totalDebit);
   }
 }
