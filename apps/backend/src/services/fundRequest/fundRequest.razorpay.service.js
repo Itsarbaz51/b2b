@@ -6,36 +6,10 @@ import SurchargeEngine from "../../engines/surcharge.engine.js";
 import LedgerEngine from "../../engines/ledger.engine.js";
 import PricingEngine from "../../engines/pricing.engine.js";
 import { ApiError } from "../../utils/ApiError.js";
-import ApiEntityService from "../apiEntity.service.js";
 
 export default class RazorpayFundRequestService {
-  // CREATE FUND REQUEST
   static async create(payload, actor, serviceProviderMapping, provider) {
-    const existing = await Prisma.transaction.findFirst({
-      where: {
-        userId: actor.id,
-        serviceProviderMappingId: serviceProviderMapping.id,
-        status: "PENDING",
-      },
-    });
-
-    // invalidate old pending order
-    if (existing) {
-      await Prisma.transaction.update({
-        where: { id: existing.id },
-        data: {
-          status: "FAILED",
-          providerResponse: "Recreated order",
-        },
-      });
-
-      if (existing.apiEntityId) {
-        await ApiEntityService.markFailed(Prisma, {
-          apiEntityId: existing.apiEntityId,
-          errorData: { message: "Recreated order" },
-        });
-      }
-    }
+    await TransactionService.checkDuplicate(payload.idempotencyKey);
 
     const plugin = getFundRequestPlugin(
       provider.code,
@@ -44,7 +18,6 @@ export default class RazorpayFundRequestService {
 
     const amount = BigInt(payload.amount);
 
-    // PRICING ENGINE
     const pricing = await PricingEngine.calculateSurcharge(Prisma, {
       userId: actor.id,
       serviceProviderMappingId: serviceProviderMapping.id,
@@ -53,92 +26,31 @@ export default class RazorpayFundRequestService {
 
     const finalAmount = pricing.totalDebit;
 
-    // CREATE RAZORPAY ORDER
     const providerResponse = await plugin.createRequest({
       amount: Number(finalAmount),
       userId: actor.id,
+      notes: {},
     });
 
-    return Prisma.$transaction(async (tx) => {
-      const wallet = await WalletEngine.getWallet({
-        tx,
-        userId: actor.id,
-        walletType: "PRIMARY",
-      });
-
-      const { transaction } = await TransactionService.create(tx, {
-        userId: actor.id,
-        walletId: wallet.id,
-        serviceProviderMappingId: serviceProviderMapping.id,
-        amount: amount,
-        providerReference: providerResponse.orderId,
-        pricing: {
-          amount,
-          surcharge: pricing.surcharge,
-          providerCost: pricing.providerCost,
-          gst: pricing.gst,
-          total: finalAmount,
-        },
-        idempotencyKey: payload.idempotencyKey,
-        requestPayload: payload,
-      });
-
-      return {
-        transactionId: transaction.id,
-        orderId: providerResponse.orderId,
-        amount: Number(finalAmount) / 100,
-        key: serviceProviderMapping.config.keyId,
-      };
-    });
+    return {
+      orderId: providerResponse.orderId,
+      amount: Number(finalAmount) / 100,
+      key: serviceProviderMapping.config.keyId,
+      notes: {
+        actualAmount: amount.toString(),
+      },
+    };
   }
 
-  // VERIFY PAYMENT
-  static async verifyRequest(payload, actor) {
-    const transaction = await Prisma.transaction.findUnique({
-      where: { id: payload.transactionId },
-      include: {
-        serviceProviderMapping: {
-          include: { provider: true },
-        },
-      },
-    });
-
-    if (!transaction) {
-      throw ApiError.notFound("Transaction not found");
-    }
-
-    // duplicate protection
-    if (transaction.status === "SUCCESS") {
-      return { status: "SUCCESS" };
-    }
-
-    // MANUAL FAIL HANDLE (from frontend)
-    if (payload.action === "FAILED") {
-      await Prisma.transaction.update({
-        where: { id: payload.transactionId },
-        data: {
-          status: "FAILED",
-          providerResponse: { message: payload.reason || "Payment failed" },
-        },
-      });
-
-      return { status: "FAILED" };
-    }
-
-    if (transaction.status !== "PENDING") {
-      throw ApiError.badRequest("Transaction already processed");
-    }
-
-    if (
-      transaction.providerReference &&
-      transaction.providerReference !== payload.razorpay_order_id
-    ) {
-      throw ApiError.badRequest("Order mismatch");
-    }
-
+  static async verifyRequest(
+    payload,
+    actor,
+    providerData,
+    serviceProviderMapping
+  ) {
     const plugin = getFundRequestPlugin(
-      transaction.serviceProviderMapping.provider.code,
-      transaction.serviceProviderMapping.config
+      providerData.code,
+      serviceProviderMapping.config
     );
 
     const verifyResponse = await plugin.verify({
@@ -147,71 +59,110 @@ export default class RazorpayFundRequestService {
       signature: payload.razorpay_signature,
     });
 
+    const paymentStatus = verifyResponse.status;
+
+    const existing = await Prisma.transaction.findFirst({
+      where: {
+        providerReference: verifyResponse.paymentId,
+      },
+    });
+
+    if (existing && existing.status === "SUCCESS") {
+      return { status: "SUCCESS" };
+    }
+
+    const actualAmount = BigInt(verifyResponse.raw.notes?.actualAmount || 0);
+
+    if (actualAmount <= 0n) {
+      throw ApiError.badRequest("Invalid amount from provider");
+    }
+
+    if (verifyResponse.orderId !== payload.razorpay_order_id) {
+      throw ApiError.badRequest("Order mismatch");
+    }
+
     return Prisma.$transaction(async (tx) => {
       const wallet = await WalletEngine.getWallet({
         tx,
-        userId: transaction.userId,
+        userId: actor.id,
         walletType: "PRIMARY",
       });
 
-      if (verifyResponse.status === "failed") {
+      const pricing = await PricingEngine.calculateSurcharge(tx, {
+        userId: actor.id,
+        serviceProviderMappingId: serviceProviderMapping.id,
+        amount: actualAmount,
+      });
+
+      if (pricing.totalDebit !== totalAmount) {
+        throw ApiError.badRequest("Amount mismatch");
+      }
+
+      const { transaction } = await TransactionService.create(tx, {
+        userId: actor.id,
+        walletId: wallet.id,
+        serviceProviderMappingId: serviceProviderMapping.id,
+        amount: actualAmount,
+        providerReference: verifyResponse.paymentId,
+        pricing,
+        idempotencyKey: verifyResponse.paymentId,
+        requestPayload: payload,
+      });
+
+      if (paymentStatus === "failed") {
         await TransactionService.update(tx, {
           transactionId: transaction.id,
           status: "FAILED",
+          providerReference: verifyResponse.paymentId,
           providerResponse: verifyResponse,
         });
 
         return { status: "FAILED" };
       }
 
-      if (verifyResponse.status === "authorized") {
+      if (paymentStatus === "authorized") {
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "PENDING",
+          providerReference: verifyResponse.paymentId,
+          providerResponse: verifyResponse,
+        });
+
         return {
           status: "PENDING",
           message: "Payment authorized but not captured",
         };
       }
 
-      if (verifyResponse.status !== "captured") {
-        throw ApiError.badRequest("Payment not captured");
+      if (paymentStatus === "captured") {
+        await WalletEngine.credit(tx, wallet, actualAmount);
+
+        await LedgerEngine.create(tx, {
+          walletId: wallet.id,
+          transactionId: transaction.id,
+          entryType: "CREDIT",
+          referenceType: "FUND_REQUEST",
+          serviceProviderMappingId: serviceProviderMapping.id,
+          amount: actualAmount,
+          narration: "Fund added via Razorpay",
+          createdBy: actor.id,
+        });
+
+        await SurchargeEngine.distribute(tx, {
+          transactionId: transaction.id,
+          userId: actor.id,
+          serviceProviderMappingId: serviceProviderMapping.id,
+          createdBy: actor.id,
+          pricing,
+        });
+
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "SUCCESS",
+          providerReference: verifyResponse.paymentId,
+          providerResponse: verifyResponse,
+        });
       }
-
-      // CREDIT USER WALLET
-      await WalletEngine.credit(tx, wallet, transaction.pricing.amount);
-
-      // LEDGER ENTRY
-      await LedgerEngine.create(tx, {
-        walletId: wallet.id,
-        transactionId: transaction.id,
-        entryType: "CREDIT",
-        referenceType: "FUND_REQUEST",
-        serviceProviderMappingId: transaction.serviceProviderMapping.id,
-        amount: transaction.pricing.amount,
-        narration: "Fund added via Razorpay",
-        createdBy: actor.id,
-      });
-
-      // DISTRIBUTE SURCHARGE / GST / PROVIDER COST
-      await SurchargeEngine.distribute(tx, {
-        transactionId: transaction.id,
-        userId: transaction.userId,
-        serviceProviderMappingId: transaction.serviceProviderMappingId,
-        createdBy: actor.id,
-        pricing: transaction.pricing,
-      });
-
-      // UPDATE TRANSACTION
-      await TransactionService.update(tx, {
-        transactionId: transaction.id,
-        status: "SUCCESS",
-        providerReference: verifyResponse.paymentId,
-        providerResponse: verifyResponse,
-      });
-
-      return {
-        status: "SUCCESS",
-        amount: transaction.pricing.amount,
-        paymentId: verifyResponse.paymentId,
-      };
     });
   }
 }

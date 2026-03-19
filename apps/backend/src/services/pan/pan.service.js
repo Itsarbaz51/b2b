@@ -19,6 +19,11 @@ export default class PanService {
       serviceProviderMappingId
     );
 
+    await CommissionSettingService.checkUserPricingRule(
+      userId,
+      serviceProviderMapping.id
+    );
+
     const { provider, serviceProviderMapping } =
       await ProviderResolver.resolveByMappingId(serviceProviderMappingId);
 
