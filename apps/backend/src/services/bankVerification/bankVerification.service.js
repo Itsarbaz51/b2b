@@ -62,8 +62,6 @@ export default class BankVerificationService {
           requestId: Helper.generateTxnId("BANK_VERIFICATION"),
         });
 
-        return console.log(providerResponse);
-
         await SettlementEngine.success({
           tx,
           actor,

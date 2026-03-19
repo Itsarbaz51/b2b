@@ -136,9 +136,8 @@ const CompanyAccounts = () => {
       if (value !== null) formData.append(key, value);
     });
     const result = await dispatch(
-      updateBank({ id: editingAccountId, data: formData })
+      updateBank({ id: editingAccountId, data: formData }),
     );
-    console.log(result);
 
     if (result?.success) {
       await dispatch(getAllMyBanks());

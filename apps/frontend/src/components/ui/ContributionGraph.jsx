@@ -1,7 +1,6 @@
 import React from "react";
 
 const ContributionGraph = ({ data = [] }) => {
-    console.log(data);
     
   const getColor = (level) => {
     if (!level) return "bg-gray-200";

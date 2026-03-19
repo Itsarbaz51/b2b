@@ -145,7 +145,6 @@ export default function MappingTable() {
 
                       <td className="px-6 py-4">{item.commissionStartLevel}</td>
                       <td className="px-6 py-5">
-                        {console.log(item.supportsSlab)}
                         {item.supportsSlab && item.providerSlabs?.length > 0 ? (
                           <div className="space-y-1 text-xs">
                             {item.providerSlabs.map((slab) => (

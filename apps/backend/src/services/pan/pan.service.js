@@ -46,12 +46,6 @@ export default class PanService {
         serviceProviderMapping,
       });
 
-      console.log("SETTLEMENT RESPONSE:", {
-        transaction,
-        wallet,
-        pricing,
-      });
-
       // CALL PROVIDER
       // const plugin = getPanPlugin(provider.code, serviceProviderMapping.config);
 

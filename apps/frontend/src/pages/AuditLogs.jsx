@@ -294,7 +294,6 @@ const AuditLogs = () => {
       searchTerm !== ""
     );
   }, [filters, searchTerm]);
-  console.log(logsList);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden p-6">

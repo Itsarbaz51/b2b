@@ -64,7 +64,6 @@ export default class SettlementEngine {
     serviceProviderMapping,
   }) {
     const walletId = transaction.walletId;
-    console.log(wallet);
 
     await WalletEngine.captureHold(tx, wallet, pricing.totalDebit);
 

@@ -449,9 +449,6 @@ class RoleServices {
   }
 
   static async deleteRole(id, req = null, res = null) {
-    console.log(id);
-    console.log(req.user);
-
     let currentUserId = req.user.id;
     // Check if role exists
     const existingRole = await Prisma.role.findUnique({
