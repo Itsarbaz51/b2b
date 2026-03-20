@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CheckCircle,
   CreditCard,
@@ -12,7 +12,7 @@ import {
   Instagram,
   Linkedin,
 } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { fetchSystemSettingPublic } from "../../redux/slices/settingSlice";
 
 const features = [
@@ -62,8 +62,14 @@ const testimonials = [
 ];
 
 function Home() {
-  const dispatch = useDispatch()
-  dispatch(fetchSystemSettingPublic())
+  const dispatch = useDispatch();
+  const  systemSetting = useSelector((state) => state.setting?.data);
+
+  // Fetch system settings on component mount
+  useEffect(() => {
+    dispatch(fetchSystemSettingPublic());
+  }, [dispatch]);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -165,7 +171,7 @@ function Home() {
             Features
           </p>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">
-            Why choose Mahi Pay for effortless payments?
+            {systemSetting?.companyName || "Mahi Pay"} for effortless payments?
           </h2>
 
           {/* Feature Grid */}
@@ -196,8 +202,8 @@ function Home() {
             </h2>
             <p className="mb-6 text-sm md:text-base font-medium opacity-90">
               Ready for hassle-free, secure payments anywhere in the world?
-              Start using Mahi Pay today: it's fast, free, and focused on
-              keeping your transactions secure!
+              Start using {systemSetting?.companyName || "Mahi Pay"} today: it's
+              fast, free, and focused on keeping your transactions secure!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button className="bg-white text-indigo-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-full transition shadow-lg">
@@ -224,7 +230,7 @@ function Home() {
             <p className="text-gray-500 mb-6">
               Boost your credibility by featuring genuine testimonials from real
               users, showcasing their positive experiences and satisfaction with
-              Mahi Pay services.
+              {systemSetting?.companyName || "Mahi Pay"} services.
             </p>
           </div>
 

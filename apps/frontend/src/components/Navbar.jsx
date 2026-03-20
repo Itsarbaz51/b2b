@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, Settings, User, Menu, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { protectedRoute } from "../../index"; // make sure this is an array of paths like ['/dashboard', '/settings']
+import { protectedRoute } from "../../index";
 import Title from "./ui/Title";
 import { useSelector } from "react-redux";
 import { HashLink } from "react-router-hash-link";
@@ -12,17 +12,18 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.auth);
+  const systemSetting  = useSelector((state) => state.setting?.data);
 
   // --- Path Matcher for protected routes ---
   const matchPath = (allowedPath, currentPath) => {
     const pattern = new RegExp(
-      "^" + allowedPath.replace(/:\w+/g, "[^/]+") + "$"
+      "^" + allowedPath.replace(/:\w+/g, "[^/]+") + "$",
     );
     return pattern.test(currentPath);
   };
 
   const isProtectedRoute = protectedRoute?.some((path) =>
-    matchPath(path, location.pathname)
+    matchPath(path, location.pathname),
   );
 
   // --- Menu Items ---
@@ -70,11 +71,19 @@ const Navbar = () => {
     <nav className="border-b border-gray-300 flex items-center justify-between px-6 md:px-8 py-4 backdrop-blur-2xl sticky top-0 z-50 bg-white/90">
       {/* LOGO */}
       <Link to="/" className="flex items-center space-x-2">
-        <img
-          src="/WhatsApp Image 2025-10-10 at 11.48.12 AM.jpeg"
-          alt="Impulse"
-          className="h-fit w-24 object-contain"
-        />
+        {systemSetting?.companyLogo ? (
+          <img
+            src={systemSetting.companyLogo}
+            alt={systemSetting.companyName || "Impulse"}
+            className="h-fit w-24 object-contain"
+          />
+        ) : (
+          <img
+            src="/WhatsApp Image 2025-10-10 at 11.48.12 AM.jpeg"
+            alt="Impulse"
+            className="h-fit w-24 object-contain"
+          />
+        )}
       </Link>
 
       {/* DESKTOP MENU */}
@@ -136,7 +145,6 @@ const Navbar = () => {
         >
           Login
         </Link>
-        
       </div>
 
       {/* MOBILE MENU TOGGLE */}
@@ -156,7 +164,7 @@ const Navbar = () => {
                 <button
                   onClick={() =>
                     setOpenDropdown(
-                      openDropdown === item.name ? null : item.name
+                      openDropdown === item.name ? null : item.name,
                     )
                   }
                   className="w-full py-2 font-medium text-gray-800 hover:text-black"
@@ -191,7 +199,7 @@ const Navbar = () => {
               >
                 {item.name}
               </Link>
-            )
+            ),
           )}
 
           {/* Login / Register Buttons for Mobile */}
@@ -202,13 +210,6 @@ const Navbar = () => {
               className="bg-black text-white px-6 py-2 rounded-full font-medium hover:bg-gray-900 transition text-center"
             >
               Login
-            </Link>
-            <Link
-              to="/register"
-              onClick={() => setIsMobileOpen(false)}
-              className="bg-black text-white px-6 py-2 rounded-full font-medium hover:bg-gray-900 transition text-center"
-            >
-              Register
             </Link>
           </div>
         </div>
