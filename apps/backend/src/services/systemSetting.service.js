@@ -256,22 +256,9 @@ class SystemSettingService {
     return mapped;
   }
 
-  static async getAll(page = 1, limit = 10, sort = "desc") {
-    const skip = (page - 1) * limit;
-    const dataRaw = await Prisma.systemSetting.findMany({
-      skip,
-      take: limit,
-      orderBy: { createdAt: sort },
-    });
-
-    const data = dataRaw.map(this.mapToSystemSetting);
-    const total = await Prisma.systemSetting.count();
-
-    const result = {
-      data,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-    };
-
+  static async getAll() {
+    const result = await Prisma.systemSetting.findFirst();
+    if (!result) return {};
     return result;
   }
 

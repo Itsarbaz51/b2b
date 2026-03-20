@@ -73,5 +73,16 @@ export const fetchSystemSetting = () => async (dispatch) => {
     dispatch(settingFail(errMsg));
   }
 };
+export const fetchSystemSettingPublic = () => async (dispatch) => {
+  try {
+    dispatch(settingRequest());
+    const { data } = await axios.get(`/system-setting/public`);
+    dispatch(settingSuccess(data));
+    return data;
+  } catch (error) {
+    const errMsg = error?.response?.data?.message || error?.message;
+    dispatch(settingFail(errMsg));
+  }
+};
 
 export default systemSettingSlice.reducer;

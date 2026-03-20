@@ -12,6 +12,8 @@ import {
   Instagram,
   Linkedin,
 } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { fetchSystemSettingPublic } from "../../redux/slices/settingSlice";
 
 const features = [
   {
@@ -60,6 +62,8 @@ const testimonials = [
 ];
 
 function Home() {
+  const dispatch = useDispatch()
+  dispatch(fetchSystemSettingPublic())
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}

@@ -55,12 +55,7 @@ class SystemSettingController {
   });
 
   static index = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, sort = "desc" } = req.query;
-    const data = await SystemSettingService.getAll(
-      Number(page),
-      Number(limit),
-      sort
-    );
+    const data = await SystemSettingService.getAll();
     return res
       .status(200)
       .json(ApiResponse.success(data, "System settings fetched", 200));

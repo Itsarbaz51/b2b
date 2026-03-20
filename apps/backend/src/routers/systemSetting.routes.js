@@ -15,11 +15,9 @@ systemSettingRoutes.get(
   SystemSettingController.show
 );
 
-// List all system settings with pagination (ADMIN only)
+// public
 systemSettingRoutes.get(
-  "/list",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize(["ADMIN"]),
+  "/public",
   SystemSettingController.index
 );
 
