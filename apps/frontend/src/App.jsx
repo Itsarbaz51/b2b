@@ -6,7 +6,6 @@ import store from "./redux/store.js";
 import { ToastContainer } from "react-toastify";
 import { verifyAuth } from "./redux/slices/authSlice";
 import { InputSelect } from "./components/ui/Input_select.jsx";
-import { ToastProvider } from "./context/ToastContext.jsx";
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -31,7 +30,7 @@ const AppContent = () => {
 
 const App = () => (
   <Provider store={store}>
-    <ToastProvider>
+   
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -42,7 +41,6 @@ const App = () => (
       />
       <AppContent />
       <InputSelect />
-    </ToastProvider>
   </Provider>
 );
 

@@ -36,7 +36,7 @@ import AadhaarVerificationModal from "./services/AadhaarVerificationModal";
 import { KYCStatusCard } from "../KYCStatusCard";
 import PANVerificationModal from "./services/PANVerificationModal";
 import { SERVICES } from "../../utils/constants";
-import { usePermissions } from "../hooks/usePermission";
+import { usePermissions } from "../../hooks/usePermission";
 import HeaderSection from "../ui/HeaderSection";
 
 // ---------- Main Form ----------

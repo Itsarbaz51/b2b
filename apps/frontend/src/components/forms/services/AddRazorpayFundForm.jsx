@@ -10,6 +10,7 @@ import { CreditCard } from "lucide-react";
 import HeaderSection from "../../ui/HeaderSection";
 import InputField from "../../ui/InputField";
 import ButtonField from "../../ui/ButtonField";
+import { getCurrentUserProfile } from "../../../redux/slices/userSlice";
 
 const AddRazorpayFundForm = ({
   resetForm,
@@ -57,6 +58,7 @@ const AddRazorpayFundForm = ({
             if (verifiedRes?.status === "SUCCESS") {
               onSuccess?.();
               resetForm();
+              dispatch(getCurrentUserProfile());
             }
           } catch (err) {
             console.error(err);

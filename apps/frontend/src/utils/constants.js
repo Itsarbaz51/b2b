@@ -7,7 +7,7 @@ export const PERMISSIONS = {
   PAYOUT: "payout",
   KYC_REQUEST: "kyc request",
   EMPLOYEE_MANAGEMENT: "employee management",
-  REPORTS: "reports",
+  LEDGER: "ledger",
   LOGS: "logs",
   SETTINGS: "settings",
   FUND_REQUEST: "fund request",

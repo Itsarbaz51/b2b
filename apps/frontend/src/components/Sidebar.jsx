@@ -16,7 +16,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/slices/authSlice";
 import { BUSINESS_ROLES, PERMISSIONS, SERVICES } from "../utils/constants";
-import { usePermissions } from "./hooks/usePermission";
+import { usePermissions } from "../hooks/usePermission";
 import {} from "../utils/lib";
 import TransferCommissionForm from "./forms/TransferCommissionForm";
 import { useState } from "react";
@@ -146,11 +146,11 @@ const Sidebar = () => {
           staticRoles: ["ADMIN"],
         },
         {
-          id: "reports",
-          label: "Reports",
+          id: "ledger",
+          label: "Ledger",
           icon: BarChart3,
-          path: "/reports",
-          employeePermission: PERMISSIONS.REPORTS,
+          path: "/ledger",
+          employeePermission: PERMISSIONS.LEDGER,
           staticRoles: ["ADMIN"],
         },
         {

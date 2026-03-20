@@ -10,7 +10,8 @@ import { createFundRequest } from "../../redux/slices/fundSlice";
 import { rupeesToPaise } from "../../utils/lib";
 import { SERVICES } from "../../utils/constants";
 import NoPermissionsPage from "../NoPermissionsPage";
-import { usePermissions } from "../../components/hooks/usePermission";
+import { usePermissions } from "../../hooks/usePermission";
+import { getCurrentUserProfile } from "../../redux/slices/userSlice";
 
 const FundAddPage = () => {
   const dispatch = useDispatch();
@@ -68,6 +69,7 @@ const FundAddPage = () => {
       if (result?.payload?.success) {
         resetForm();
         fetchRequests();
+        dispatch(getCurrentUserProfile());
       }
     } catch (err) {
       console.error(err);

@@ -19,7 +19,6 @@ import TermsConditions from "../pages/landing/Terms&conditions";
 // 🔹 Protected Pages
 import Dashboard from "../pages/Dashboard";
 import TransactionHistory from "../pages/TransactionsPage.jsx";
-import Reports from "../pages/Reports";
 import Settings from "../pages/Settings.jsx";
 import UserProfilePage from "../pages/UserProfilePage.jsx";
 import UnauthorizedPage from "../pages/UnauthorizedPage.jsx";
@@ -38,6 +37,7 @@ import AddUserProfileKYC from "../components/forms/AddUserProfileKYC.jsx";
 import FundRequestPage from "../pages/services/FundRequestPage.jsx";
 import FundAddPage from "../pages/services/FundAddPage.jsx";
 import PayoutPage from "../pages/services/PayoutPage.jsx";
+import Ledger from "../pages/Ledger.jsx";
 
 export const createRouter = () => {
   return createBrowserRouter(
@@ -68,7 +68,7 @@ export const createRouter = () => {
             path="commission-management"
             element={<CommissionManagement />}
           />
-          <Route path="reports" element={<Reports />} />
+          <Route path="ledger" element={<Ledger />} />
           <Route path="request-fund" element={<FundRequestPage />} />
           <Route path="payout" element={<PayoutPage />} />
           <Route path="kyc-request" element={<RequestKYC />} />

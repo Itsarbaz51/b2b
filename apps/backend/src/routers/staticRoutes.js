@@ -4,10 +4,8 @@ import authRoutes from "./auth.routes.js";
 import bankRoutes from "./bank.routes.js";
 import commissionRoutes from "./commission.routes.js";
 import kycRoutes from "./kyc.routes.js";
-// import ledgerRoutes from "./ledger.routes.js";
 import loginLogRoutes from "./loginLog.routes.js";
 import permissionRoutes from "./permission.routes.js";
-// import piiConsentRoutes from "./piiConsent.routes.js";
 import roleRoutes from "./role.routes.js";
 import serviceRoutes from "./service.routes.js";
 import systemSettingRoutes from "./systemSetting.routes.js";
@@ -21,6 +19,8 @@ import payoutRoutes from "./payout/payout.route.js";
 import transactionRoutes from "./transaction.routes.js";
 import bankVerificationRoutes from "./bankVerification/bankVerification.routes.js";
 import webhookRoutes from "./webhook.routes.js";
+import dashboardRoutes from "./dashboard.routes.js";
+import ledgerRoutes from "./ledger.routes.js";
 
 export function StaticRoutes(app) {
   app.use("/api/v1/addresses", addressRoutes);
@@ -29,10 +29,8 @@ export function StaticRoutes(app) {
   app.use("/api/v1/banks", bankRoutes);
   app.use("/api/v1/commissions", commissionRoutes);
   app.use("/api/v1/kycs", kycRoutes);
-  // app.use("api/v1/ledgers", ledgerRoutes);
   app.use("/api/v1/login-logs", loginLogRoutes);
   app.use("/api/v1/permissions", permissionRoutes);
-  // app.use("api/v1/pii-consent", piiConsentRoutes);
   app.use("/api/v1/roles", roleRoutes);
   app.use("/api/v1/services", serviceRoutes);
   app.use("/api/v1/system-setting", systemSettingRoutes);
@@ -46,4 +44,6 @@ export function StaticRoutes(app) {
   app.use("/api/v1/payout", payoutRoutes);
   app.use("/api/v1/bank-verification", bankVerificationRoutes);
   app.use("/api/v1/webhook", webhookRoutes);
+  app.use("/api/v1/dashboard", dashboardRoutes);
+  app.use("/api/v1/ledger", ledgerRoutes);
 }

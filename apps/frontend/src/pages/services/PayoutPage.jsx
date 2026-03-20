@@ -12,7 +12,7 @@ import { rupeesToPaise } from "../../utils/lib";
 
 import PageHeader from "../../components/ui/PageHeader";
 import StateCard from "../../components/ui/StateCard";
-import { usePermissions } from "../../components/hooks/usePermission";
+import { usePermissions } from "../../hooks/usePermission";
 import { SERVICES } from "../../utils/constants";
 
 import PayoutTable from "../../components/tabels/services/PayoutTable";

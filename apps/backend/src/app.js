@@ -6,7 +6,7 @@ import { StaticRoutes } from "./routers/staticRoutes.js";
 import { requestId } from "./middlewares/requestId.middleware.js";
 import { rateLimiterMiddleware } from "./middlewares/rateLimiter.middleware.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
-import path from "path";
+
 
 const app = express();
 

@@ -14,6 +14,8 @@ import loginLogsReducer from "./slices/logsSlice.js";
 import settingReducer from "./slices/settingSlice.js";
 import aadhaarReducer from "./slices/aadhaarSlice.js";
 import transactionReducer from "./slices/transactionSlice.js";
+import dashboardReducer from "./slices/dashboardSlice.js";
+import ledgerReducer from "./slices/ledgerSlice.js";
 
 const store = configureStore({
   reducer: {
@@ -32,6 +34,8 @@ const store = configureStore({
     setting: settingReducer,
     aadhaar: aadhaarReducer,
     transaction: transactionReducer,
+    dashboard: dashboardReducer,
+    ledger: ledgerReducer,
   },
 });
 

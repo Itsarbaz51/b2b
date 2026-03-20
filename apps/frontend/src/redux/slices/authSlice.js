@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { getCurrentUserProfile } from "./userSlice";
 
 // Configure axios once
 if (!axios.defaults.baseURL) {
@@ -70,7 +71,7 @@ const authSlice = createSlice({
 
       if (
         logoutErrors.some((logoutError) =>
-          action.payload?.includes(logoutError)
+          action.payload?.includes(logoutError),
         )
       ) {
         // Real auth error → logout user
@@ -179,6 +180,7 @@ export const login = (credentials) => async (dispatch) => {
     dispatch(setAuthentication(true));
     dispatch(authSuccess(data));
     toast.success("Login successful");
+    dispatch(getCurrentUserProfile());
     return data;
   } catch (error) {
     const errMsg =
@@ -244,7 +246,7 @@ export const updateCredentials =
 
       const { data } = await axios.put(
         `/auth/${userId}/credentials`,
-        credentialsData
+        credentialsData,
       );
 
       dispatch(credentialsUpdateSuccess(data));
@@ -281,7 +283,7 @@ export const verifyPasswordReset = (token) => async (dispatch) => {
   try {
     dispatch(authRequest());
     const { data } = await axios.get(
-      `/auth/verify-password-reset?token=${token}`
+      `/auth/verify-password-reset?token=${token}`,
     );
     dispatch(authSuccess(data));
     toast.success(data.message || "Password reset successful");

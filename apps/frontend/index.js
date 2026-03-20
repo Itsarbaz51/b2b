@@ -5,6 +5,7 @@ export const protectedRoute = [
   "/users",
   "/commission-management",
   "/reports",
+  "/ledger",
   "/kyc",
   "/users",
   "/settings",
@@ -73,6 +74,11 @@ export const navbarTitleConfig = {
   },
   "/reports": {
     title: "Reports",
+    tagLine: "Analytics & insights",
+    icon: BarChart3,
+  },
+  "/ledger": {
+    title: "Ledger",
     tagLine: "Analytics & insights",
     icon: BarChart3,
   },

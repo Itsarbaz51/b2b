@@ -22,7 +22,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import StateCard from "../../components/ui/StateCard";
 import ConfirmCard from "../../components/ui/ConfirmCard";
 import AddRazorpayFundForm from "../../components/forms/services/AddRazorpayFundForm";
-import { usePermissions } from "../../components/hooks/usePermission";
+import { usePermissions } from "../../hooks/usePermission";
 import { SERVICES } from "../../utils/constants";
 
 const FundRequestPage = () => {

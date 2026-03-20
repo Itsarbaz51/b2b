@@ -1,7 +1,7 @@
 import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
 import { ROUTE_CONFIG, SERVICES } from "../utils/constants";
-import { usePermissions } from "../components/hooks/usePermission";
+import { usePermissions } from "../hooks/usePermission";
 
 const ProtectedRoute = ({ children }) => {
   const location = useLocation();
