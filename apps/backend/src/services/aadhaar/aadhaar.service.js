@@ -1,13 +1,8 @@
 import Prisma from "../../db/db.js";
-import WalletEngine from "../../engines/wallet.engine.js";
-import LedgerEngine from "../../engines/ledger.engine.js";
 import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
-import ApiEntityService from "../apiEntity.service.js";
 import TransactionService from "../transaction.service.js";
-import { getAadhaarPlugin } from "../../plugin_registry/aadhaar/pluginRegistry.js";
 import { ApiError } from "../../utils/ApiError.js";
-import ProviderResolver from "../../resolvers/Provider.resolver.js";
-import SurchargeEngine from "../../engines/surcharge.engine.js";
+import ProviderResolver from "../../resolvers/provider.resolver.js";
 import { CommissionSettingService } from "../commission.service.js";
 import SettlementEngine from "../../engines/settlement.engine.js";
 

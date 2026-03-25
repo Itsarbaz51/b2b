@@ -1,4 +1,4 @@
-import ProviderResolver from "../../resolvers/Provider.resolver.js";
+import ProviderResolver from "../../resolvers/provider.resolver.js";
 import BankFundRequestService from "./fundRequest.bank.service.js";
 import RazorpayFundRequestService from "./fundRequest.razorpay.service.js";
 import { ApiError } from "../../utils/ApiError.js";

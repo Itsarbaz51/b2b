@@ -1,7 +1,5 @@
-// services/bankVerification/bankVerification.service.js
-
 import Prisma from "../../db/db.js";
-import ProviderResolver from "../../resolvers/Provider.resolver.js";
+import ProviderResolver from "../../resolvers/provider.resolver.js";
 import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
 import TransactionService from "../transaction.service.js";
 import SettlementEngine from "../../engines/settlement.engine.js";
