@@ -112,7 +112,6 @@ const Sidebar = () => {
           businessPermission: payoutPermissions.canView,
           employeePermission: PERMISSIONS.PAYOUT,
           staticRoles: [
-            "ADMIN",
             "STATE HEAD",
             "MASTER DISTRIBUTOR",
             "DISTRIBUTOR",
