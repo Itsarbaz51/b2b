@@ -13,12 +13,13 @@ export default class WonderpayPayoutService {
   static async transfer(serviceProviderMapping, provider, payload, actor) {
     const plugin = this.getPlugin(provider, serviceProviderMapping);
 
+    const txnId = Helper.generateTxnId("WOND");
     return Prisma.$transaction(async (tx) => {
       const { transaction, wallet, pricing, isDuplicate } =
         await SettlementEngine.execute({
           tx,
           actor,
-          payload,
+          payload: { ...payload, txnId },
           serviceProviderMapping,
         });
 
@@ -60,6 +61,8 @@ export default class WonderpayPayoutService {
           clientOrderId,
         };
       } catch (err) {
+        console.log(err);
+
         await SettlementEngine.failed({
           tx,
           walletId: wallet.id,

@@ -8,7 +8,7 @@ const router = Router();
 
 // TRANSFER
 router.post(
-  "/transfer",
+  "/create",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["business"]),
   validateRequest({

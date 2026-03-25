@@ -20,8 +20,8 @@ export default class PricingEngine {
 
     if (!user) throw ApiError.notFound("User not found");
 
-    //  PROVIDER COST
     let providerCost = 0n;
+    const type = mapping.pricingValueType;
 
     if (mapping.supportsSlab) {
       const slab = await tx.providerSlab.findFirst({
@@ -36,9 +36,21 @@ export default class PricingEngine {
         throw ApiError.badRequest("Provider slab not configured");
       }
 
-      providerCost = BigInt(slab.providerCost);
+      const value = BigInt(slab.providerCost);
+
+      if (type === "PERCENTAGE") {
+        providerCost = (txnAmount * value) / 10000n;
+      } else {
+        providerCost = value;
+      }
     } else {
-      providerCost = BigInt(mapping.providerCost);
+      const value = BigInt(mapping.providerCost || 0);
+
+      if (type === "PERCENTAGE") {
+        providerCost = (txnAmount * value) / 10000n;
+      } else {
+        providerCost = value;
+      }
     }
 
     //  SURCHARGE RULE
@@ -65,9 +77,8 @@ export default class PricingEngine {
     if (rule) {
       let value = BigInt(rule.value);
 
-      //   SLAB CHECK
       if (rule.supportsSlab) {
-        const slab = await tx.userPricingSlab.findFirst({
+        const slab = await tx.commissionSlab.findFirst({
           where: {
             commissionSettingId: rule.id,
             minAmount: { lte: txnAmount },
@@ -82,8 +93,11 @@ export default class PricingEngine {
         value = BigInt(slab.value);
       }
 
-      surcharge =
-        rule.type === "PERCENTAGE" ? (txnAmount * value) / 10000n : value;
+      if (rule.type === "PERCENTAGE") {
+        surcharge = (txnAmount * value) / 10000n;
+      } else {
+        surcharge = value;
+      }
     }
 
     //  GST (Only on surcharge)

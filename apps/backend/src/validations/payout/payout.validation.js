@@ -4,7 +4,7 @@ class PayoutValidationSchemas {
   static get TransferSchema() {
     return z
       .object({
-        serviceId: z.string().uuid("Invalid serviceId"),
+        serviceProviderMappingId: z.string().uuid("Invalid serviceProviderMappingId"),
         provider: z.string().optional(),
 
         number: z.string().min(10, "Invalid mobile number"),

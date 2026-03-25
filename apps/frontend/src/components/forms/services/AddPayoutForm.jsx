@@ -207,11 +207,7 @@ const AddPayoutForm = ({
                 type="submit"
                 icon={Landmark}
                 isLoading={isLoading}
-                isDisabled={
-                  form.transferMode !== "UPI"
-                    ? !isVerified || isLoading
-                    : isLoading
-                }
+                isDisabled={isLoading}
               />
             </div>
           </form>

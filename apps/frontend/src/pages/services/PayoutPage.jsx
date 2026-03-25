@@ -40,9 +40,9 @@ const PayoutPage = () => {
     currentUser?.role?.name === "ADMIN" ||
     currentUser?.role?.type === "employee";
 
-  const { canProcess, serviceProviderMappingId } = usePermissions(
-    SERVICES.PAYOUT,
-  );
+  const { canProcess, defaultProvider } = usePermissions(SERVICES.PAYOUT);
+
+  const serviceProviderMappingId = defaultProvider.serviceProviderMappingId;
 
   const fetchRequests = () => {
     dispatch(
@@ -104,10 +104,9 @@ const PayoutPage = () => {
 
       const result = await dispatch(
         createPayout({
-          provider: "WONDERPAY",
-          serviceId,
+          serviceProviderMappingId,
           number: data.mobile,
-          amount: rupeesToPaise(data.amount),
+          amount: Number(rupeesToPaise(data.amount)),
           transferMode: data.transferMode,
           beneficiaryName: data.beneficiaryName,
           accountNo: data.accountNo,
@@ -219,7 +218,7 @@ const PayoutPage = () => {
           resetForm={resetForm}
           onSubmit={handleSubmit}
           onVerify={handleVerify}
-          serviceId={serviceId}
+          serviceProviderMappingId={serviceProviderMappingId}
           isVerified={isVerified}
           verifying={verifying}
           isLoading={processing}

@@ -5,6 +5,7 @@ const InputField = ({
   name,
   type = "text",
   placeholder,
+  step,
   required = true,
   icon: Icon,
   value,
@@ -29,6 +30,7 @@ const InputField = ({
         name={name}
         value={value}
         onChange={onChange}
+        step={step}
         placeholder={placeholder}
         maxLength={maxLength}
         inputMode={inputMode}

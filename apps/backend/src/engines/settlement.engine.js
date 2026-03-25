@@ -18,6 +18,7 @@ export default class SettlementEngine {
     const pricing = await PricingEngine.calculateSurcharge(tx, {
       userId,
       serviceProviderMappingId: serviceProviderMapping.id,
+      amount: payload.amount || 0,
     });
 
     const existingTxn = await tx.transaction.findFirst({
@@ -40,6 +41,7 @@ export default class SettlementEngine {
 
     const { transaction } = await TransactionService.create(tx, {
       userId,
+      txnId: payload.txnId,
       walletId: wallet.id,
       serviceProviderMappingId: serviceProviderMapping.id,
       amount: pricing.totalDebit,

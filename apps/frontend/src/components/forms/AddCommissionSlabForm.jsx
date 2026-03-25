@@ -115,6 +115,7 @@ export default function AddCommissionSlabForm({
               <InputField
                 label="Min Amount (₹)"
                 type="number"
+                step="0.01"
                 value={form.minAmount}
                 onChange={(e) =>
                   setForm({ ...form, minAmount: e.target.value })
@@ -124,6 +125,7 @@ export default function AddCommissionSlabForm({
               <InputField
                 label="Max Amount (₹)"
                 type="number"
+                step="0.01"
                 value={form.maxAmount}
                 onChange={(e) =>
                   setForm({ ...form, maxAmount: e.target.value })
@@ -133,6 +135,7 @@ export default function AddCommissionSlabForm({
               <InputField
                 label="Commission (₹)"
                 type="number"
+                step="0.01"
                 value={form.value}
                 onChange={(e) => setForm({ ...form, value: e.target.value })}
               />

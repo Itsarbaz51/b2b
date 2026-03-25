@@ -116,6 +116,7 @@ export default function AddProviderSlabForm({
               <InputField
                 label="Min ₹"
                 type="number"
+                step="0.01"
                 value={form.minAmount}
                 onChange={(e) =>
                   setForm({ ...form, minAmount: e.target.value })
@@ -125,6 +126,7 @@ export default function AddProviderSlabForm({
               <InputField
                 label="Max ₹"
                 type="number"
+                step="0.01"
                 value={form.maxAmount}
                 onChange={(e) =>
                   setForm({ ...form, maxAmount: e.target.value })
@@ -134,6 +136,7 @@ export default function AddProviderSlabForm({
               <InputField
                 label="Provider Cost ₹"
                 type="number"
+                step="0.01"
                 value={form.providerCost}
                 onChange={(e) =>
                   setForm({ ...form, providerCost: e.target.value })

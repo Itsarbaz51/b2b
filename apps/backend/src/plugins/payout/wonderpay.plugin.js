@@ -74,8 +74,10 @@ class WonderpayPayoutPlugin extends PayoutPluginInterface {
 
       return data;
     } catch (err) {
+      console.log(err);
+
       throw ApiError.internal(
-        err.response?.data?.message || "Wonderpay payout failed"
+        err.response?.data?.message || err.message || "Wonderpay payout failed"
       );
     }
   }
