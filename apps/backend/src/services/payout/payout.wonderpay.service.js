@@ -43,7 +43,7 @@ export default class WonderpayPayoutService {
       try {
         const response = await plugin.payout({
           ...payload,
-          amount: pricing.totalDebit,
+          amount: (Number(pricing.txnAmount) / 100).toString(),
           clientOrderId,
         });
 
@@ -61,11 +61,9 @@ export default class WonderpayPayoutService {
           clientOrderId,
         };
       } catch (err) {
-        console.log(err);
-
         await SettlementEngine.failed({
           tx,
-          walletId: wallet.id,
+          wallet,
           pricing,
         });
 
