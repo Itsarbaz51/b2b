@@ -7,6 +7,10 @@ const rateLimiterMiddleware = rateLimit({
   legacyHeaders: false,
   message: "Too many requests, try again later",
 
+  keyGenerator: (req) => {
+    return (req.ip || "").replace(/^::ffff:/, "");
+  },
+
   handler: (req, res) => {
     res.status(429).json({ error: "Too many requests, try again later" });
   },

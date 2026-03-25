@@ -1,0 +1,42 @@
+# Node modules (reinstall inside container)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Env files (security)
+.env
+.env.*
+
+# Logs
+logs
+*.log
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Docker files (optional)
+docker-compose.yml
+Dockerfile
+
+# Tests & docs (optional)
+coverage
+tests
+__tests__
+
+# Build artifacts (if any)
+dist
+build
+
+# Prisma (optional - depends)
+# Uncomment if prisma generate runs inside container
+# prisma/dev.db
+
+# Misc
+*.md
