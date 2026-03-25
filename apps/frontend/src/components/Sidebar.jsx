@@ -109,7 +109,7 @@ const Sidebar = () => {
           label: "Payout",
           icon: ArrowDownCircle,
           path: "/payout",
-          businessPermission: payoutPermissions.canView,
+          businessUserPermission: payoutPermissions.canView,
           employeePermission: PERMISSIONS.PAYOUT,
           staticRoles: [
             "STATE HEAD",
