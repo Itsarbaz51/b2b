@@ -1,7 +1,7 @@
 import { ApiError } from "../../utils/ApiError.js";
 import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
 import WonderpayPayoutService from "./payout.wonderpay.service.js";
-import ProviderResolver from "../../resolvers/Provider.resolver.js";
+import ProviderResolver from "../../resolvers/provider.resolver.js";
 import { CommissionSettingService } from "../commission.service.js";
 
 export default class PayoutService {
