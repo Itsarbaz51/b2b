@@ -1,21 +1,14 @@
-# 1. Base image
 FROM node:20-alpine
 
-# 2. App directory
 WORKDIR /app
 
-# 3. Install dependencies (better caching)
+# install deps
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --production
 
-# 4. Copy app files
+# copy code
 COPY . .
 
-# 5. Prisma client generate
-RUN npx prisma generate
-
-# 6. Expose port
 EXPOSE 8000
 
-# 7. Start with safe DB migration (production way)
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
+CMD ["node", "src/index.js"]    
