@@ -4,7 +4,7 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "npx prisma generate && node src/index.js",
     "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
     "seed": "node prisma/seed.js",
     "seed-city": "node prisma/city.js"
