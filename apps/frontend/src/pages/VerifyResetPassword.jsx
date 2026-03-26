@@ -9,6 +9,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { verifyPasswordReset } from "../redux/slices/authSlice";
+import { ApiError } from "../../../backend/src/utils/ApiError";
 
 export default function VerifyResetPassword() {
   const dispatch = useDispatch();
@@ -69,7 +70,7 @@ export default function VerifyResetPassword() {
 
         // यहाँ navigate नहीं करेंगे, useEffect automatic redirect कर देगा
       } else {
-        throw new Error(resultAction.error?.message || "Password reset failed");
+        throw ApiError.internal(resultAction.error?.message || "Password reset failed");
       }
     } catch (error) {
       console.error("Password reset error:", error);
