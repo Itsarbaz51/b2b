@@ -12,6 +12,7 @@ import { SERVICES } from "../../utils/constants";
 import NoPermissionsPage from "../NoPermissionsPage";
 import { usePermissions } from "../../hooks/usePermission";
 import { getCurrentUserProfile } from "../../redux/slices/userSlice";
+import { verifyAuth } from "../../redux/slices/authSlice";
 
 const FundAddPage = () => {
   const dispatch = useDispatch();
@@ -67,10 +68,9 @@ const FundAddPage = () => {
         }),
       );
 
-      if (result?.payload?.success) {
+      if (result?.success) {
         resetForm();
         fetchRequests();
-        dispatch(getCurrentUserProfile());
       }
     } catch (err) {
       console.error(err);
@@ -91,11 +91,22 @@ const FundAddPage = () => {
         </div>
 
         {/* Wallet Card */}
+        {/* Wallet Card */}
         <div className="bg-white border border-gray-300 rounded-xl p-6 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Wallet className="text-blue-600" />
             <div>
-              <p className="text-sm text-gray-500">Current Wallet Balance</p>
+              <p className="text-sm text-gray-500 flex items-center gap-2">
+                Current Wallet Balance
+                <button
+                  onClick={() => dispatch(verifyAuth())}
+                  title="Refresh Balance"
+                  className="text-blue-600 hover:text-blue-800 focus:outline-none"
+                  aria-label="Refresh Wallet Balance"
+                >
+                  🔄
+                </button>
+              </p>
               <p className="text-xl font-semibold text-gray-800">
                 ₹{balance.toFixed(2)}
               </p>
@@ -158,7 +169,7 @@ const FundAddPage = () => {
               className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
             >
               <ArrowLeft size={16} />
-              Change payment method
+              Change payment method (Instant wallet credit){" "}
             </button>
 
             <AddRazorpayFundForm
@@ -179,7 +190,7 @@ const FundAddPage = () => {
               className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
             >
               <ArrowLeft size={16} />
-              Change payment method
+              Change payment method (Contact admin for approval)
             </button>
 
             <AddBankTransferFundForm

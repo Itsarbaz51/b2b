@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { verifyAuth } from "./authSlice";
 
 const initialState = {
   fundRequests: [],
@@ -133,7 +134,7 @@ export const verifyFundRequest = (payload) => async (dispatch) => {
 
     dispatch(fundSuccess(data));
     toast.success(data.message);
-
+    dispatch(verifyAuth());
     return data;
   } catch (error) {
     const errMsg = error?.response?.data?.message || error?.message;

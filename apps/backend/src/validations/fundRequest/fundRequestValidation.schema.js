@@ -6,7 +6,7 @@ const CreateFundRequest = z
 
     provider: z.enum(["BANK_TRANSFER", "RAZORPAY"]),
 
-    amount: z.coerce.number().positive("Amount must be greater than 0"),
+    amount: z.coerce.number().min(100, "Amount must be at least 100"),
 
     rrn: z
       .string()

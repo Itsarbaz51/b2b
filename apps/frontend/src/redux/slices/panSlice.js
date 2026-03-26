@@ -68,7 +68,7 @@ export const verifyPan = (payload) => async (dispatch) => {
       error?.response?.data?.message ||
       error?.message ||
       "PAN verification failed";
-
+    toast.error(errMsg);
     dispatch(panFail(errMsg));
     throw error;
   }

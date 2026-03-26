@@ -19,13 +19,13 @@ export default class PanService {
       serviceProviderMappingId
     );
 
+    const { provider, serviceProviderMapping } =
+      await ProviderResolver.resolveByMappingId(serviceProviderMappingId);
+
     await CommissionSettingService.checkUserPricingRule(
       userId,
       serviceProviderMapping.id
     );
-
-    const { provider, serviceProviderMapping } =
-      await ProviderResolver.resolveByMappingId(serviceProviderMappingId);
 
     if (serviceProviderMapping.commissionStartLevel === "NONE") {
       throw ApiError.badRequest("Surcharge disabled for this service");
