@@ -17,6 +17,7 @@ app.use(
         "http://tsg8g0ksk4os8s48ocw8ckws.147.93.20.127.sslip.io",
         "https://7m6g6bvg-5173.inc1.devtunnels.ms",
         "http://localhost:5173",
+        "https://b2b.azzunique.cloud"
       ];
       // const allowed = [
       //   process.env.CLIENT_URL , "https://7m6g6bvg-5173.inc1.devtunnels.ms"
