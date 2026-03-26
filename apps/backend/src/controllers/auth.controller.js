@@ -5,11 +5,26 @@ import { ApiError } from "../utils/ApiError.js";
 import Helper from "../utils/helper.js";
 import EmployeeServices from "../services/employee.service.js";
 
+const isProd = process.env.NODE_ENV === "production";
+
+const getCookieDomain = (hostname) => {
+  if (!hostname || hostname === "localhost") return undefined;
+
+  const parts = hostname.split(".");
+
+  // azzunique.cloud / primewebdev.in
+  if (parts.length === 2) return hostname;
+
+  // api.azzunique.cloud / www.primewebdev.in
+  return parts.slice(-2).join(".");
+};
+
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
+  secure: isProd,
+  sameSite: isProd ? "none" : "lax",
   path: "/",
+  domain: getCookieDomain(req.hostname),
   maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
 };
 
