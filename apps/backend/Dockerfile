@@ -2,13 +2,18 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# install deps
+# 1. Install dependencies
 COPY package*.json ./
-RUN npm install --production
+RUN npm ci --only=production
 
-# copy code
+# 2. Copy app
 COPY . .
 
+# 3. Prisma generate (IMPORTANT)
+RUN npx prisma generate
+
+# 4. Expose port
 EXPOSE 8000
 
-CMD ["node", "src/index.js"]    
+# 5. Run migrations + start app
+CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
