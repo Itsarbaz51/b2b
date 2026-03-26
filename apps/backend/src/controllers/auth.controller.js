@@ -73,26 +73,21 @@ class AuthController {
     if (!userId) {
       throw ApiError.unauthorized("User not authenticated");
     }
-    try {
-      let safeUser = await AuthServices.getUserById(userId, req, res);
+    let safeUser = await AuthServices.getUserById(userId, req, res);
 
-      if (!safeUser) {
-        throw ApiError.notFound("Business user not found");
-      }
-
-      return res
-        .status(200)
-        .json(
-          ApiResponse.success(
-            { user: safeUser },
-            "Current business user fetched",
-            200
-          )
-        );
-    } catch (error) {
-      console.error("Error fetching current business user:", error);
-      throw ApiError.internal("Failed to fetch business user data");
+    if (!safeUser) {
+      throw ApiError.notFound("Business user not found");
     }
+
+    return res
+      .status(200)
+      .json(
+        ApiResponse.success(
+          { user: safeUser },
+          "Current business user fetched",
+          200
+        )
+      );
   });
 
   static logout = asyncHandler(async (req, res) => {

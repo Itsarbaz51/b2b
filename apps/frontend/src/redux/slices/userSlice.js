@@ -41,7 +41,7 @@ const userSlice = createSlice({
     userSuccess: (state, action) => {
       state.isLoading = false;
       state.isSubmitting = false;
-      state.success = action.payload?.message || null;
+      // state.success = action.payload?.message || null;
       state.error = null;
     },
     userFail: (state, action) => {

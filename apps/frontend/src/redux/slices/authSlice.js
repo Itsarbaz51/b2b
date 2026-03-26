@@ -2,7 +2,6 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { getCurrentUserProfile } from "./userSlice";
 
 // Configure axios once
 if (!axios.defaults.baseURL) {
@@ -180,7 +179,7 @@ export const login = (credentials) => async (dispatch) => {
     dispatch(setAuthentication(true));
     dispatch(authSuccess(data));
     toast.success("Login successful");
-    dispatch(getCurrentUserProfile());
+    dispatch(verifyAuth());
     return data;
   } catch (error) {
     const errMsg =

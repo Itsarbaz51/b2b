@@ -36,7 +36,7 @@ const commissionSlice = createSlice({
     },
     commissionSuccess: (state, action) => {
       state.isLoading = false;
-      state.success = action.payload?.message || null;
+      // state.success = action.payload?.message || null;
       state.error = null;
     },
     commissionFail: (state, action) => {

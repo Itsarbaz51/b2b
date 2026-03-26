@@ -1,10 +1,11 @@
-// layouts/MainLayout.js
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import usePageTitle from "../hooks/usePageTitle";
 
 const MainLayout = () => {
+  usePageTitle();
   return (
     <div className="">
       {/* {loading && <Loader />}  */}
