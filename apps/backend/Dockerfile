@@ -5,15 +5,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# 🔥 IMPORTANT: copy prisma first
 COPY prisma ./prisma
-
-# generate client
 RUN npx prisma generate
 
-# copy rest app
 COPY . .
+
+# install netcat
+RUN apk add --no-cache netcat-openbsd
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
+CMD ["sh", "-c", "until nc -z mysql 3306; do echo 'waiting for db...'; sleep 2; done; npx prisma migrate deploy && node src/index.js"]
