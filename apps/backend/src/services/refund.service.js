@@ -1,4 +1,5 @@
 import Prisma from "../db/db.js";
+import { ApiError } from "../utils/ApiError.js";
 import WebhookService from "./webhook.service.js";
 
 export default class RefundService {
@@ -7,7 +8,7 @@ export default class RefundService {
       where: { id: transactionId },
     });
 
-    if (!txn) throw new Error("Transaction not found");
+    if (!txn) throw ApiError.notFound("Transaction not found");
 
     await Prisma.transaction.update({
       where: { id: transactionId },

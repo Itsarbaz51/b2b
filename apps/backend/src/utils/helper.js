@@ -4,6 +4,7 @@ import nodemailer from "nodemailer";
 import axios from "axios";
 import crypto from "crypto";
 import fs from "fs";
+import { ApiError } from "./ApiError";
 
 class Helper {
   static generateAccessToken(payload) {
@@ -222,7 +223,7 @@ class Helper {
 
   static generatePassword(length = 12) {
     if (length < 4) {
-      throw new Error("Password length must be at least 4 characters.");
+      throw ApiError.internal("Password length must be at least 4 characters.");
     }
 
     const charset =
@@ -260,7 +261,7 @@ class Helper {
 
   static generateTransactionPin(length = 4) {
     if (length < 1) {
-      throw new Error("PIN length must be at least 1 digit.");
+      throw ApiError.internal("PIN length must be at least 1 digit.");
     }
 
     const numbers = "0123456789";

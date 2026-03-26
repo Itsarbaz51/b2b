@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { ApiError } from "./ApiError";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16; // 128 bits
@@ -17,7 +18,7 @@ export class CryptoService {
       if (!text) return text;
 
       if (!secretKey || Buffer.from(secretKey, "hex").length !== KEY_LENGTH) {
-        throw new Error(
+        throw ApiError.internal(
           "Invalid encryption key length. Must be 32 bytes (64 hex chars)."
         );
       }
@@ -37,7 +38,7 @@ export class CryptoService {
       return `${iv.toString("hex")}:${encrypted}:${authTag.toString("hex")}`;
     } catch (error) {
       console.error("Encryption failed:", error);
-      throw new Error("Encryption failed");
+      throw ApiError.internal("Encryption failed");
     }
   }
 
@@ -47,7 +48,7 @@ export class CryptoService {
 
       const parts = encryptedText.split(":");
       if (parts.length !== 3) {
-        throw new Error("Invalid encrypted text format");
+        throw ApiError.internal("Invalid encrypted text format");
       }
 
       const [ivHex, encrypted, authTagHex] = parts;
@@ -55,7 +56,7 @@ export class CryptoService {
       const authTag = Buffer.from(authTagHex, "hex");
 
       if (!secretKey || Buffer.from(secretKey, "hex").length !== KEY_LENGTH) {
-        throw new Error(
+        throw ApiError.internal(
           "Invalid encryption key length. Must be 32 bytes (64 hex chars)."
         );
       }
@@ -73,7 +74,7 @@ export class CryptoService {
       return decrypted;
     } catch (error) {
       console.error("Decryption failed:", error);
-      throw new Error("Decryption failed");
+      throw ApiError.internal("Decryption failed");
     }
   }
 

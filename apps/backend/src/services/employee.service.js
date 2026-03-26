@@ -925,7 +925,7 @@ class EmployeeServices {
       });
 
       if (!adminUser) {
-        throw new Error("Admin user not found");
+        throw ApiError.notFound("Admin user not found");
       }
 
       targetParentId = adminUser.id;

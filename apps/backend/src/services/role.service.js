@@ -39,11 +39,11 @@ class RoleServices {
     const { currentUserRoleLevel, type, currentUser } = options;
 
     if (!type) {
-      throw new Error("Type parameter is required");
+      throw ApiError.badRequest("Type parameter is required");
     }
 
     if (!["employee", "business"].includes(type)) {
-      throw new Error(
+      throw ApiError.badRequest(
         "Invalid type parameter. Must be 'employee' or 'business'"
       );
     }

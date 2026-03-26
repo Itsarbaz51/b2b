@@ -170,7 +170,7 @@ export class BankDetailService {
       });
 
       if (!adminUser) {
-        throw new Error("Admin user not found");
+        throw ApiError.notFound("Admin user not found");
       }
 
       targetUserId = adminUser.id;
@@ -198,7 +198,7 @@ export class BankDetailService {
       },
     });
 
-    if (!admin) throw new Error("Admin not found");
+    if (!admin) throw ApiError.badRequest("Admin not found");
 
     const bank = await Prisma.bankDetail.findFirst({
       where: {
@@ -332,7 +332,7 @@ export class BankDetailService {
         });
 
         if (!adminUser) {
-          throw new Error("Admin user not found");
+          throw ApiError.badRequest("Admin user not found");
         }
         targetUserId = adminUser.id;
       }
@@ -503,7 +503,7 @@ export class BankDetailService {
         });
 
         if (!adminUser) {
-          throw new Error("Admin user not found");
+          throw ApiError.badRequest("Admin user not found");
         }
         targetUserId = adminUser.id;
       }
@@ -669,7 +669,7 @@ export class BankDetailService {
       });
 
       if (!adminUser) {
-        throw new Error("Admin user not found");
+        throw ApiError.badRequest("Admin user not found");
       }
       targetUserId = adminUser.id;
     }

@@ -838,7 +838,7 @@ class AuthServices {
     });
 
     if (!process.env.FRONTEND_URL) {
-      throw new Error("FRONTEND_URL env var is not defined");
+      throw ApiError.internal("FRONTEND_URL env var is not defined");
     }
 
     const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&email=${encodeURIComponent(user.email)}`;

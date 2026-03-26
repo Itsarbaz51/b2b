@@ -67,7 +67,7 @@ class AuthMiddleware {
   static authorize = (allowedAccess = []) => {
     // Validate input array
     if (!Array.isArray(allowedAccess)) {
-      throw new Error("Authorization rules must be an array");
+      throw ApiError.internal("Authorization rules must be an array");
     }
 
     // Check for duplicates and validate entries
@@ -76,7 +76,7 @@ class AuthMiddleware {
 
     for (const item of allowedAccess) {
       if (seen.has(item)) {
-        throw new Error(
+        throw ApiError.badRequest(
           `Duplicate entry found in authorization rules: ${item}`
         );
       }
@@ -87,7 +87,7 @@ class AuthMiddleware {
         !PREDEFINED_BUSINESS_ROLES.includes(item) &&
         !validRoleTypes.includes(item)
       ) {
-        throw new Error(
+        throw ApiError.badRequest(
           `Invalid authorization entry: ${item}. Must be either a predefined business role or valid role type.`
         );
       }

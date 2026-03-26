@@ -53,7 +53,7 @@ class SystemSettingService {
       });
 
       if (!adminUser) {
-        throw new Error("Admin user not found");
+        throw ApiError.badRequest("Admin user not found");
       }
 
       targetUserId = adminUser.id;
@@ -240,7 +240,7 @@ class SystemSettingService {
       });
 
       if (!adminUser) {
-        throw new Error("Admin user not found");
+        throw ApiError.notFound("Admin user not found");
       }
 
       targetUserId = adminUser.id;
