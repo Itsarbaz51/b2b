@@ -57,7 +57,9 @@ export default class BankFundRequestService {
           providerCost: serviceProviderMapping.providerCost,
         };
 
+        const txnId = Helper.generateTxnId("BT");
         const { transaction, apiEntity } = await TransactionService.create(tx, {
+          txnId,
           userId: actor.id,
           walletId: wallet.id,
           serviceProviderMappingId: serviceProviderMapping.id,

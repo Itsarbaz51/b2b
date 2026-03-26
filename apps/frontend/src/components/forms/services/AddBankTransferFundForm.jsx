@@ -13,7 +13,7 @@ const AddBankTransferFundForm = ({
   onSubmit,
   resetForm,
   isProcessing,
-  serviceId,
+  serviceProviderMappingId,
 }) => {
   const [idempotencyKey] = useState(uuidv4());
 
@@ -21,12 +21,11 @@ const AddBankTransferFundForm = ({
   const { bankDetail: adminBank } = useSelector((s) => s.bank);
 
   const [form, setForm] = useState({
-    provider: "BANK_TRANSFER",
     amount: "",
     rrn: "",
     transactionDate: new Date().toISOString().split("T")[0],
     paymentImage: null,
-    serviceId,
+    serviceProviderMappingId,
     idempotencyKey,
   });
 

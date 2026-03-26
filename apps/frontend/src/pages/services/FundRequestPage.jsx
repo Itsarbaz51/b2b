@@ -41,8 +41,13 @@ const FundRequestPage = () => {
     currentUser?.role?.name === "ADMIN" ||
     currentUser?.role?.type === "employee";
 
-  const { canProcess, serviceProviderMappingId } = usePermissions(
-    SERVICES.FUND_REQUEST,
+  // permission hook
+  const { canProcess, providers } = usePermissions(SERVICES.FUND_REQUEST);
+
+  const razorpayProvider = providers.find((p) => p.providerCode === "RAZORPAY");
+
+  const bankProvider = providers.find(
+    (p) => p.providerCode === "BANK_TRANSFER",
   );
 
   const fetchRequests = () => {
@@ -217,7 +222,7 @@ const FundRequestPage = () => {
         <AddRazorpayFundForm
           resetForm={resetForm}
           onSuccess={fetchRequests}
-          serviceProviderMappingId={serviceProviderMappingId}
+          serviceProviderMappingId={razorpayProvider?.serviceProviderMappingId}
         />
       )}
 
@@ -226,7 +231,7 @@ const FundRequestPage = () => {
           onSubmit={handleBankSubmit}
           resetForm={resetForm}
           isProcessing={processing}
-          serviceProviderMappingId={serviceProviderMappingId}
+          serviceProviderMappingId={bankProvider?.serviceProviderMappingId}
         />
       )}
 

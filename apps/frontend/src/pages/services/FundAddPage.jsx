@@ -62,6 +62,7 @@ const FundAddPage = () => {
       const result = await dispatch(
         createFundRequest({
           ...data,
+          serviceProviderMappingId: bankProvider?.serviceProviderMappingId,
           amount: rupeesToPaise(data.amount),
         }),
       );

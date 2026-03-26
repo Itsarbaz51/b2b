@@ -17,7 +17,11 @@ export default class FundRequestService {
     const { provider: providerData, serviceProviderMapping } =
       await ProviderResolver.resolveByMappingId(mappingId);
 
-    if (serviceProviderMapping.commissionStartLevel === "NONE") {
+    // BANK_TRANSFER skip
+    if (
+      providerData.code !== "BANK_TRANSFER" &&
+      serviceProviderMapping.commissionStartLevel === "NONE"
+    ) {
       throw ApiError.badRequest("Surcharge disabled for this service (NONE)");
     }
 
@@ -28,13 +32,16 @@ export default class FundRequestService {
   static async create(payload, actor) {
     const { serviceProviderMappingId } = payload;
 
-    await this.checkRule(actor.id, serviceProviderMappingId);
-
     await this.checkPermission(actor.id, serviceProviderMappingId);
 
     const { providerData, serviceProviderMapping } = await this.resolveProvider(
       serviceProviderMappingId
     );
+
+    // sirf RAZORPAY rule check
+    if (providerData.code !== "BANK_TRANSFER") {
+      await this.checkRule(actor.id, serviceProviderMappingId);
+    }
 
     switch (providerData.code) {
       case "BANK_TRANSFER":
