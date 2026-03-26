@@ -1,4 +1,4 @@
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 
 const rateLimiterMiddleware = rateLimit({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000,
