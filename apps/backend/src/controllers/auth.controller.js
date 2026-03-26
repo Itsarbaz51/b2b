@@ -19,19 +19,19 @@ const getCookieDomain = (hostname) => {
   return parts.slice(-2).join(".");
 };
 
-const cookieOptions = {
+const getCookieOptions = (req) => ({
   httpOnly: true,
   secure: isProd,
   sameSite: isProd ? "none" : "lax",
   path: "/",
   domain: getCookieDomain(req.hostname),
-  maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-};
+  maxAge: 1000 * 60 * 60 * 24 * 7,
+});
 
-const refreshCookieOptions = {
-  ...cookieOptions,
-  maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
-};
+const getRefreshCookieOptions = (req) => ({
+  ...getCookieOptions(req),
+  maxAge: 1000 * 60 * 60 * 24 * 30,
+});
 
 class AuthController {
   static login = asyncHandler(async (req, res) => {
@@ -52,8 +52,8 @@ class AuthController {
 
     return res
       .status(200)
-      .cookie("accessToken", accessToken, cookieOptions)
-      .cookie("refreshToken", refreshToken, refreshCookieOptions)
+      .cookie("accessToken", accessToken, getCookieOptions(req))
+      .cookie("refreshToken", refreshToken, getRefreshCookieOptions(req))
       .json(
         ApiResponse.success(
           { user: userWithoutSensitiveData, accessToken },
@@ -100,8 +100,8 @@ class AuthController {
 
     await AuthServices.logout(userId, refreshToken, req, res);
 
-    res.clearCookie("accessToken", cookieOptions);
-    res.clearCookie("refreshToken", cookieOptions);
+    res.clearCookie("accessToken", getCookieOptions(req));
+    res.clearCookie("refreshToken", getCookieOptions(req));
 
     return res
       .status(200)
@@ -121,8 +121,8 @@ class AuthController {
       res
     );
 
-    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
-    res.cookie("accessToken", accessToken, cookieOptions);
+    res.cookie("refreshToken", refreshToken, getRefreshCookieOptions(req));
+    res.cookie("accessToken", accessToken, getCookieOptions(req));
 
     const safeUser = Helper.serializeUser(user);
     const {
