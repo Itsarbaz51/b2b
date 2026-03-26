@@ -13,13 +13,14 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
       headers: {
         "Content-Type": "application/json",
       },
+      validateStatus: () => true, // ✅ important (non-200 bhi handle karega)
     });
 
     this.accessToken = null;
     this.tokenExpiry = null;
   }
 
-  // 🔐 AES-256-GCM (AU COMPATIBLE)
+  // 🔐 AES-256-GCM
   encrypt(data) {
     const key = Buffer.from(this.config.encryptionKey, "utf8");
     const iv = Buffer.from(this.config.saltKey, "utf8");
@@ -32,48 +33,56 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
     ]);
 
     const authTag = cipher.getAuthTag();
-
-    const finalBuffer = Buffer.concat([encrypted, authTag]);
-
-    return finalBuffer.toString("base64");
+    return Buffer.concat([encrypted, authTag]).toString("base64");
   }
 
   decrypt(encData) {
-    const key = Buffer.from(this.config.encryptionKey, "utf8");
-    const iv = Buffer.from(this.config.saltKey, "utf8");
+    try {
+      const key = Buffer.from(this.config.encryptionKey, "utf8");
+      const iv = Buffer.from(this.config.saltKey, "utf8");
 
-    const data = Buffer.from(encData, "base64");
+      const data = Buffer.from(encData, "base64");
 
-    const authTag = data.slice(data.length - 16);
-    const encrypted = data.slice(0, data.length - 16);
+      const authTag = data.slice(data.length - 16);
+      const encrypted = data.slice(0, data.length - 16);
 
-    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
-    decipher.setAuthTag(authTag);
+      const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+      decipher.setAuthTag(authTag);
 
-    const decrypted = Buffer.concat([
-      decipher.update(encrypted),
-      decipher.final(),
-    ]);
+      const decrypted = Buffer.concat([
+        decipher.update(encrypted),
+        decipher.final(),
+      ]);
 
-    return JSON.parse(decrypted.toString("utf8"));
+      return JSON.parse(decrypted.toString("utf8"));
+    } catch (err) {
+      throw ApiError.internal("Failed to decrypt AU response");
+    }
   }
 
-  // 🔑 TOKEN (with caching)
+  // 🔑 TOKEN
   async getAccessToken() {
     if (this.accessToken && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
 
     try {
-      const { data } = await axios.get(
+      const response = await axios.get(
         `${this.config.baseUrl}/oauth/accesstoken?grant_type=client_credentials`,
         {
           auth: {
             username: this.config.clientId,
             password: this.config.clientSecret,
           },
+          timeout: 10000,
         }
       );
+
+      const data = response.data;
+
+      if (!data?.access_token) {
+        throw new Error("Invalid token response");
+      }
 
       this.accessToken = data.access_token;
       this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
@@ -84,7 +93,7 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
     }
   }
 
-  // 🔥 MAIN ENTRY
+  // 🔥 MAIN
   async verifyAccount(params) {
     const method = this.config.verificationMethod || "PENNILESS";
 
@@ -100,7 +109,7 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
     }
   }
 
-  // ✅ PENNILESS API
+  // ✅ PENNILESS
   async verifyPenniless({ accountNo, ifsc, requestId }) {
     try {
       const token = await this.getAccessToken();
@@ -111,7 +120,7 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
         BeneficiaryIFSCCode: ifsc,
         RequestId: requestId,
         ReferenceNumber: requestId,
-        OriginatingChannel: this.config.channel, // 🔥 YAHI USE HO RAHA
+        OriginatingChannel: this.config.channel,
         Remarks: "Account Verification",
         PaymentMethod: "P2A",
         FlgIntraBankAllowed: "N",
@@ -121,15 +130,39 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
 
       const encrypted = this.encrypt(payload);
 
-      const { data } = await this.client.post(
+      const response = await this.client.post(
         "/CBSIMPSBeneficiaryNameInqService/IMPSBeneficiary",
         { encvalue: encrypted },
         {
           headers: {
-            "Key-Authentication": `Bearer ${token}`, // 🔥 FIXED HEADER
+            "Key-Authentication": `Bearer ${token}`,
           },
+          responseType: "json", // ✅ FIX
         }
       );
+
+      let data = response.data;
+
+      // 🔥 HANDLE STRING RESPONSE
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          throw ApiError.internal("Invalid string response from AU Bank");
+        }
+      }
+
+      // 🔥 INVALID RESPONSE
+      if (!data || typeof data !== "object") {
+        throw ApiError.internal("Invalid response from AU Bank");
+      }
+
+      // 🔥 ERROR RESPONSE FROM BANK
+      if (!data.encvalue) {
+        throw ApiError.internal(
+          data.message || JSON.stringify(data) || "AU Bank error"
+        );
+      }
 
       const decrypted = this.decrypt(data.encvalue);
 
@@ -152,13 +185,24 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
         },
       };
     } catch (err) {
-      throw ApiError.internal(
-        typeof err.response?.data === "string"
-          ? err.response.data
-          : JSON.stringify(
-              err.response?.data || err.message || "Penniless failed"
-            )
-      );
+      // 🔥 SAFE ERROR HANDLING (NO IncomingMessage CRASH)
+      let message = "Penniless verification failed";
+
+      try {
+        if (err.response?.data) {
+          if (typeof err.response.data === "string") {
+            message = err.response.data;
+          } else {
+            message = JSON.stringify(err.response.data);
+          }
+        } else if (err.message) {
+          message = err.message;
+        }
+      } catch {
+        message = "Unknown error";
+      }
+
+      throw ApiError.internal(message);
     }
   }
 
