@@ -3,14 +3,16 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-
-# ❗ IMPORTANT (dev deps bhi install)
 RUN npm install
 
-COPY . .
+# 🔥 IMPORTANT: copy prisma first
+COPY prisma ./prisma
 
-# ❗ Prisma generate (must)
+# generate client
 RUN npx prisma generate
+
+# copy rest app
+COPY . .
 
 EXPOSE 8000
 
