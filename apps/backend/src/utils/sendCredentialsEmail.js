@@ -1,4 +1,4 @@
-import EmailTemplates from "../emaiTemplates/EmailTemplates.js";
+import EmailTemplates from "../emaiTemplates/emailTemplates.js";
 import Helper from "./helper.js";
 
 export async function sendCredentialsEmail(
