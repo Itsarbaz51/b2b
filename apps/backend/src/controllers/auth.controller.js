@@ -5,8 +5,6 @@ import { ApiError } from "../utils/ApiError.js";
 import Helper from "../utils/helper.js";
 import EmployeeServices from "../services/employee.service.js";
 
-const isProd = process.env.NODE_ENV === "production";
-
 const getCookieDomain = (hostname) => {
   if (!hostname || hostname === "localhost") return undefined;
 
@@ -19,14 +17,19 @@ const getCookieDomain = (hostname) => {
   return parts.slice(-2).join(".");
 };
 
-const getCookieOptions = (req) => ({
-  httpOnly: true,
-  secure: isProd,
-  sameSite: isProd ? "none" : "lax",
-  path: "/",
-  domain: getCookieDomain(req.hostname),
-  maxAge: 1000 * 60 * 60 * 24 * 7,
-});
+const getCookieOptions = (req) => {
+  const isLocalhost =
+    req.hostname === "localhost" || req.hostname === "127.0.0.1";
+
+  return {
+    httpOnly: true,
+    secure: !isLocalhost,
+    sameSite: isLocalhost ? "lax" : "none",
+    path: "/",
+    domain: isLocalhost ? undefined : `.${getCookieDomain(req.hostname)}`,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+  };
+};
 
 const getRefreshCookieOptions = (req) => ({
   ...getCookieOptions(req),
