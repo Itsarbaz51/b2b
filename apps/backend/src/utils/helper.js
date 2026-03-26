@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 import axios from "axios";
 import crypto from "crypto";
 import fs from "fs";
-import { ApiError } from "./ApiError";
+import { ApiError } from "./ApiError.js";
 
 class Helper {
   static generateAccessToken(payload) {

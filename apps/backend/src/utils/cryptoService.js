@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { ApiError } from "./ApiError";
+import { ApiError } from "./ApiError.js";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16; // 128 bits
