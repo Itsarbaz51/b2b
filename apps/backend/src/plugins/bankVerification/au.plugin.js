@@ -153,7 +153,11 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
       };
     } catch (err) {
       throw ApiError.internal(
-        err.response?.data || err.message || "Penniless failed"
+        typeof err.response?.data === "string"
+          ? err.response.data
+          : JSON.stringify(
+              err.response?.data || err.message || "Penniless failed"
+            )
       );
     }
   }
