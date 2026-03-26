@@ -1,14 +1,16 @@
+import { ApiError } from "../../utils/ApiError.js";
+
 class FundRequestInterface {
   constructor(config) {
     this.config = config;
   }
 
   async createRequest(payload) {
-    throw new Error("createRequest not implemented");
+    throw ApiError.internal("createRequest not implemented");
   }
 
   async verify(payload) {
-    throw new Error("verify not implemented");
+    throw ApiError.internal("verify not implemented");
   }
 }
 

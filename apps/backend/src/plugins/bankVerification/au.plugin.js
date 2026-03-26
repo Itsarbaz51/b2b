@@ -159,7 +159,7 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
   }
 
   async verifyPennyDrop() {
-    throw new Error("Penny Drop not implemented yet");
+    throw ApiError.internal("Penny Drop not implemented yet");
   }
 }
 
