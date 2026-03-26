@@ -38,6 +38,11 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
 
   decrypt(encData) {
     try {
+      if (!encData || typeof encData !== "string") {
+        console.log("❌ INVALID encData:", encData);
+        return null; // 🔥 crash mat hone do
+      }
+
       const key = Buffer.from(this.config.encryptionKey, "utf8");
       const iv = Buffer.from(this.config.saltKey, "utf8");
 
@@ -56,7 +61,8 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
 
       return JSON.parse(decrypted.toString("utf8"));
     } catch (err) {
-      throw ApiError.internal("Failed to decrypt AU response");
+      console.log("❌ DECRYPT FAILED:", err.message);
+      return null; // 🔥 crash avoid
     }
   }
 
@@ -137,39 +143,69 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
           headers: {
             "Key-Authentication": `Bearer ${token}`,
           },
-          responseType: "json", // ✅ FIX
+          responseType: "text", // 🔥 IMPORTANT (stream issue avoid)
         }
       );
 
       let data = response.data;
 
-      // 🔥 HANDLE STRING RESPONSE
-      if (typeof data === "string") {
-        try {
-          data = JSON.parse(data);
-        } catch {
-          throw ApiError.internal("Invalid string response from AU Bank");
-        }
+      console.log("🔍 RAW RESPONSE:", data);
+
+      // 🔥 IncomingMessage / object case handle
+      if (typeof data !== "string") {
+        console.log("⚠️ Non-string response detected");
+        return {
+          status: false,
+          statusCode: 500,
+          message: "Invalid AU response (not string)",
+          raw: data,
+        };
       }
 
-      // 🔥 INVALID RESPONSE
-      if (!data || typeof data !== "object") {
-        throw ApiError.internal("Invalid response from AU Bank");
+      // 🔥 try parse JSON
+      try {
+        data = JSON.parse(data);
+      } catch {
+        console.log("⚠️ JSON parse failed");
+        return {
+          status: false,
+          statusCode: 500,
+          message: "Invalid JSON from AU",
+          raw: data,
+        };
       }
 
-      // 🔥 ERROR RESPONSE FROM BANK
+      // 🔥 encvalue missing
       if (!data.encvalue) {
-        throw ApiError.internal(
-          data.message || JSON.stringify(data) || "AU Bank error"
-        );
+        return {
+          status: false,
+          statusCode: 400,
+          message: "AU response missing encvalue",
+          raw: data,
+        };
       }
 
+      // 🔥 decrypt safe
       const decrypted = this.decrypt(data.encvalue);
 
+      if (!decrypted) {
+        return {
+          status: false,
+          statusCode: 500,
+          message: "Decrypt failed",
+          raw: data,
+        };
+      }
+
       if (decrypted?.TransactionStatus?.ResponseCode !== "0") {
-        throw ApiError.badRequest(
-          decrypted?.TransactionStatus?.ResponseMessage || "Verification failed"
-        );
+        return {
+          status: false,
+          statusCode: 400,
+          message:
+            decrypted?.TransactionStatus?.ResponseMessage ||
+            "Verification failed",
+          raw: decrypted,
+        };
       }
 
       return {
@@ -185,24 +221,13 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
         },
       };
     } catch (err) {
-      // 🔥 SAFE ERROR HANDLING (NO IncomingMessage CRASH)
-      let message = "Penniless verification failed";
+      console.log("🔥 FINAL ERROR:", err);
 
-      try {
-        if (err.response?.data) {
-          if (typeof err.response.data === "string") {
-            message = err.response.data;
-          } else {
-            message = JSON.stringify(err.response.data);
-          }
-        } else if (err.message) {
-          message = err.message;
-        }
-      } catch {
-        message = "Unknown error";
-      }
-
-      throw ApiError.internal(message);
+      return {
+        status: false,
+        statusCode: 500,
+        message: err.message || "Penniless failed",
+      };
     }
   }
 
