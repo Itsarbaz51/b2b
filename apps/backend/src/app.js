@@ -37,7 +37,7 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.use(helmet());
 app.use(requestId);
-app.use(rateLimiterMiddleware);
+// app.use(rateLimiterMiddleware);
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", requestId: req.requestId });
