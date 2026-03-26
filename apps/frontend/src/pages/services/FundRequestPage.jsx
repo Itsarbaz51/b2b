@@ -97,9 +97,17 @@ const FundRequestPage = () => {
 
   const handleConfirmSubmit = async (reason) => {
     try {
-      const { action, request } = confirmAction;
+      const { action, request, serviceProviderMappingId } = confirmAction;
+      const transactionId = request.id;
 
-      await dispatch(verifyFundRequest(request.id, action, reason));
+      const payload = {
+        transactionId,
+        action,
+        reason,
+        serviceProviderMappingId,
+      };
+
+      await dispatch(verifyFundRequest(payload));
 
       fetchRequests();
       setConfirmAction(null);
@@ -114,6 +122,7 @@ const FundRequestPage = () => {
       setConfirmAction({
         action: "APPROVE",
         request,
+        serviceProviderMappingId: bankProvider.serviceProviderMappingId,
       });
     }
 
@@ -121,6 +130,7 @@ const FundRequestPage = () => {
       setConfirmAction({
         action: "REJECT",
         request,
+        serviceProviderMappingId: bankProvider.serviceProviderMappingId,
       });
     }
   };

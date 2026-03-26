@@ -272,12 +272,19 @@ class AuthServices {
           },
         });
 
-        finalPermissions = services.map((service) => ({
-          service,
-          serviceProviderMappingId: mappingMap.get(service.id)?.id || null,
-          canView: true,
-          canProcess: true,
-        }));
+        finalPermissions = services.map((service) => {
+          const mappingList = mappingMap.get(service.id) || [];
+
+          return {
+            service,
+            providers: mappingList.map((m) => ({
+              serviceProviderMappingId: m.id,
+              providerCode: m.provider?.code,
+            })),
+            canView: true,
+            canProcess: true,
+          };
+        });
       }
 
       // ---------------- EMPLOYEE ----------------

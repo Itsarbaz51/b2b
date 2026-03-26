@@ -71,11 +71,14 @@ export default class FundRequestService {
 
     await this.checkPermission(actor.id, serviceProviderMappingId);
 
-    await this.checkRule(actor.id, serviceProviderMappingId);
-
     const { providerData, serviceProviderMapping } = await this.resolveProvider(
       serviceProviderMappingId
     );
+
+    // sirf RAZORPAY rule check
+    if (providerData.code !== "BANK_TRANSFER") {
+      await this.checkRule(actor.id, serviceProviderMappingId);
+    }
 
     switch (providerData.code) {
       case "BANK_TRANSFER":
