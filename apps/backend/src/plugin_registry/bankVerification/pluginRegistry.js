@@ -7,6 +7,6 @@ export function getBankVerificationPlugin(providerCode, config) {
       return new AUBankVerificationPlugin(config);
 
     default:
-      throw ApiError.internal("Unknown BANK VERIFICATION provider");
+      throw ApiError.internal("Unknown bank verification provider");
   }
 }

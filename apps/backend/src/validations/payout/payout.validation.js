@@ -4,13 +4,14 @@ class PayoutValidationSchemas {
   static get TransferSchema() {
     return z
       .object({
-        serviceProviderMappingId: z.string().uuid("Invalid serviceProviderMappingId"),
+        serviceProviderMappingId: z
+          .string()
+          .uuid("Invalid serviceProviderMappingId"),
         provider: z.string().optional(),
 
         number: z.string().min(10, "Invalid mobile number"),
 
-        amount: z.number().positive("Amount must be greater than 0"),
-
+        amount: z.number().min(100, "Amount must be at least 100"),
         transferMode: z.enum(["IMPS", "NEFT", "RTGS", "UPI"]),
 
         accountNo: z.string().optional(),

@@ -1,27 +1,24 @@
-import Prisma from "../../db/db.js";
-import ProviderResolver from "../../resolvers/provider.resolver.js";
-import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
-import TransactionService from "../transaction.service.js";
-import SettlementEngine from "../../engines/settlement.engine.js";
-import { CommissionSettingService } from "../commission.service.js";
-import { getBankVerificationPlugin } from "../../plugin_registry/bankVerification/pluginRegistry.js";
 import { ApiError } from "../../utils/ApiError.js";
-import Helper from "../../utils/helper.js";
+import ServicePermissionResolver from "../../resolvers/servicePermission.resolver.js";
+import ProviderResolver from "../../resolvers/provider.resolver.js";
+import { CommissionSettingService } from "../commission.service.js";
+import AUBankVerificationService from "./bankVerification.au.service.js";
 
 export default class BankVerificationService {
-  static async verifyAccount(payload, actor) {
-    const { accountNo, ifsc, serviceId, idempotencyKey } = payload;
-    const userId = actor.id;
+  static async checkRule(userId, mappingId) {
+    await CommissionSettingService.checkUserPricingRule(userId, mappingId);
+  }
 
-    await TransactionService.checkDuplicate(idempotencyKey);
-
+  static async checkPermission(userId, mappingId) {
     await ServicePermissionResolver.validateHierarchyServiceAccess(
       userId,
-      serviceId
+      mappingId
     );
+  }
 
+  static async resolveProvider(mappingId) {
     const { provider, serviceProviderMapping } =
-      await ProviderResolver.resolveProvider(serviceId);
+      await ProviderResolver.resolveByMappingId(mappingId);
 
     if (serviceProviderMapping.commissionStartLevel === "NONE") {
       throw ApiError.badRequest("Surcharge disabled for this service");
@@ -29,69 +26,34 @@ export default class BankVerificationService {
 
     if (serviceProviderMapping.mode !== "SURCHARGE") {
       throw ApiError.badRequest(
-        "Bank Verification service configured as SURCHARGE mode only"
+        "Bank Verification supports SURCHARGE mode only"
       );
     }
 
-    await CommissionSettingService.checkUserPricingRule(
-      userId,
-      serviceProviderMapping.id
+    return { provider, serviceProviderMapping };
+  }
+
+  static async verifyAccount(payload, actor) {
+    const { serviceProviderMappingId } = payload;
+
+    await this.checkRule(actor.id, serviceProviderMappingId);
+    await this.checkPermission(actor.id, serviceProviderMappingId);
+
+    const { provider, serviceProviderMapping } = await this.resolveProvider(
+      serviceProviderMappingId
     );
 
-    return Prisma.$transaction(async (tx) => {
-      const { transaction, wallet, pricing } = await SettlementEngine.execute({
-        tx,
-        actor,
-        payload,
-        serviceProviderMapping,
-      });
-
-      let providerResponse;
-
-      try {
-        const plugin = getBankVerificationPlugin(
-          provider.code,
-          serviceProviderMapping.config
+    switch (provider.code) {
+      case "AU":
+        return AUBankVerificationService.verifyAccount(
+          serviceProviderMapping,
+          provider,
+          payload,
+          actor
         );
 
-        providerResponse = await plugin.verifyAccount({
-          accountNo,
-          ifsc,
-          requestId: Helper.generateTxnId("BANK_VERIFICATION"),
-        });
-
-        await SettlementEngine.success({
-          tx,
-          actor,
-          transaction,
-          wallet,
-          pricing,
-          serviceProviderMapping,
-        });
-
-        await TransactionService.update(tx, {
-          transactionId: transaction.id,
-          status: "SUCCESS",
-          providerResponse,
-        });
-
-        return providerResponse;
-      } catch (error) {
-        await SettlementEngine.failed({
-          tx,
-          actor,
-          wallet,
-          pricing,
-        });
-
-        await TransactionService.update(tx, {
-          transactionId: transaction.id,
-          status: "FAILED",
-          providerResponse: error?.message,
-        });
-
-        throw error;
-      }
-    });
+      default:
+        throw ApiError.badRequest("Unsupported bank verification provider");
+    }
   }
 }
