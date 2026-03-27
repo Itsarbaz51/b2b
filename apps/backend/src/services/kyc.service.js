@@ -310,39 +310,39 @@ class KycServices {
   static async storeUserKyc(payload, req = null, res = null) {
     let currentUserId = req.user.id;
 
-    // if (payload.kycType === "API") {
-    //   const [panTxn, aadhaarTxn] = await Promise.all([
-    //     Prisma.transaction.findFirst({
-    //       where: {
-    //         userId: currentUserId,
-    //         status: "SUCCESS",
-    //         serviceProviderMapping: { service: { code: "PAN" } },
-    //       },
-    //       orderBy: { completedAt: "desc" },
-    //     }),
-    //     Prisma.transaction.findFirst({
-    //       where: {
-    //         userId: currentUserId,
-    //         status: "SUCCESS",
-    //         serviceProviderMapping: { service: { code: "AADHAAR" } },
-    //       },
-    //       orderBy: { completedAt: "desc" },
-    //     }),
-    //   ]);
+    if (payload.kycType === "API") {
+      const [panTxn, aadhaarTxn] = await Promise.all([
+        Prisma.transaction.findFirst({
+          where: {
+            userId: currentUserId,
+            status: "SUCCESS",
+            serviceProviderMapping: { service: { code: "PAN" } },
+          },
+          orderBy: { completedAt: "desc" },
+        }),
+        Prisma.transaction.findFirst({
+          where: {
+            userId: currentUserId,
+            status: "SUCCESS",
+            serviceProviderMapping: { service: { code: "AADHAAR" } },
+          },
+          orderBy: { completedAt: "desc" },
+        }),
+      ]);
 
-    //   const panName = panTxn?.providerResponse?.name?.trim();
-    //   const aadhaarName = aadhaarTxn?.providerResponse?.name?.trim();
+      const panName = panTxn?.providerResponse?.name?.trim();
+      const aadhaarName = aadhaarTxn?.providerResponse?.name?.trim();
 
-    //   if (!panName || !aadhaarName) {
-    //     throw ApiError.badRequest("PAN or Aadhaar verification name missing");
-    //   }
+      if (!panName || !aadhaarName) {
+        throw ApiError.badRequest("PAN or Aadhaar verification name missing");
+      }
 
-    //   if (!NameMatch.isMatch(panName, aadhaarName)) {
-    //     throw ApiError.badRequest(
-    //       `PAN and Aadhaar name mismatch. PAN: "${panName}" | Aadhaar: "${aadhaarName}"`
-    //     );
-    //   }
-    // }
+      if (!NameMatch.isMatch(panName, aadhaarName)) {
+        throw ApiError.badRequest(
+          `PAN and Aadhaar name mismatch. PAN: "${panName}" | Aadhaar: "${aadhaarName}"`
+        );
+      }
+    }
 
     try {
       const userExists = await Prisma.user.findUnique({
