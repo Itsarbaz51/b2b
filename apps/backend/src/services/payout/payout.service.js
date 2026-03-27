@@ -73,14 +73,15 @@ export default class PayoutService {
     }
   }
 
-  static async checkStatus(payload, actor) {
-    const { serviceId, provider } = payload;
+  static async checkStatus(payload, actor, isCron = false) {
+    const { serviceProviderMappingId } = payload;
 
-    await this.checkPermission(actor.id, serviceId);
+    if (!isCron) {
+      await this.checkPermission(actor.id, serviceProviderMappingId);
+    }
 
     const { providerData, serviceProviderMapping } = await this.resolveProvider(
-      serviceId,
-      provider
+      serviceProviderMappingId
     );
 
     switch (providerData.code) {

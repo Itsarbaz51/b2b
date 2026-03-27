@@ -3,9 +3,11 @@ dotenv.config({ path: "./.env" });
 import Prisma from "./db/db.js";
 import app from "./app.js";
 import { envConfig } from "./config/env.config.js";
+import { startCronJobs } from "./cron/index.js";
 
 (async function main() {
   try {
+    // startCronJobs()
     console.log("Connecting to database...");
     await Prisma.$connect();
     console.log("✅ Database connected");

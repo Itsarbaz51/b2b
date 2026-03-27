@@ -210,7 +210,9 @@ const CommissionSettingTable = ({
 
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-blue-600">
-                              ₹{paisaToRupee(slab.value)}
+                              {commission.type === "FLAT"
+                                ? `₹${paisaToRupee(slab.value)}`
+                                : `%${paisaToRupee(slab.value)}`}
                             </span>
 
                             <button

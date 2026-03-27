@@ -5,16 +5,22 @@ export default class ApiEntityService {
   // CREATE
   static async create(
     tx,
-    { userId, serviceProviderMappingId, requestPayload, reference = null }
+    {
+      userId,
+      serviceProviderMappingId,
+      requestPayload,
+      reference = null,
+      providerInitData,
+    }
   ) {
-    if (!userId)
-      throw ApiError.badRequest("userId required");
+    if (!userId) throw ApiError.badRequest("userId required");
 
     return await tx.apiEntity.create({
       data: {
         reference: reference || crypto.randomUUID(),
         userId,
         serviceProviderMappingId,
+        providerInitData,
         requestPayload,
         status: "PENDING",
       },

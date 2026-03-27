@@ -65,7 +65,16 @@ export default class TransactionService {
   // UPDATE (Provider response / Final status)
   static async update(
     tx,
-    { transactionId, status, netAmount, providerReference, providerResponse }
+    {
+      transactionId,
+      status,
+      netAmount,
+      providerReference,
+      providerResponse,
+      providerInitData,
+      retryCount,
+      lastCheckedAt,
+    }
   ) {
     if (!transactionId) throw ApiError.badRequest("TransactionId required");
 
@@ -86,6 +95,8 @@ export default class TransactionService {
         netAmount: netAmount ?? existingTxn.netAmount,
         providerReference,
         providerResponse,
+        retryCount,
+        lastCheckedAt,
         processedAt: status ? new Date() : undefined,
         completedAt: status === "SUCCESS" ? new Date() : undefined,
       },
@@ -97,6 +108,7 @@ export default class TransactionService {
         where: { id: existingTxn.apiEntityId },
         data: {
           status,
+          providerInitData,
           providerFinalData: providerResponse,
           completedAt: status === "SUCCESS" ? new Date() : undefined,
           errorData: status === "FAILED" ? providerResponse : undefined,

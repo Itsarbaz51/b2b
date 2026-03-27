@@ -6,7 +6,10 @@ export async function checkPendingTransactions() {
     where: {
       status: "PENDING",
       initiatedAt: {
-        lt: new Date(Date.now() - 5 * 60 * 1000),
+        lt: new Date(Date.now() - 10 * 60 * 1000),
+      },
+      retryCount: {
+        lt: 10,
       },
     },
   });
@@ -14,15 +17,21 @@ export async function checkPendingTransactions() {
   for (const txn of pending) {
     try {
       console.log("Auto checking:", txn.id);
-
-      await PayoutService.checkStatus(
+      PayoutService.checkStatus(
         {
-          serviceId: txn.serviceId,
-          provider: txn.provider,
-          clientOrderId: txn.providerReference,
+          serviceProviderMappingId: txn.serviceProviderMappingId,
+          txnId: txn.txnId,
         },
-        { id: txn.userId }
+        { id: txn.userId },
+        true
       );
+      await Prisma.transaction.update({
+        where: { id: txn.id },
+        data: {
+          retryCount: { increment: 1 },
+          lastCheckedAt: new Date(),
+        },
+      });
     } catch (err) {
       console.log("Status check failed:", err.message);
     }

@@ -160,7 +160,9 @@ export default function MappingTable() {
 
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-blue-600">
-                                    ₹{paisaToRupee(slab.providerCost)}
+                                    {item.pricingValueType === "FLAT"
+                                      ? `₹${paisaToRupee(slab.providerCost)}`
+                                      : `%${paisaToRupee(slab.providerCost)}`}
                                   </span>
 
                                   <button
@@ -179,7 +181,9 @@ export default function MappingTable() {
                           </div>
                         ) : (
                           <div className="text-sm font-semibold text-red-500">
-                            ₹{paisaToRupee(item.providerCost)}
+                            {item.pricingValueType === "FLAT"
+                              ? `₹${paisaToRupee(item.providerCost)}`
+                              : `%${paisaToRupee(item.providerCost)}`}
                           </div>
                         )}
                       </td>

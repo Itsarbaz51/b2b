@@ -6,6 +6,7 @@ import SettlementEngine from "../../engines/settlement.engine.js";
 import { CommissionSettingService } from "../commission.service.js";
 import { getPanPlugin } from "../../plugin_registry/pan/pluginRegistry.js";
 import { ApiError } from "../../utils/ApiError.js";
+import Helper from "../../utils/helper.js";
 
 export default class PanService {
   static async verifyPan(payload, actor) {
@@ -41,13 +42,13 @@ export default class PanService {
       userId,
       serviceProviderMapping.id
     );
-
+    const txnId = Helper.generateTxnId("PAN");
     return Prisma.$transaction(async (tx) => {
       // START SETTLEMENT
       const { transaction, wallet, pricing } = await SettlementEngine.execute({
         tx,
         actor,
-        payload,
+        payload: { ...payload, txnId },
         serviceProviderMapping,
       });
 

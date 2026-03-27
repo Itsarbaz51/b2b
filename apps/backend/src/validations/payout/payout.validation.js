@@ -46,9 +46,8 @@ class PayoutValidationSchemas {
 
   static get StatusSchema() {
     return z.object({
-      serviceId: z.string().uuid("Invalid serviceId"),
-      provider: z.string(),
-      clientOrderId: z.string().min(5, "clientOrderId required"),
+      serviceProviderMappingId: z.string().uuid("Invalid serviceId"),
+      txnId: z.string().min(5, "Txn id required"),
     });
   }
 

@@ -66,10 +66,10 @@ class AuthServices {
     if (!user) {
       if (req) {
         await AuditLogService.createAuditLog({
-          userId: user.id,
+          userId: user?.id,
           action: "LOGIN_RETRIEVAL_FAILED",
           entityType: "LOGIN",
-          entityId: id,
+          entityId: user?.id,
           ipAddress: Helper.getClientIP(req),
           metadata: {
             ...Helper.generateCommonMetadata(req, res),
@@ -85,10 +85,10 @@ class AuthServices {
     if (isValid !== password) {
       if (req) {
         await AuditLogService.createAuditLog({
-          userId: user.id,
+          userId: user?.id,
           action: "LOGIN_CREDENTIALS_FAILED",
           entityType: "LOGIN",
-          entityId: id,
+          entityId: user?.id,
           ipAddress: Helper.getClientIP(req),
           metadata: {
             ...Helper.generateCommonMetadata(req, res),
@@ -101,7 +101,7 @@ class AuthServices {
 
     // Generate tokens with role type information
     const tokenPayload = {
-      id: user.id,
+      id: user?.id,
       email: user.email,
       role: user.role.name,
       roleLevel: user.role.level,
@@ -127,7 +127,7 @@ class AuthServices {
       ].includes(user.role.name)
     ) {
       const permissions = await UserPermissionService.getUserPermissions(
-        user.id
+        user?.id
       );
       tokenPayload.permissions = permissions;
 
@@ -138,7 +138,7 @@ class AuthServices {
     const refreshToken = Helper.generateRefreshToken(tokenPayload);
 
     await Prisma.user.update({
-      where: { id: user.id },
+      where: { id: user?.id },
       data: { refreshToken },
     });
 
@@ -158,7 +158,7 @@ class AuthServices {
 
     // Create login log data
     const loginData = {
-      userId: user.id,
+      userId: user?.id,
       domainName: req.hostname,
       ipAddress: String(ip),
       userAgent: req.headers["user-agent"] || "",
@@ -176,10 +176,10 @@ class AuthServices {
     await LoginLogService.createLoginLog(loginData);
 
     await AuditLogService.createAuditLog({
-      userId: user.id,
+      userId: user?.id,
       action: `LOGIN_SUCCESS`,
       entityType: "AUTH",
-      entityId: user.id,
+      entityId: user?.id,
       ipAddress: req.ip,
       metadata: {
         ...Helper.generateCommonMetadata(req, res),

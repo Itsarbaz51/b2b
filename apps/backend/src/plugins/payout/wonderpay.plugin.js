@@ -83,14 +83,14 @@ class WonderpayPayoutPlugin extends PayoutPluginInterface {
   }
 
   // STATUS CHECK
-  async checkStatus({ clientOrderId }) {
+  async checkStatus({ txnId }) {
     try {
       const { data } = await this.client.post(
         "/api/api/api-module/payout/status-check",
         {
           clientId: this.config.clientId,
           secretKey: this.config.secretKey,
-          clientOrderId,
+          clientOrderId: txnId,
         }
       );
 

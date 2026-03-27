@@ -11,15 +11,15 @@ export default class WonderpayPayoutService {
   }
 
   static async transfer(serviceProviderMapping, provider, payload, actor) {
-    const plugin = this.getPlugin(provider, serviceProviderMapping);
+    // const plugin = this.getPlugin(provider, serviceProviderMapping);
 
-    const txnId = Helper.generateTxnId("WOND");
+    const clientOrderId = Helper.generateTxnId("PAYOUT");
     return Prisma.$transaction(async (tx) => {
       const { transaction, wallet, pricing, isDuplicate } =
         await SettlementEngine.execute({
           tx,
           actor,
-          payload: { ...payload, txnId },
+          payload: { ...payload, txnId: clientOrderId },
           serviceProviderMapping,
         });
 
@@ -38,21 +38,30 @@ export default class WonderpayPayoutService {
         };
       }
 
-      const clientOrderId = Helper.generateTxnId("PAYOUT");
-
+      let response = {
+        utr: null,
+        amount: (Number(pricing.txnAmount) / 100).toString(),
+        status: 5,
+        addBene: false,
+        message: "Request accepted successfully",
+        orderId: "WOPAY17746499",
+        statusCode: 1,
+        clientOrderId,
+        beneficiaryName: "Arbaz khan",
+      };
       try {
-        const response = await plugin.payout({
-          ...payload,
-          amount: (Number(pricing.txnAmount) / 100).toString(),
-          clientOrderId,
-        });
+        // const response = await plugin.payout({
+        //   ...payload,
+        //   amount: (Number(pricing.txnAmount) / 100).toString(),
+        //   clientOrderId,
+        // });
 
         await TransactionService.update(tx, {
           transactionId: transaction.id,
           status: "PENDING",
-          providerReference: clientOrderId,
-          providerResponse: response,
+          providerReference: response.orderId,
           requestPayload: { ...payload, clientOrderId },
+          providerInitData: response,
         });
 
         return {
@@ -94,14 +103,14 @@ export default class WonderpayPayoutService {
   }
 
   static async checkStatus(serviceProviderMapping, provider, payload, actor) {
-    const plugin = this.getPlugin(provider, serviceProviderMapping);
+    // const plugin = this.getPlugin(provider, serviceProviderMapping);
 
-    const { clientOrderId } = payload;
+    const { txnId } = payload;
 
     return Prisma.$transaction(async (tx) => {
       const transaction = await tx.transaction.findFirst({
         where: {
-          providerReference: clientOrderId,
+          txnId,
         },
       });
 
@@ -116,7 +125,28 @@ export default class WonderpayPayoutService {
         };
       }
 
-      const response = await plugin.checkStatus({ clientOrderId });
+      const wallet = await tx.wallet.findUnique({
+        where: {
+          id: transaction.walletId,
+        },
+      });
+
+      if (!wallet) {
+        throw ApiError.badRequest("Wallet not found");
+      }
+
+      // const response = await plugin.checkStatus({ txnId });
+      const response = {
+        statusCode: 1,
+        message: "Completed",
+        clientOrderId: "260314173248957F3F",
+        orderId: "WOPAY17746499",
+        beneficiaryName: "Arbaz khan",
+        utr: "607317443437",
+        status: 1,
+        addBene: false,
+        amount: "100.0000",
+      };
 
       const status = response.status;
 
@@ -126,6 +156,7 @@ export default class WonderpayPayoutService {
           tx,
           actor,
           transaction,
+          wallet,
           pricing: transaction.pricing,
           serviceProviderMapping,
         });
@@ -134,11 +165,12 @@ export default class WonderpayPayoutService {
           transactionId: transaction.id,
           status: "SUCCESS",
           providerResponse: response,
+          lastCheckedAt: new Date(),
         });
       } else if (status === 0) {
         await SettlementEngine.failed({
           tx,
-          walletId: transaction.walletId,
+          wallet,
           pricing: transaction.pricing,
         });
 
@@ -146,11 +178,14 @@ export default class WonderpayPayoutService {
           transactionId: transaction.id,
           status: "FAILED",
           providerResponse: response,
+          lastCheckedAt: new Date(),
         });
       } else {
         await TransactionService.update(tx, {
           transactionId: transaction.id,
           providerResponse: response,
+          retryCount: { increment: 1 },
+          lastCheckedAt: new Date(),
         });
       }
 

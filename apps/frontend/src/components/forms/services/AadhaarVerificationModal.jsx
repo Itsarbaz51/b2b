@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export default function AadhaarVerificationModal({
   aadhaarNumber,
-  serviceId,
+  serviceProviderMappingId,
   onSuccess,
   onClose,
 }) {
@@ -38,7 +38,7 @@ export default function AadhaarVerificationModal({
         return;
       }
 
-      if (!serviceId) {
+      if (!serviceProviderMappingId) {
         toast.error("Aadhaar service not available");
         return;
       }
@@ -48,7 +48,7 @@ export default function AadhaarVerificationModal({
       const res = await dispatch(
         sendAadhaarOtp({
           aadhaarNumber: cleanAadhaar,
-          serviceId,
+          serviceProviderMappingId,
           idempotencyKey: idempotencyKey,
         }),
       );

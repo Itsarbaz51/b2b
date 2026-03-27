@@ -14,7 +14,7 @@ import {
   FileCode,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../redux/slices/authSlice";
+import { logout, verifyAuth } from "../redux/slices/authSlice";
 import { BUSINESS_ROLES, PERMISSIONS, SERVICES } from "../utils/constants";
 import { usePermissions } from "../hooks/usePermission";
 import {} from "../utils/lib";
@@ -372,10 +372,18 @@ const Sidebar = () => {
           {BUSINESS_ROLE_LIST.includes(role) && (
             <div className="bg-gray-100 rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600 font-medium">
+                <span className="text-xs text-gray-600 font-medium flex justify-center items-center gap-1">
+                  <Wallet className="h-3 w-3 text-gray-500" />
                   Wallets
                 </span>
-                <Wallet className="h-3 w-3 text-gray-500" />
+                <button
+                  onClick={() => dispatch(verifyAuth())}
+                  title="Refresh Balance"
+                  className="text-blue-600 hover:text-blue-800 focus:outline-none"
+                  aria-label="Refresh Wallet Balance"
+                >
+                  🔄
+                </button>
               </div>
 
               {/* USER VIEW */}
