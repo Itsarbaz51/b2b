@@ -337,7 +337,9 @@ class KycServices {
         throw ApiError.badRequest("PAN or Aadhaar verification name missing");
       }
 
-      if (!NameMatch.isMatch(panName, aadhaarName)) {
+      if (
+        !NameMatch.isMatch(panName.toUpperCase(), aadhaarName.toUpperCase())
+      ) {
         throw ApiError.badRequest(
           `PAN and Aadhaar name mismatch. PAN: "${panName}" | Aadhaar: "${aadhaarName}"`
         );
