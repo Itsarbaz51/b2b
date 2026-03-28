@@ -19,16 +19,15 @@ export default class RazorpayFundRequestService {
 
     const amount = BigInt(payload.amount);
 
-    const pricing = await PricingEngine.calculateSurcharge(Prisma, {
-      userId: actor.id,
-      serviceProviderMappingId: serviceProviderMapping.id,
-      amount,
-    });
-
-    const finalAmount = pricing.totalDebit;
-    const receiptId = Helper.generateTxnId("RAZ");
-
     return Prisma.$transaction(async (tx) => {
+      const pricing = await PricingEngine.calculateSurcharge(tx, {
+        userId: actor.id,
+        serviceProviderMappingId: serviceProviderMapping.id,
+        amount,
+      });
+
+      const finalAmount = pricing.totalDebit;
+      const receiptId = Helper.generateTxnId("RAZ");
       const wallet = await WalletEngine.getWallet({
         tx,
         userId: actor.id,

@@ -64,6 +64,9 @@ export default class SettlementEngine {
     service,
     provider,
   }) {
+    if (transaction.status === "SUCCESS") {
+      return;
+    }
     const walletId = transaction.walletId;
 
     await WalletEngine.captureHold(tx, wallet, pricing.totalDebit);
