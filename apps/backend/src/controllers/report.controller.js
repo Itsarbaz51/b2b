@@ -1,7 +1,7 @@
 import ReportService from "../services/reports/report.service.js";
 
 export default class ReportController {
-  // 🔥 PROFIT BREAKDOWN
+  //  PROFIT BREAKDOWN
   static async getProfitBreakdown(req, res, next) {
     try {
       const { fromDate, toDate } = req.query;
@@ -22,7 +22,7 @@ export default class ReportController {
     }
   }
 
-  // 🔥 CA REPORT
+  //  CA REPORT
   static async getCAReport(req, res, next) {
     try {
       const { fromDate, toDate } = req.query;

@@ -9,7 +9,7 @@ export default class ReportService {
       },
     };
 
-    // 🔥 user specific
+    //  user specific
     if (role !== "ADMIN") {
       where.userId = userId;
     }
@@ -26,7 +26,7 @@ export default class ReportService {
       },
     });
 
-    // 🔥 aggregation
+    //  aggregation
     const summary = {};
 
     for (const row of data) {
