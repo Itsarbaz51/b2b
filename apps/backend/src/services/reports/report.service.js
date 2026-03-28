@@ -1,118 +1,105 @@
 import Prisma from "../../db/db.js";
-import { Parser } from "json2csv";
 
 export default class ReportService {
-  static async getTransactionReport({ userId, role, filters = {} }) {
-    const {
-      targetUserId,
-      status,
-      serviceId,
-      fromDate,
-      toDate,
-      minAmount,
-      maxAmount,
-      search,
-      page = 1,
-      limit = 20,
-    } = filters;
-
-    const isAdmin = ["ADMIN", "EMPLOYEE"].includes(role);
-
+  static async getProfitBreakdown({ userId, fromDate, toDate, role }) {
     const where = {
-      ...(isAdmin ? targetUserId && { userId: targetUserId } : { userId }),
-
-      ...(status && status !== "ALL" && { status }),
-
-      ...(serviceId && { serviceProviderMappingId: serviceId }),
-
-      ...(fromDate &&
-        toDate && {
-          initiatedAt: {
-            gte: new Date(fromDate),
-            lte: new Date(toDate),
-          },
-        }),
-
-      ...(minAmount || maxAmount
-        ? {
-            amount: {
-              ...(minAmount && { gte: Number(minAmount) }),
-              ...(maxAmount && { lte: Number(maxAmount) }),
-            },
-          }
-        : {}),
-
-      ...(search && {
-        OR: [
-          { txnId: { contains: search } },
-          { user: { phoneNumber: { contains: search } } },
-        ],
-      }),
-    };
-
-    const [rows, total] = await Promise.all([
-      Prisma.transaction.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { initiatedAt: "desc" },
-        include: {
-          user: true,
-          serviceProviderMapping: {
-            include: {
-              service: true,
-              provider: true,
-            },
-          },
-        },
-      }),
-      Prisma.transaction.count({ where }),
-    ]);
-
-    const data = rows.map((txn) => {
-      const pricing = txn.pricing || {};
-      const surcharge = Number(pricing.surcharge || 0);
-      const providerCost = Number(pricing.providerCost || 0);
-
-      const profit = isAdmin ? surcharge : Number(txn.amount) - providerCost;
-
-      return {
-        txnId: txn.txnId,
-        user: txn.user?.username,
-        phone: txn.user?.phoneNumber,
-
-        service: txn.serviceProviderMapping?.service?.name,
-        provider: txn.serviceProviderMapping?.provider?.code,
-
-        amount: Number(txn.amount),
-        providerCost,
-        surcharge,
-        profit,
-
-        status: txn.status,
-        date: txn.initiatedAt,
-      };
-    });
-
-    return {
-      data,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+      createdAt: {
+        gte: new Date(fromDate),
+        lte: new Date(toDate),
       },
     };
-  }
 
-  static async exportCSV({ userId, role, filters = {} }) {
-    const report = await this.getTransactionReport({
-      userId,
-      role,
-      filters: { ...filters, page: 1, limit: 100000 },
+    // 🔥 user specific
+    if (role !== "ADMIN") {
+      where.userId = userId;
+    }
+
+    const data = await Prisma.commissionEarning.findMany({
+      where,
+      select: {
+        userId: true,
+        surchargeAmount: true,
+        commissionAmount: true,
+        netAmount: true,
+        createdAt: true,
+        transactionId: true,
+      },
     });
 
-    const parser = new Parser();
-    return parser.parse(report.data);
+    // 🔥 aggregation
+    const summary = {};
+
+    for (const row of data) {
+      if (!summary[row.userId]) {
+        summary[row.userId] = {
+          totalProfit: 0,
+          totalTxn: 0,
+        };
+      }
+
+      summary[row.userId].totalProfit += Number(row.netAmount);
+      summary[row.userId].totalTxn += 1;
+    }
+
+    return summary;
+  }
+
+  // CA REPORT (GST + PROFIT)
+  static async getCAReport({ fromDate, toDate }) {
+    const where = {
+      createdAt: {
+        gte: new Date(fromDate),
+        lte: new Date(toDate),
+      },
+    };
+
+    // 🔹 Total surcharge collected
+    const surcharge = await Prisma.commissionEarning.aggregate({
+      _sum: { surchargeAmount: true },
+      where,
+    });
+
+    // 🔹 GST collected from user
+    const gstOut = await Prisma.ledgerEntry.aggregate({
+      _sum: { amount: true },
+      where: {
+        referenceType: "USER_GST",
+        createdAt: where.createdAt,
+      },
+    });
+
+    // 🔹 GST paid to provider
+    const gstIn = await Prisma.ledgerEntry.aggregate({
+      _sum: { amount: true },
+      where: {
+        referenceType: "PROVIDER_GST",
+        createdAt: where.createdAt,
+      },
+    });
+
+    // 🔹 Total distributor payout
+    const payout = await Prisma.commissionEarning.aggregate({
+      _sum: { netAmount: true },
+      where,
+    });
+
+    const totalRevenue = Number(surcharge._sum.surchargeAmount || 0);
+    const totalGSTOut = Number(gstOut._sum.amount || 0);
+    const totalGSTIn = Number(gstIn._sum.amount || 0);
+    const totalPayout = Number(payout._sum.netAmount || 0);
+
+    return {
+      revenue: totalRevenue,
+
+      gst: {
+        outputGST: totalGSTOut,
+        inputGST: totalGSTIn,
+        payableGST: totalGSTOut - totalGSTIn,
+      },
+
+      payoutToUsers: totalPayout,
+
+      netProfit: totalRevenue - totalPayout - (totalGSTOut - totalGSTIn),
+    };
   }
 }

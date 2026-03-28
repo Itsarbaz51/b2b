@@ -4,28 +4,18 @@ import ReportController from "../controllers/report.controller.js";
 
 const router = Router();
 
+// 🔥 Profit breakdown
 router.get(
-  "/transactions",
+  "/profit-breakdown",
   AuthMiddleware.isAuthenticated,
-  ReportController.getTransactions
+  ReportController.getProfitBreakdown
 );
 
+// 🔥 CA Report (admin only ideally)
 router.get(
-  "/transactions/export",
+  "/ca-report",
   AuthMiddleware.isAuthenticated,
-  ReportController.exportCSV
-);
-
-router.get(
-  "/settlements",
-  AuthMiddleware.isAuthenticated,
-  ReportController.getSettlements
-);
-
-router.get(
-  "/commissions",
-  AuthMiddleware.isAuthenticated,
-  ReportController.getCommissions
+  ReportController.getCAReport
 );
 
 export default router;

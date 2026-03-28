@@ -1,61 +1,41 @@
 import ReportService from "../services/reports/report.service.js";
-import SettlementReportService from "../services/reports/settlement.report.service.js";
-import CommissionReportService from "../services/reports/commission.report.service.js";
 
 export default class ReportController {
-  static async getTransactions(req, res, next) {
+  // 🔥 PROFIT BREAKDOWN
+  static async getProfitBreakdown(req, res, next) {
     try {
-      const result = await ReportService.getTransactionReport({
+      const { fromDate, toDate } = req.query;
+
+      const data = await ReportService.getProfitBreakdown({
         userId: req.user.id,
-        role: req.user.role === "ADMIN" ? "ADMIN" : req.user.roleType,
-        filters: req.query,
+        role: req.user.role,
+        fromDate,
+        toDate,
       });
 
-      res.json({ success: true, ...result });
+      res.json({
+        success: true,
+        data,
+      });
     } catch (err) {
       next(err);
     }
   }
 
-  static async exportCSV(req, res, next) {
+  // 🔥 CA REPORT
+  static async getCAReport(req, res, next) {
     try {
-      const csv = await ReportService.exportCSV({
-        userId: req.user.id,
-        role: req.user.role === "ADMIN" ? "ADMIN" : req.user.roleType,
-        filters: req.query,
+      const { fromDate, toDate } = req.query;
+
+      const data = await ReportService.getCAReport({
+        fromDate,
+        toDate,
       });
 
-      res.header("Content-Type", "text/csv");
-      res.attachment("report.csv");
-      res.send(csv);
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  static async getSettlements(req, res, next) {
-    try {
-      const result = await SettlementReportService.getSettlementReport({
-        userId: req.user.id,
-        role: req.user.role === "ADMIN" ? "ADMIN" : req.user.roleType,
-        filters: req.query,
+      res.json({
+        success: true,
+        data,
       });
-
-      res.json({ success: true, ...result });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  static async getCommissions(req, res, next) {
-    try {
-      const result = await CommissionReportService.getCommissionReport({
-        userId: req.user.id,
-        role: req.user.role === "ADMIN" ? "ADMIN" : req.user.roleType,
-        filters: req.query,
-      });
-
-      res.json({ success: true, ...result });
     } catch (err) {
       next(err);
     }

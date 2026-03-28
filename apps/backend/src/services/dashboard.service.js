@@ -216,4 +216,32 @@ export default class DashboardService {
       chart,
     };
   }
+  // static async getDashboard({ userId, role }) {
+  //   const where = role === "ADMIN" ? {} : { userId };
+
+  //   const [txn, earnings, gst] = await Promise.all([
+  //     Prisma.transaction.aggregate({
+  //       _sum: { amount: true },
+  //       where,
+  //     }),
+
+  //     Prisma.commissionEarning.aggregate({
+  //       _sum: { netAmount: true },
+  //       where,
+  //     }),
+
+  //     Prisma.ledgerEntry.aggregate({
+  //       _sum: { amount: true },
+  //       where: {
+  //         referenceType: "USER_GST",
+  //       },
+  //     }),
+  //   ]);
+
+  //   return {
+  //     totalVolume: txn._sum.amount || 0,
+  //     totalProfit: earnings._sum.netAmount || 0,
+  //     totalGST: gst._sum.amount || 0,
+  //   };
+  // }
 }
