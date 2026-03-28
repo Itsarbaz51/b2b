@@ -35,7 +35,7 @@ export default class RazorpayFundRequestService {
         walletType: "PRIMARY",
       });
 
-      // ✅ CREATE TXN FIRST (PENDING)
+      //  CREATE TXN FIRST (PENDING)
       const { transaction } = await TransactionService.create(tx, {
         txnId: receiptId,
         userId: actor.id,
@@ -47,7 +47,7 @@ export default class RazorpayFundRequestService {
         requestPayload: payload,
       });
 
-      // ✅ CREATE RAZORPAY ORDER
+      //  CREATE RAZORPAY ORDER
       const providerResponse = await plugin.createRequest({
         amount: Number(finalAmount),
         userId: actor.id,
@@ -58,7 +58,7 @@ export default class RazorpayFundRequestService {
         receiptId,
       });
 
-      // ✅ SAVE ORDER ID
+      //  SAVE ORDER ID
       await tx.transaction.update({
         where: { id: transaction.id },
         data: {
@@ -86,6 +86,55 @@ export default class RazorpayFundRequestService {
       serviceProviderMapping.config
     );
 
+    //  STEP 1: FIND TRANSACTION
+    const transaction = await Prisma.transaction.findFirst({
+      where: payload.transactionId
+        ? { id: payload.transactionId }
+        : { providerReference: payload.razorpay_order_id },
+    });
+
+    if (!transaction) {
+      throw ApiError.badRequest("Transaction not found");
+    }
+
+    //  DUPLICATE SAFE
+    if (transaction.status === "SUCCESS") {
+      return { status: "SUCCESS" };
+    }
+
+    //  STEP 2: HANDLE FAILED (NO VERIFY)
+    if (payload.action === "FAILED") {
+      await Prisma.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: "FAILED",
+          completedAt: new Date(),
+          providerResponse: {
+            reason: payload.reason || "User cancelled",
+          },
+        },
+      });
+
+      await TransactionService.update(Prisma, {
+        transactionId: transaction.id,
+        status: "FAILED",
+        providerResponse: {
+          reason: payload.reason || "User cancelled",
+        },
+      });
+
+      return { status: "FAILED" };
+    }
+
+    //  STEP 3: VERIFY ONLY FOR SUCCESS FLOW
+    if (
+      !payload.razorpay_order_id ||
+      !payload.razorpay_payment_id ||
+      !payload.razorpay_signature
+    ) {
+      throw ApiError.badRequest("Missing Razorpay params");
+    }
+
     const verifyResponse = await plugin.verify({
       orderId: payload.razorpay_order_id,
       paymentId: payload.razorpay_payment_id,
@@ -94,22 +143,6 @@ export default class RazorpayFundRequestService {
 
     const paymentStatus = verifyResponse.status;
     const totalAmount = BigInt(verifyResponse.raw.amount);
-
-    // ✅ FIND EXISTING TXN (BY ORDER ID)
-    const transaction = await Prisma.transaction.findFirst({
-      where: {
-        providerReference: payload.razorpay_order_id,
-      },
-    });
-
-    if (!transaction) {
-      throw ApiError.badRequest("Transaction not found");
-    }
-
-    // ✅ DUPLICATE SAFE
-    if (transaction.status === "SUCCESS") {
-      return { status: "SUCCESS" };
-    }
 
     const actualAmount = verifyResponse.raw.notes?.actualAmount
       ? BigInt(verifyResponse.raw.notes.actualAmount)
@@ -161,7 +194,7 @@ export default class RazorpayFundRequestService {
         };
       }
 
-      // ✅ SUCCESS
+      //  SUCCESS
       if (paymentStatus === "captured") {
         await WalletEngine.credit(tx, wallet, actualAmount);
 

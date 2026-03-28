@@ -17,7 +17,7 @@ export default class BankVerificationService {
   }
 
   static async resolveProvider(mappingId) {
-    const { provider, serviceProviderMapping } =
+    const { service, provider, serviceProviderMapping } =
       await ProviderResolver.resolveByMappingId(mappingId);
 
     if (serviceProviderMapping.commissionStartLevel === "NONE") {
@@ -30,7 +30,7 @@ export default class BankVerificationService {
       );
     }
 
-    return { provider, serviceProviderMapping };
+    return { service, provider, serviceProviderMapping };
   }
 
   static async verifyAccount(payload, actor) {
@@ -39,15 +39,15 @@ export default class BankVerificationService {
     await this.checkRule(actor.id, serviceProviderMappingId);
     await this.checkPermission(actor.id, serviceProviderMappingId);
 
-    const { provider, serviceProviderMapping } = await this.resolveProvider(
-      serviceProviderMappingId
-    );
+    const { service, provider, serviceProviderMapping } =
+      await this.resolveProvider(serviceProviderMappingId);
 
     switch (provider.code) {
       case "AU":
         return AUBankVerificationService.verifyAccount(
           serviceProviderMapping,
           provider,
+          service,
           payload,
           actor
         );

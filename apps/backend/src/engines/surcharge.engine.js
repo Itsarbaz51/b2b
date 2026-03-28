@@ -213,7 +213,7 @@ export default class SurchargeEngine {
 
     // USER GST (OUTPUT)
 
-    const userGST = BigInt(pricing?.gst || 0n);
+    const userGST = BigInt(pricing?.gstSurcharge || 0n);
 
     if (userGST > 0n) {
       const gstWallet = await WalletEngine.getWallet({
@@ -237,9 +237,9 @@ export default class SurchargeEngine {
     }
 
     // PROVIDER GST (INPUT TAX)
-    if (providerCost > 0n && mapping.applyGST && mapping.gstPercent) {
-      const providerGST = (providerCost * BigInt(mapping.gstPercent)) / 100n;
+    const providerGST = BigInt(pricing?.gstProvider || 0n);
 
+    if (providerGST > 0n) {
       const gstWallet = await WalletEngine.getWallet({
         tx,
         userId: admin.id,

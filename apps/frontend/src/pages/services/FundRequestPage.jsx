@@ -249,9 +249,20 @@ const FundRequestPage = () => {
         <ConfirmCard
           actionType={confirmAction.action}
           user={confirmAction.request}
-          predefinedReasons={rejectReasons}
           isClose={() => setConfirmAction(null)}
           isSubmit={handleConfirmSubmit}
+          predefinedReasons={
+            confirmAction.action === "REJECT"
+              ? [
+                  "Invalid RRN",
+                  "Amount mismatch",
+                  "Fake payment screenshot",
+                  "Duplicate payment",
+                  "Bank transaction not found",
+                  "Other",
+                ]
+              : []
+          }
         />
       )}
     </div>

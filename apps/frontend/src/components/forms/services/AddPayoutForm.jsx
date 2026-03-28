@@ -112,7 +112,6 @@ const AddPayoutForm = ({
               options={[
                 { label: "IMPS", value: "IMPS" },
                 { label: "NEFT", value: "NEFT" },
-                { label: "RTGS", value: "RTGS" },
                 { label: "UPI", value: "UPI" },
               ]}
             />

@@ -95,7 +95,9 @@ export default class AadhaarService {
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
         include: {
-          serviceProviderMapping: { include: { provider: true } },
+          serviceProviderMapping: {
+            include: { provider: true, service: true },
+          },
         },
       });
 
@@ -105,7 +107,7 @@ export default class AadhaarService {
         throw ApiError.badRequest("Invalid transaction state");
       }
 
-      const { serviceProviderMapping } = transaction;
+      const { service, provider, serviceProviderMapping } = transaction;
 
       // const plugin = getAadhaarPlugin(
       //   serviceProviderMapping.provider.code,
@@ -171,6 +173,8 @@ export default class AadhaarService {
           wallet,
           pricing: transaction.pricing,
           serviceProviderMapping,
+          service,
+          provider,
         });
 
         await TransactionService.update(tx, {

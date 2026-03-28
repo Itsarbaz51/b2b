@@ -269,7 +269,7 @@ const Ledger = () => {
       {/* Main Content */}
       <div className="py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <p className="text-sm text-gray-600">Total Transactions</p>
             <p className="text-2xl font-bold text-gray-900">
@@ -294,14 +294,6 @@ const Ledger = () => {
                   .filter((e) => e.entryType === "DEBIT")
                   .reduce((sum, e) => sum + parseFloat(e.amount), 0),
               )}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
-            <p className="text-sm text-gray-600">Current Balance</p>
-            <p className="text-2xl font-bold text-purple-600">
-              {entries.length > 0
-                ? paisaToRupee(entries[0].runningBalance)
-                : "₹0"}
             </p>
           </div>
         </div>

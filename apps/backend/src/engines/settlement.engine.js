@@ -61,6 +61,8 @@ export default class SettlementEngine {
     wallet,
     pricing,
     serviceProviderMapping,
+    service,
+    provider,
   }) {
     const walletId = transaction.walletId;
 
@@ -73,7 +75,7 @@ export default class SettlementEngine {
       referenceType: "TRANSACTION",
       serviceProviderMappingId: serviceProviderMapping.id,
       amount: pricing.totalDebit,
-      narration: "Payout debit",
+      narration: `${service.code} (${provider.code}) debit`,
       createdBy: actor.id,
     });
 

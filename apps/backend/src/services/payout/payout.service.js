@@ -13,14 +13,17 @@ export default class PayoutService {
   }
 
   static async resolveProvider(mappingId) {
-    const { provider: providerData, serviceProviderMapping } =
-      await ProviderResolver.resolveByMappingId(mappingId);
+    const {
+      service,
+      provider: providerData,
+      serviceProviderMapping,
+    } = await ProviderResolver.resolveByMappingId(mappingId);
 
     if (serviceProviderMapping.commissionStartLevel === "NONE") {
       throw ApiError.badRequest("Surcharge disabled for this service (NONE)");
     }
 
-    return { providerData, serviceProviderMapping };
+    return { service, providerData, serviceProviderMapping };
   }
 
   static async checkBalance(payload, actor) {
@@ -80,15 +83,15 @@ export default class PayoutService {
       await this.checkPermission(actor.id, serviceProviderMappingId);
     }
 
-    const { providerData, serviceProviderMapping } = await this.resolveProvider(
-      serviceProviderMappingId
-    );
+    const { service, providerData, serviceProviderMapping } =
+      await this.resolveProvider(serviceProviderMappingId);
 
     switch (providerData.code) {
       case "WONDERPAY":
         return WonderpayPayoutService.checkStatus(
           serviceProviderMapping,
           providerData,
+          service,
           payload,
           actor
         );

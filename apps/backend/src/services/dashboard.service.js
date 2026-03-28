@@ -50,12 +50,6 @@ export default class DashboardService {
       }),
     ]);
 
-    // 🔥 TOTAL VOLUME
-    const totalVolume = await Prisma.transaction.aggregate({
-      where: { ...baseFilter, status: "SUCCESS" },
-      _sum: { amount: true },
-    });
-
     // 🔥 SERVICE TOTAL
     const grouped = await Prisma.transaction.groupBy({
       by: ["serviceProviderMappingId"],
@@ -65,7 +59,7 @@ export default class DashboardService {
 
     const mappings = await Prisma.serviceProviderMapping.findMany({
       where: { id: { in: grouped.map((g) => g.serviceProviderMappingId) } },
-      include: { service: true },
+      include: { service: true, provider: true }, // 🔥 provider added
     });
 
     const services = grouped.map((g) => {
@@ -73,6 +67,7 @@ export default class DashboardService {
       return {
         name: map?.service?.name || "Unknown",
         code: map?.service?.code || "UNKNOWN",
+        provider: map?.provider?.code || "UNKNOWN", // 🔥 new
         total: Number(g._sum.amount || 0),
       };
     });
@@ -115,22 +110,34 @@ export default class DashboardService {
     const chart = Object.values(chartMap);
 
     // 🔥 WALLET TOTAL
-    const walletFilter = isAdminOrEmployee ? {} : { userId };
+    const walletFilter = {
+      ...(isAdminOrEmployee
+        ? {
+            user: {
+              role: {
+                name: {
+                  notIn: ["ADMIN", "EMPLOYEE"],
+                },
+              },
+            },
+          }
+        : { userId }),
+    };
 
-    const [primary, commission] = await Promise.all([
-      Prisma.wallet.findMany({
-        where: { walletType: "PRIMARY", ...walletFilter },
-      }),
-      Prisma.wallet.findMany({
-        where: { walletType: "COMMISSION", ...walletFilter },
-      }),
-    ]);
+    const wallets = await Prisma.wallet.findMany({
+      where: walletFilter,
+    });
 
     const sum = (arr) =>
       arr.reduce((s, w) => s + Number(w.balance - w.holdBalance), 0);
 
-    const totalPrimaryBalance = sum(primary);
-    const totalCommissionBalance = sum(commission);
+    const totalPrimaryBalance = sum(
+      wallets.filter((w) => w.walletType === "PRIMARY")
+    );
+
+    const totalCommissionBalance = sum(
+      wallets.filter((w) => w.walletType === "COMMISSION")
+    );
 
     // 🔥 GST + TDS (ADMIN ONLY)
     let totalGSTBalance = 0;
@@ -146,18 +153,43 @@ export default class DashboardService {
       totalTDSBalance = sum(tds);
     }
 
-    // 🔥 TODAY
+    // 🔥 TODAY (JSON PRICING BASED)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todayFilter = {
-      initiatedAt: { gte: today },
-      ...(isAdminOrEmployee ? {} : { userId }),
-    };
+    const todayTxns = await Prisma.transaction.findMany({
+      where: {
+        initiatedAt: { gte: today },
+        ...(isAdminOrEmployee ? {} : { userId }),
+        status: "SUCCESS",
+      },
+      select: {
+        amount: true,
+        pricing: true, // 🔥 key fix
+      },
+    });
 
-    const todayAgg = await Prisma.transaction.aggregate({
-      where: { ...todayFilter, status: "SUCCESS" },
-      _sum: { amount: true, netAmount: true },
+    let todayTotalEarning = 0;
+    let todayTotalExpenses = 0;
+    let todaySurchargeGiven = 0;
+    let todaySurchargeEarned = 0;
+
+    todayTxns.forEach((txn) => {
+      const pricing = txn.pricing || {};
+
+      const surcharge = Number(pricing.surcharge || 0);
+      const providerCost = Number(pricing.providerCost || 0);
+
+      if (isAdminOrEmployee) {
+        // ADMIN
+        todayTotalEarning += providerCost;
+        todaySurchargeEarned += surcharge;
+      } else {
+        // USER
+        todayTotalEarning += Number(txn.amount || 0);
+        todayTotalExpenses += providerCost;
+        todaySurchargeGiven += surcharge;
+      }
     });
 
     return {
@@ -165,8 +197,10 @@ export default class DashboardService {
         totalPrimaryBalance,
         totalCommissionBalance,
 
-        todayTotalEarning: Number(todayAgg._sum.amount || 0),
-        todayTotalExpenses: Number(todayAgg._sum.netAmount || 0),
+        todayTotalEarning,
+        todayTotalExpenses,
+        todaySurchargeGiven,
+        todaySurchargeEarned,
 
         success,
         failed,

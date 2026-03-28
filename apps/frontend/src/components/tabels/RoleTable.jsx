@@ -98,24 +98,36 @@ export function RoleTable({
               <td className="px-6 py-4">
                 <div className="flex flex-wrap gap-2">
                   {role?.permission?.length ? (
-                    <>
-                      {role.permission.slice(0, 3).map((perm) => (
-                        <span
-                          key={perm.id}
-                          className="px-2 py-1 text-xs rounded bg-blue-50 text-blue-700 border border-blue-200"
-                        >
-                          {perm.service?.name}
-                          {perm.canView && " 👁"}
-                          {perm.canProcess && " ⚙"}
-                        </span>
-                      ))}
+                    (() => {
+                      const activePermissions = role.permission.filter(
+                        (p) => p.canView || p.canProcess,
+                      );
 
-                      {role.permission.length > 3 && (
-                        <span className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600 border border-gray-200">
-                          +{role.permission.length - 3} more
+                      return activePermissions.length ? (
+                        <>
+                          {activePermissions.slice(0, 3).map((perm) => (
+                            <span
+                              key={perm.id}
+                              className="px-2 py-1 text-xs rounded bg-blue-50 text-blue-700 border border-blue-200"
+                            >
+                              {perm.service?.name}
+                              {perm.canView && " 👁"}
+                              {perm.canProcess && " ⚙"}
+                            </span>
+                          ))}
+
+                          {activePermissions.length > 3 && (
+                            <span className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600 border border-gray-200">
+                              +{activePermissions.length - 3} more
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          No Active Permissions
                         </span>
-                      )}
-                    </>
+                      );
+                    })()
                   ) : (
                     <span className="text-xs text-gray-400">
                       No Permissions

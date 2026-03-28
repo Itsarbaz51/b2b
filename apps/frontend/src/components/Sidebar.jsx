@@ -150,7 +150,7 @@ const Sidebar = () => {
           icon: BarChart3,
           path: "/ledger",
           employeePermission: PERMISSIONS.LEDGER,
-          staticRoles: ["ADMIN"],
+          staticRoles: BUSINESS_ROLE_LIST,
         },
         {
           id: "logs",

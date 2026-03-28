@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import InputField from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
 import CloseBtn from "../ui/CloseBtn";
 import HeaderSection from "../ui/HeaderSection";
 
 const AddUserPermission = ({
-  mode, // "user" | "role"
+  mode,
   onSubmit,
   onCancel,
   selectedUser,
@@ -19,47 +19,10 @@ const AddUserPermission = ({
   });
 
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
-  const [showServiceSuggestions, setShowServiceSuggestions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const serviceSearchRef = useRef(null);
-
-  const currentMode =
-    existingPermissions && existingPermissions.length > 0 ? "edit" : "add";
-
-  /* ------------------------------
-     LOAD EXISTING PERMISSIONS
-  ------------------------------ */
-
-  useEffect(() => {
-    if (!selectedUser?.id) return;
-
-    if (existingPermissions?.length > 0) {
-      const permissionMap = {};
-
-      existingPermissions.forEach((perm) => {
-        const serviceId = perm.serviceId || perm.service?.id;
-
-        if (!serviceId) return;
-
-        permissionMap[serviceId] = {
-          canView: perm.canView ?? false,
-          canProcess: perm.canProcess ?? false,
-        };
-      });
-
-      setFormData({
-        entityId: selectedUser.id,
-        permissions: permissionMap,
-      });
-    } else {
-      setFormData({
-        entityId: selectedUser.id,
-        permissions: {},
-      });
-    }
-  }, [existingPermissions, selectedUser]);
+  const currentMode = existingPermissions?.length > 0 ? "edit" : "add";
 
   /* ------------------------------
      SERVICES LIST
@@ -69,13 +32,64 @@ const AddUserPermission = ({
     if (!services) return [];
 
     return services.map((s) => ({
-      id: s.id,
+      id: String(s.id),
       name: s.name,
       code: s.code,
     }));
   }, [services]);
 
-  const filteredServices = useMemo(() => {
+  /* ------------------------------
+     LOAD PERMISSIONS (EDIT / DEFAULT)
+  ------------------------------ */
+
+  useEffect(() => {
+    if (!selectedUser?.id || !processedServices.length) return;
+
+    const permissionMap = {};
+
+    if (existingPermissions?.length > 0) {
+      // EDIT MODE
+      existingPermissions.forEach((perm) => {
+        const serviceId = String(perm.serviceId || perm.service?.id);
+
+        if (!serviceId) return;
+
+        permissionMap[serviceId] = {
+          canView: perm.canView ?? false,
+          canProcess: perm.canProcess ?? false,
+        };
+      });
+
+      // Ensure missing services bhi aa jaye
+      processedServices.forEach((service) => {
+        if (!permissionMap[service.id]) {
+          permissionMap[service.id] = {
+            canView: false,
+            canProcess: false,
+          };
+        }
+      });
+    } else {
+      // ADD MODE → all services default
+      processedServices.forEach((service) => {
+        permissionMap[service.id] = {
+          canView: false,
+          canProcess: false,
+        };
+      });
+    }
+
+    setFormData({
+      entityId: selectedUser.id,
+      permissions: permissionMap,
+    });
+  }, [processedServices, selectedUser, existingPermissions]);
+
+  /* ------------------------------
+     SEARCH FILTER
+  ------------------------------ */
+
+  const visibleServices = useMemo(() => {
     const term = serviceSearchTerm.toLowerCase();
 
     return processedServices.filter(
@@ -86,53 +100,12 @@ const AddUserPermission = ({
   }, [serviceSearchTerm, processedServices]);
 
   /* ------------------------------
-     ADD SERVICE
-  ------------------------------ */
-
-  const handleServiceSelect = (service) => {
-    setFormData((prev) => {
-      if (prev.permissions[service.id]) return prev;
-
-      return {
-        ...prev,
-        permissions: {
-          ...prev.permissions,
-          [service.id]: {
-            canView: false,
-            canProcess: false,
-          },
-        },
-      };
-    });
-
-    setServiceSearchTerm("");
-    setShowServiceSuggestions(false);
-  };
-
-  /* ------------------------------
-     REMOVE SERVICE
-  ------------------------------ */
-
-  const handleServiceRemove = (serviceId) => {
-    setFormData((prev) => {
-      const updated = { ...prev.permissions };
-      delete updated[serviceId];
-
-      return {
-        ...prev,
-        permissions: updated,
-      };
-    });
-  };
-
-  /* ------------------------------
      TOGGLE PERMISSION
   ------------------------------ */
 
   const togglePermission = (serviceId, field) => {
     setFormData((prev) => ({
       ...prev,
-
       permissions: {
         ...prev.permissions,
         [serviceId]: {
@@ -181,24 +154,6 @@ const AddUserPermission = ({
       setIsSubmitting(false);
     }
   };
-  /* ------------------------------
-     CLOSE SUGGESTION ON OUTSIDE
-  ------------------------------ */
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        serviceSearchRef.current &&
-        !serviceSearchRef.current.contains(e.target)
-      ) {
-        setShowServiceSuggestions(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   /* ------------------------------
      UI
@@ -206,33 +161,30 @@ const AddUserPermission = ({
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <HeaderSection
+          title={
+            mode === "role"
+              ? currentMode === "add"
+                ? "Add Role Permission"
+                : "Edit Role Permission"
+              : currentMode === "add"
+                ? "Add User Permission"
+                : "Edit User Permission"
+          }
+          tagLine="Configure permissions"
+          isClose={onCancel}
+        />
         <div className="p-6">
-          <HeaderSection
-            title={
-              mode === "role"
-                ? currentMode === "add"
-                  ? "Add Role Permission"
-                  : "Edit Role Permission"
-                : currentMode === "add"
-                  ? "Add User Permission"
-                  : "Edit User Permission"
-            }
-            tagLine={"Configure provider pricing slab"}
-            isClose={onCancel}
-          />
-
           {error && <div className="mb-3 text-red-600 text-sm">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* USER INFO */}
-
             <div className="p-3 bg-gray-50 border border-gray-300 rounded">
               <div className="font-medium">
                 {selectedUser?.firstName || selectedUser?.name}{" "}
                 {selectedUser?.lastName || ""}
               </div>
-
               <div className="text-xs text-gray-500">
                 {selectedUser?.email ||
                   selectedUser?.description ||
@@ -241,50 +193,27 @@ const AddUserPermission = ({
               </div>
             </div>
 
-            {/* SERVICE SEARCH */}
+            {/* SEARCH (FILTER ONLY) */}
+            <InputField
+              label={"Service search"}
+              name="serviceSearch"
+              value={serviceSearchTerm}
+              placeholder="Search service..."
+              onChange={(e) => setServiceSearchTerm(e.target.value)}
+            />
 
-            <div ref={serviceSearchRef}>
-              <InputField
-                name="serviceSearch"
-                value={serviceSearchTerm}
-                placeholder="Search service..."
-                onChange={(e) => {
-                  setServiceSearchTerm(e.target.value);
-                  setShowServiceSuggestions(true);
-                }}
-              />
-
-              {showServiceSuggestions && serviceSearchTerm && (
-                <div className="border border-gray-300 rounded shadow mt-1 max-h-52 overflow-y-auto">
-                  {filteredServices.map((service) => (
-                    <div
-                      key={service.id}
-                      onClick={() => handleServiceSelect(service)}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                    >
-                      {service.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* PERMISSION TABLE */}
-
-            <div className="space-y-3">
-              {Object.keys(formData.permissions).map((serviceId) => {
-                const service = processedServices.find(
-                  (s) => s.id === serviceId,
-                );
-
-                const perm = formData.permissions[serviceId];
+            {/* PERMISSIONS */}
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {visibleServices.map((service) => {
+                const perm = formData.permissions[service.id];
+                if (!perm) return null;
 
                 return (
                   <div
-                    key={serviceId}
+                    key={service.id}
                     className="flex items-center justify-between border border-gray-300 p-3 rounded"
                   >
-                    <div className="font-medium">{service?.name}</div>
+                    <div className="font-medium">{service.name}</div>
 
                     <div className="flex gap-6 items-center">
                       <label className="flex gap-2 items-center">
@@ -292,7 +221,7 @@ const AddUserPermission = ({
                           type="checkbox"
                           checked={perm.canView}
                           onChange={() =>
-                            togglePermission(serviceId, "canView")
+                            togglePermission(service.id, "canView")
                           }
                         />
                         View
@@ -303,19 +232,11 @@ const AddUserPermission = ({
                           type="checkbox"
                           checked={perm.canProcess}
                           onChange={() =>
-                            togglePermission(serviceId, "canProcess")
+                            togglePermission(service.id, "canProcess")
                           }
                         />
                         Process
                       </label>
-
-                      <button
-                        type="button"
-                        onClick={() => handleServiceRemove(serviceId)}
-                        className="text-red-500 text-sm"
-                      >
-                        Remove
-                      </button>
                     </div>
                   </div>
                 );
@@ -323,7 +244,6 @@ const AddUserPermission = ({
             </div>
 
             {/* BUTTONS */}
-
             <div className="flex gap-3 pt-4 border-t border-gray-300">
               <CloseBtn isClose={onCancel} title="Cancel" />
 

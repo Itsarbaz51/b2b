@@ -99,16 +99,68 @@ const AddBankTransferFundForm = ({
 
         <div className="p-4 sm:p-6 space-y-5">
           {/* ADMIN BANK CARD */}
+          {/* ADMIN BANK CARD */}
           {adminBank && (
-            <div className="p-4 bg-blue-50 border border-gray-300 rounded-lg">
-              <p className="font-semibold text-gray-800">
-                {adminBank.accountHolder}
-              </p>
+            <div className="relative overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white shadow-sm p-5">
+              {/* Top Badge */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Landmark className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">
+                      Bank Details
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Transfer to this account
+                    </p>
+                  </div>
+                </div>
 
-              <p className="text-gray-600">{adminBank.bankName}</p>
+                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                  Primary
+                </span>
+              </div>
 
-              <div className="text-sm text-gray-600 mt-1">
-                {adminBank.accountNumber} • {adminBank.ifsc}
+              {/* Divider */}
+              <div className="border-t border-blue-100 mb-4"></div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500 text-xs">Account Holder</p>
+                  <p className="font-semibold text-gray-800">
+                    {adminBank.accountHolder}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-gray-500 text-xs">Bank Name</p>
+                  <p className="font-medium text-gray-700">
+                    {adminBank.bankName}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-gray-500 text-xs">Account Number</p>
+                  <p className="font-mono tracking-wide text-gray-800">
+                    {adminBank.accountNumber}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-gray-500 text-xs">IFSC Code</p>
+                  <p className="font-mono text-gray-800">
+                    {adminBank.ifscCode}
+                  </p>
+                </div>
+              </div>
+
+              {/* Bottom hint */}
+              <div className="mt-4 text-xs text-gray-500">
+                ⚠️ Please transfer the exact amount and upload the payment
+                receipt. For approval, please contact your admin.
               </div>
             </div>
           )}

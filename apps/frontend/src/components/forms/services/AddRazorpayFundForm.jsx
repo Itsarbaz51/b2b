@@ -35,7 +35,7 @@ const AddRazorpayFundForm = ({
 
       const options = {
         key: res?.data?.key,
-        amount: res?.data?.amount * 100,
+        amount: res?.data?.amount,
         currency: "INR",
         name: "Wallet Topup",
         description: "Add funds to wallet",
@@ -64,13 +64,9 @@ const AddRazorpayFundForm = ({
         },
 
         modal: {
-          ondismiss: function () {
-            console.log("Payment popup closed");
-          },
-        },
+          ondismiss: async function (response) {
+            console.log(response);
 
-        modal: {
-          ondismiss: async function () {
             await dispatch(
               verifyFundRequest({
                 transactionId: res?.data?.transactionId,

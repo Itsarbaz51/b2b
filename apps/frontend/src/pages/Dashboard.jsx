@@ -115,7 +115,7 @@ const Dashboard = () => {
       color: "blue",
       cards: [
         {
-          title: "Primary Balance",
+          title: "All Users Main Wallet Balance",
           value: paisaToRupee(summary.totalPrimaryBalance || 0),
           icon: Wallet,
           gradient: getCardGradient("Primary Balance"),
@@ -124,7 +124,7 @@ const Dashboard = () => {
           trendUp: true,
         },
         {
-          title: "Commission Balance",
+          title: "All Users Commission Balance",
           value: paisaToRupee(summary.totalCommissionBalance || 0),
           icon: Percent,
           gradient: getCardGradient("Commission Balance"),
@@ -363,7 +363,7 @@ const Dashboard = () => {
         {statCardGroups.map((group, gIdx) => (
           <div key={gIdx} className="space-y-5">
             {/* Group Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-betwee ">
               <div className="flex items-center gap-3">
                 <div className={`p-2 bg-${group.color}-100 rounded-xl`}>
                   {group.icon && (
@@ -377,19 +377,14 @@ const Dashboard = () => {
                   {group.cards.length} items
                 </span>
               </div>
-              {group.cards.length > 4 && (
-                <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-                  View All <ChevronRight className="h-4 w-4" />
-                </button>
-              )}
             </div>
 
             {/* Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ">
               {group.cards.map((card, idx) => (
                 <div
                   key={idx}
-                  className="transform transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl animate-fadeInUp"
+                  className="transform transition-all duration-300 hover:-translate-y-1 animate-fadeInUp"
                   style={{
                     animationDelay: `${(gIdx * group.cards.length + idx) * 0.03}s`,
                   }}

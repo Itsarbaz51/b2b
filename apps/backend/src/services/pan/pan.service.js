@@ -20,7 +20,7 @@ export default class PanService {
       serviceProviderMappingId
     );
 
-    const { provider, serviceProviderMapping } =
+    const { service, provider, serviceProviderMapping } =
       await ProviderResolver.resolveByMappingId(serviceProviderMappingId);
 
     await CommissionSettingService.checkUserPricingRule(
@@ -77,6 +77,8 @@ export default class PanService {
           wallet,
           pricing,
           serviceProviderMapping,
+          service,
+          provider,
         });
 
         await TransactionService.update(tx, {

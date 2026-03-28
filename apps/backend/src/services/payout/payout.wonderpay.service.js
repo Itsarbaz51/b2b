@@ -102,7 +102,13 @@ export default class WonderpayPayoutService {
     }
   }
 
-  static async checkStatus(serviceProviderMapping, provider, payload, actor) {
+  static async checkStatus(
+    serviceProviderMapping,
+    provider,
+    service,
+    payload,
+    actor
+  ) {
     // const plugin = this.getPlugin(provider, serviceProviderMapping);
 
     const { txnId } = payload;
@@ -159,6 +165,8 @@ export default class WonderpayPayoutService {
           wallet,
           pricing: transaction.pricing,
           serviceProviderMapping,
+          provider,
+          service,
         });
 
         await TransactionService.update(tx, {
