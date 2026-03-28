@@ -101,21 +101,31 @@ export default class PricingEngine {
     }
 
     //  GST (Only on surcharge)
-    let gst = 0n;
+    let gstSurcharge = 0n;
 
     if (rule?.applyGST && rule.gstPercent) {
       const percent = BigInt(rule.gstPercent);
-      gst = (surcharge * percent) / 100n;
+      gstSurcharge = (surcharge * percent) / 100n;
+    }
+
+    //  GST (Only on provider mapping )
+    let gstProvider = 0n;
+
+    if (mapping?.applyGST && mapping.gstPercent) {
+      const percent = BigInt(mapping.gstPercent);
+      gstProvider = (providerCost * percent) / 100n;
     }
 
     //  FINAL AMOUNT
-    const totalDebit = providerCost + surcharge + gst + txnAmount;
+    const totalDebit =
+      providerCost + surcharge + gstProvider + gstSurcharge + txnAmount;
 
     return {
       txnAmount,
       providerCost,
       surcharge,
-      gst,
+      gstProvider,
+      gstSurcharge,
       totalDebit,
     };
   }

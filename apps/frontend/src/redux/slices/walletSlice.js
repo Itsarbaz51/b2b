@@ -63,8 +63,6 @@ export const transferCommissionToPrimary = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    console.log(error);
-
     const errMsg = error?.response?.data?.message || error?.message || "Failed";
 
     dispatch(walletFail(errMsg));

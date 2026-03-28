@@ -45,7 +45,6 @@ export default function PANVerificationModal({
           idempotencyKey,
         }),
       );
-      console.log(res);
 
       if (res?.success) {
         onSuccess(res.data);
@@ -54,7 +53,6 @@ export default function PANVerificationModal({
         toast.error(res?.message || "Verification failed");
       }
     } catch (error) {
-      console.log(error);
       toast.error(error?.message || "Something went wrong");
     } finally {
       setLoading(false);

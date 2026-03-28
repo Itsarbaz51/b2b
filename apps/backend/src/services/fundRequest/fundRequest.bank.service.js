@@ -54,7 +54,6 @@ export default class BankFundRequestService {
 
         const pricing = {
           amount: payload.amount,
-          providerCost: serviceProviderMapping.providerCost,
         };
 
         const txnId = Helper.generateTxnId("BT");

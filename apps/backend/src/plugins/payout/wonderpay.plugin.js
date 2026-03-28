@@ -65,7 +65,6 @@ class WonderpayPayoutPlugin extends PayoutPluginInterface {
           clientOrderId,
         }
       );
-      console.log(data);
 
       if (data.statusCode !== 1) {
         throw ApiError.badRequest(data.message || "Payout failed");
