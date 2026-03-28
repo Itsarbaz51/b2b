@@ -319,43 +319,4 @@ export default class TransactionService {
       },
     };
   }
-
-  // dashboard
-  static async getSummary() {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const [pending, successToday, totalVolume, totalCommission] =
-      await Promise.all([
-        Prisma.transaction.count({
-          where: { status: "PENDING" },
-        }),
-
-        Prisma.transaction.count({
-          where: {
-            status: "SUCCESS",
-            completedAt: {
-              gte: startOfToday,
-            },
-          },
-        }),
-
-        Prisma.transaction.aggregate({
-          _sum: { amount: true },
-        }),
-
-        Prisma.transaction.aggregate({
-          _sum: {
-            "pricing.userCommission": true,
-          },
-        }),
-      ]);
-
-    return {
-      pending,
-      successToday,
-      totalVolume: totalVolume._sum.amount || 0,
-      totalCommission: totalCommission._sum.userCommission || 0,
-    };
-  }
 }

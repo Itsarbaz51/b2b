@@ -1,43 +1,75 @@
 import Prisma from "../db/db.js";
 
 export default class DashboardService {
-  static async getDashboard({ userId, role, range = "7d", status = "ALL" }) {
-    const now = new Date();
-
+  // 🔹 DATE FILTER
+  static getDateFilter({ type, from, to }) {
     let startDate;
-    let groupType;
+    let endDate = new Date();
 
-    switch (range) {
-      case "1d":
-        startDate = new Date(now.setHours(0, 0, 0, 0));
-        groupType = "hour";
-        break;
-      case "7d":
-        startDate = new Date(Date.now() - 7 * 86400000);
-        groupType = "day";
-        break;
-      case "1m":
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        groupType = "day";
-        break;
-      case "1y":
-        startDate = new Date(now.getFullYear(), 0, 1);
-        groupType = "month";
-        break;
-      default:
-        startDate = new Date(0);
-        groupType = "month";
+    if (type === "all") {
+      return null; // ✅ ALL TIME
     }
 
-    const isAdminOrEmployee = role === "ADMIN" || role === "employee";
+    if (type === "today") {
+      startDate = new Date();
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (type === "yesterday") {
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - 1);
+      startDate.setHours(0, 0, 0, 0);
+
+      endDate = new Date(startDate);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (from && to) {
+      startDate = new Date(from);
+      startDate.setHours(0, 0, 0, 0);
+
+      endDate = new Date(to);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    return { startDate, endDate };
+  }
+
+  // 🔹 GROUP TYPE
+  static getGroupType(startDate, endDate) {
+    const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+
+    if (diff <= 1) return "hour";
+    if (diff <= 31) return "day";
+    return "month";
+  }
+
+  static async getDashboard({
+    userId,
+    role,
+    type = "all",
+    from,
+    to,
+    status = "ALL",
+  }) {
+    const isAdmin = role === "ADMIN";
+
+    // 🔹 DATE FILTER
+    const dateFilter = this.getDateFilter({ type, from, to });
 
     const baseFilter = {
-      initiatedAt: { gte: startDate },
-      ...(isAdminOrEmployee ? {} : { userId }),
+      ...(dateFilter && {
+        initiatedAt: {
+          gte: dateFilter.startDate,
+          lte: dateFilter.endDate,
+        },
+      }),
+      ...(isAdmin ? {} : { userId }),
       ...(status !== "ALL" ? { status } : {}),
     };
 
-    // 🔥 COUNTS
+    const groupType = dateFilter
+      ? this.getGroupType(dateFilter.startDate, dateFilter.endDate)
+      : "month";
+
+    // 🔹 TRANSACTION COUNTS
     const [success, failed, pending] = await Promise.all([
       Prisma.transaction.count({
         where: { ...baseFilter, status: "SUCCESS" },
@@ -50,82 +82,57 @@ export default class DashboardService {
       }),
     ]);
 
-    // 🔥 SERVICE TOTAL
-    const grouped = await Prisma.transaction.groupBy({
-      by: ["serviceProviderMappingId"],
-      where: { ...baseFilter, status: "SUCCESS" },
+    // 🔹 TOTAL VOLUME
+    const txnAgg = await Prisma.transaction.aggregate({
       _sum: { amount: true },
-    });
-
-    const mappings = await Prisma.serviceProviderMapping.findMany({
-      where: { id: { in: grouped.map((g) => g.serviceProviderMappingId) } },
-      include: { service: true, provider: true }, // 🔥 provider added
-    });
-
-    const services = grouped.map((g) => {
-      const map = mappings.find((m) => m.id === g.serviceProviderMappingId);
-      return {
-        name: map?.service?.name || "Unknown",
-        code: map?.service?.code || "UNKNOWN",
-        provider: map?.provider?.code || "UNKNOWN", // 🔥 new
-        total: Number(g._sum.amount || 0),
-      };
-    });
-
-    // 🔥 CHART
-    const txns = await Prisma.transaction.findMany({
       where: baseFilter,
-      select: {
-        amount: true,
-        initiatedAt: true,
-        serviceProviderMappingId: true,
+    });
+
+    // 🔹 PROFIT (DATE FILTERED)
+    const earningAgg = await Prisma.commissionEarning.aggregate({
+      _sum: { netAmount: true },
+      where: {
+        ...(isAdmin ? {} : { userId }),
+        ...(dateFilter && {
+          createdAt: {
+            gte: dateFilter.startDate,
+            lte: dateFilter.endDate,
+          },
+        }),
       },
     });
 
-    const mappingMap = {};
-    mappings.forEach((m) => {
-      mappingMap[m.id] = m.service?.code || "UNKNOWN";
+    // 🔹 GST
+    const gstAgg = await Prisma.ledgerEntry.aggregate({
+      _sum: { amount: true },
+      where: {
+        referenceType: "USER_GST",
+        ...(isAdmin ? {} : { userId }),
+      },
     });
 
-    const chartMap = {};
-
-    txns.forEach((txn) => {
-      const date = txn.initiatedAt;
-
-      let label =
-        groupType === "hour"
-          ? `${date.getHours()}:00`
-          : groupType === "day"
-            ? date.toISOString().slice(0, 10)
-            : date.toISOString().slice(0, 7);
-
-      if (!chartMap[label]) chartMap[label] = { label, total: 0 };
-
-      const code = mappingMap[txn.serviceProviderMappingId] || "UNKNOWN";
-
-      chartMap[label].total += Number(txn.amount);
-      chartMap[label][code] = (chartMap[label][code] || 0) + Number(txn.amount);
+    // 🔹 TDS
+    const tdsAgg = await Prisma.ledgerEntry.aggregate({
+      _sum: { amount: true },
+      where: {
+        referenceType: "TDS",
+        ...(isAdmin ? {} : { userId }),
+      },
     });
 
-    const chart = Object.values(chartMap);
-
-    // 🔥 WALLET TOTAL
-    const walletFilter = {
-      ...(isAdminOrEmployee
+    // 🔹 WALLET (exclude ADMIN wallets)
+    const wallets = await Prisma.wallet.findMany({
+      where: isAdmin
         ? {
             user: {
               role: {
                 name: {
-                  notIn: ["ADMIN", "EMPLOYEE"],
+                  notIn: ["ADMIN"],
                 },
               },
             },
           }
-        : { userId }),
-    };
-
-    const wallets = await Prisma.wallet.findMany({
-      where: walletFilter,
+        : { userId },
     });
 
     const sum = (arr) =>
@@ -139,109 +146,95 @@ export default class DashboardService {
       wallets.filter((w) => w.walletType === "COMMISSION")
     );
 
-    // 🔥 GST + TDS (ADMIN ONLY)
-    let totalGSTBalance = 0;
-    let totalTDSBalance = 0;
-
-    if (isAdminOrEmployee) {
-      const [gst, tds] = await Promise.all([
-        Prisma.wallet.findMany({ where: { walletType: "GST" } }),
-        Prisma.wallet.findMany({ where: { walletType: "TDS" } }),
-      ]);
-
-      totalGSTBalance = sum(gst);
-      totalTDSBalance = sum(tds);
-    }
-
-    // 🔥 TODAY (JSON PRICING BASED)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const todayTxns = await Prisma.transaction.findMany({
+    // 🔹 REVENUE + PROFIT
+    const txns = await Prisma.transaction.findMany({
       where: {
-        initiatedAt: { gte: today },
-        ...(isAdminOrEmployee ? {} : { userId }),
+        ...baseFilter,
         status: "SUCCESS",
       },
       select: {
         amount: true,
-        pricing: true, // 🔥 key fix
+        pricing: true,
+        initiatedAt: true,
       },
     });
 
-    let todayTotalEarning = 0;
-    let todayTotalExpenses = 0;
-    let todaySurchargeGiven = 0;
-    let todaySurchargeEarned = 0;
+    let totalRevenue = 0;
+    let totalProfit = 0;
 
-    todayTxns.forEach((txn) => {
+    txns.forEach((txn) => {
       const pricing = txn.pricing || {};
 
-      const surcharge = Number(pricing.surcharge || 0);
-      const providerCost = Number(pricing.providerCost || 0);
-
-      if (isAdminOrEmployee) {
-        // ADMIN
-        todayTotalEarning += providerCost;
-        todaySurchargeEarned += surcharge;
-      } else {
-        // USER
-        todayTotalEarning += Number(txn.amount || 0);
-        todayTotalExpenses += providerCost;
-        todaySurchargeGiven += surcharge;
-      }
+      totalRevenue += Number(txn.amount || 0);
+      totalProfit += Number(pricing.surcharge || 0);
     });
 
+    // 🔹 SERVICE WISE
+    const grouped = await Prisma.transaction.groupBy({
+      by: ["serviceProviderMappingId"],
+      where: { ...baseFilter, status: "SUCCESS" },
+      _sum: { amount: true },
+    });
+
+    const mappings = await Prisma.serviceProviderMapping.findMany({
+      where: { id: { in: grouped.map((g) => g.serviceProviderMappingId) } },
+      include: { service: true, provider: true },
+    });
+
+    const services = grouped.map((g) => {
+      const map = mappings.find((m) => m.id === g.serviceProviderMappingId);
+
+      return {
+        name: map?.service?.name || "Unknown",
+        code: map?.service?.code || "UNKNOWN",
+        providerName: map?.provider?.name || "Unknown",
+        providerCode: map?.provider?.code || "UNKNOWN",
+        total: Number(g._sum.amount || 0),
+      };
+    });
+
+    // 🔹 CHART
+    const chartMap = {};
+
+    txns.forEach((txn) => {
+      const d = txn.initiatedAt;
+
+      let label =
+        groupType === "hour"
+          ? `${d.getHours()}:00`
+          : groupType === "day"
+            ? d.toISOString().slice(0, 10)
+            : d.toISOString().slice(0, 7);
+
+      if (!chartMap[label]) chartMap[label] = { label, total: 0 };
+
+      chartMap[label].total += Number(txn.amount);
+    });
+
+    const chart = Object.values(chartMap);
+
+    // 🔹 FINAL RESPONSE
     return {
       summary: {
+        totalVolume: txnAgg._sum.amount || 0,
+
+        totalProfit: earningAgg._sum.netAmount || 0, // filtered
+        totalGST: gstAgg._sum.amount || 0,
+        totalTDS: tdsAgg._sum.amount || 0,
+
         totalPrimaryBalance,
         totalCommissionBalance,
 
-        todayTotalEarning,
-        todayTotalExpenses,
-        todaySurchargeGiven,
-        todaySurchargeEarned,
+        totalRevenue,
+        totalTxnProfit: totalProfit,
 
         success,
         failed,
         pending,
-
-        ...(isAdminOrEmployee && {
-          totalGSTBalance,
-          totalTDSBalance,
-        }),
       },
 
       services,
       chart,
     };
   }
-  // static async getDashboard({ userId, role }) {
-  //   const where = role === "ADMIN" ? {} : { userId };
-
-  //   const [txn, earnings, gst] = await Promise.all([
-  //     Prisma.transaction.aggregate({
-  //       _sum: { amount: true },
-  //       where,
-  //     }),
-
-  //     Prisma.commissionEarning.aggregate({
-  //       _sum: { netAmount: true },
-  //       where,
-  //     }),
-
-  //     Prisma.ledgerEntry.aggregate({
-  //       _sum: { amount: true },
-  //       where: {
-  //         referenceType: "USER_GST",
-  //       },
-  //     }),
-  //   ]);
-
-  //   return {
-  //     totalVolume: txn._sum.amount || 0,
-  //     totalProfit: earnings._sum.netAmount || 0,
-  //     totalGST: gst._sum.amount || 0,
-  //   };
-  // }
 }

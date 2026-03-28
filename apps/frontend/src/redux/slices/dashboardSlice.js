@@ -28,14 +28,17 @@ export default slice.reducer;
 
 // 🔥 API
 export const getDashboard =
-  ({ range = "7d", status = "ALL" }) =>
+  ({ type, from, to, status = "ALL" }) =>
   async (dispatch) => {
     try {
       dispatch(request());
 
-      const { data } = await axios.get(
-        `/dashboard?range=${range}&status=${status}`,
-      );
+      let url = `/dashboard?status=${status}`;
+
+      if (type) url += `&type=${type}`;
+      if (from && to) url += `&from=${from}&to=${to}`;
+
+      const { data } = await axios.get(url);
 
       dispatch(success(data));
     } catch (err) {
