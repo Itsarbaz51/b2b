@@ -19,6 +19,8 @@ const CommissionEarningTable = ({
     }
   };
 
+  const toNumber = (val) => Number(val || 0);
+
   return (
     <div className="bg-white w-full rounded-xl h-full shadow-lg border border-gray-300 overflow-x-auto">
       <table className="min-w-full">
@@ -27,31 +29,26 @@ const CommissionEarningTable = ({
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               #
             </th>
-
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Transaction
             </th>
-
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Service
             </th>
-
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               User
             </th>
-
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               From User
             </th>
-
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Mode
             </th>
-
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Amount
             </th>
 
+            {/* FIXED HEADER */}
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Earning
             </th>
@@ -59,7 +56,6 @@ const CommissionEarningTable = ({
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Net Amount
             </th>
-
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Date
             </th>
@@ -83,76 +79,90 @@ const CommissionEarningTable = ({
               </td>
             </tr>
           ) : (
-            earnings.map((earning, index) => (
-              <tr key={earning.id} className="hover:bg-blue-50 transition-all">
-                <td className="px-6 py-5">
-                  {(currentPage - 1) * limit + index + 1}
-                </td>
+            earnings.map((earning, index) => {
+              const amount = toNumber(earning.amount);
+              const commission = toNumber(earning.commissionAmount);
+              const surcharge = toNumber(earning.surchargeAmount);
+              const net = toNumber(earning.netAmount);
 
-                {/* Transaction */}
-                <td className="px-6 py-5 text-sm">
-                  <div className="font-semibold text-blue-600">
-                    {earning.transaction?.txnId || "-"}
-                  </div>
-                </td>
+              const earningValue =
+                earning.mode === "SURCHARGE" ? surcharge : commission;
 
-                {/* Service */}
-                <td className="px-6 py-5 text-sm text-gray-700">
-                  <div className="font-semibold">
-                    {earning.serviceProviderMapping?.service?.name || "-"}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {earning.serviceProviderMapping?.service?.code || ""}
-                  </div>
-                </td>
+              return (
+                <tr
+                  key={earning.id}
+                  className="hover:bg-blue-50 transition-all"
+                >
+                  <td className="px-6 py-5">
+                    {(currentPage - 1) * limit + index + 1}
+                  </td>
 
-                {/* User */}
-                <td className="px-6 py-5 text-sm text-gray-700">
-                  <div className="font-semibold">
-                    {earning.user?.username || "-"}
-                  </div>
-                </td>
+                  {/* Transaction */}
+                  <td className="px-6 py-5 text-sm">
+                    <div className="font-semibold text-blue-600">
+                      {earning.transaction?.txnId || "-"}
+                    </div>
+                  </td>
 
-                {/* From User */}
-                <td className="px-6 py-5 text-sm text-gray-700">
-                  {earning.fromUser?.username || "-"}
-                </td>
+                  {/* Service */}
+                  <td className="px-6 py-5 text-sm text-gray-700">
+                    <div className="font-semibold">
+                      {earning.serviceProviderMapping?.service?.name || "-"}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {earning.serviceProviderMapping?.service?.code || ""}
+                    </div>
+                  </td>
 
-                {/* Mode */}
-                <td className="px-6 py-5">
-                  <span
-                    className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${getModeColor(
-                      earning.mode,
-                    )}`}
-                  >
-                    {earning.mode}
-                  </span>
-                </td>
+                  {/* User */}
+                  <td className="px-6 py-5 text-sm text-gray-700">
+                    <div className="text-xs text-gray-500">
+                      {`${earning.user?.firstName} ${earning.user?.lastName}` ||
+                        ""}
+                    </div>
+                    <div className="font-semibold">
+                      {earning.user?.username || "-"}
+                    </div>
+                  </td>
 
-                {/* Amount */}
-                <td className="px-6 py-5 text-sm font-semibold">
-                  ₹{paisaToRupee(earning.amount)}
-                </td>
+                  {/* From User */}
+                  <td className="px-6 py-5 text-sm text-gray-700">
+                    {earning.fromUser?.username || "-"}
+                  </td>
 
-                {/* Commission / surchage */}
-                <td className="px-6 py-5 text-sm font-semibold text-green-600">
-                  ₹
-                  {earning.mode == "SURCHARGE"
-                    ? paisaToRupee(earning.surchargeAmount)
-                    : paisaToRupee(earning.commissionAmount)}
-                </td>
+                  {/* Mode */}
+                  <td className="px-6 py-5">
+                    <span
+                      className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${getModeColor(
+                        earning.mode,
+                      )}`}
+                    >
+                      {earning.mode}
+                    </span>
+                  </td>
 
-                {/* Net */}
-                <td className="px-6 py-5 text-sm font-semibold text-indigo-600">
-                  ₹{paisaToRupee(earning.netAmount)}
-                </td>
+                  {/* Amount */}
+                  <td className="px-6 py-5 text-sm font-semibold">
+                    ₹{paisaToRupee(amount)}
+                  </td>
 
-                {/* Date */}
-                <td className="px-6 py-5 text-sm text-gray-600">
-                  {new Date(earning.createdAt).toLocaleString()}
-                </td>
-              </tr>
-            ))
+                  {/* Earning */}
+                  <td className="px-6 py-5 text-sm font-semibold text-green-600">
+                    ₹{paisaToRupee(earningValue)}
+                  </td>
+
+                  {/* Net */}
+                  <td className="px-6 py-5 text-sm font-semibold text-indigo-600">
+                    ₹{paisaToRupee(net)}
+                  </td>
+
+                  {/* Date */}
+                  <td className="px-6 py-5 text-sm text-gray-600">
+                    {new Date(earning.createdAt).toLocaleString()}
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

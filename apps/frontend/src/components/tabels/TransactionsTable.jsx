@@ -1,28 +1,6 @@
-import React, { Fragment, useState } from "react";
-import {
-  Search,
-  Clock,
-  Activity,
-  Receipt,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-} from "lucide-react";
+import { Fragment } from "react";
+import { Search, Clock, Activity, RefreshCw } from "lucide-react";
 import { paisaToRupee } from "../../utils/lib";
-import { useSelector } from "react-redux";
-import { ObjectInspector } from "react-inspector";
-
-const HIDE_KEYS = ["photo_link", "xml_file", "base64"];
-
-const formatKey = (key) =>
-  key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-
-const calcLatency = (start, end) => {
-  if (!start || !end) return "N/A";
-  const diff = new Date(end).getTime() - new Date(start).getTime();
-  return diff >= 0 ? `${diff} ms` : "N/A";
-};
 
 const ProviderStatusBadge = ({ status }) => {
   const s = String(status || "").toUpperCase();
@@ -62,15 +40,6 @@ const TransactionsTable = ({
   onRefresh,
   loading,
 }) => {
-  const [expandedTxn, setExpandedTxn] = useState(null);
-
-  const user = useSelector((s) => s.auth?.currentUser);
-  const isAdmin = user?.role?.name === "ADMIN";
-
-  const copyJSON = async (obj) => {
-    await navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
-  };
-
   return (
     <>
       {/* Tabs */}
@@ -167,7 +136,7 @@ const TransactionsTable = ({
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
         <table className="min-w-full">
           <thead className="bg-gray-50 text-gray-600">
             <tr>
@@ -176,9 +145,13 @@ const TransactionsTable = ({
                 "Txn ID",
                 "Service",
                 "User",
-                "Amount",
+                "Txn Amount",
+                "GST",
+                "Surcharge",
+                "Total Debit",
                 "Status",
-                "Date",
+                "Init Date",
+                "Completed Date",
                 "Details",
               ].map((h) => (
                 <th
@@ -195,20 +168,6 @@ const TransactionsTable = ({
             {transactions.map((txn, index) => {
               const service = txn.serviceProviderMapping?.service;
               const Icon = getTypeIcon(service?.code);
-
-              const response =
-                txn.providerResponse?.data &&
-                typeof txn.providerResponse.data === "object"
-                  ? txn.providerResponse.data
-                  : txn.providerResponse || {};
-
-              const latency = calcLatency(
-                txn.initiatedAt,
-                txn.completedAt || txn.processedAt,
-              );
-
-              const providerStatus =
-                txn.providerResponse?.status || response?.status || txn.status;
 
               return (
                 <Fragment key={txn.id}>
@@ -234,178 +193,32 @@ const TransactionsTable = ({
                     <td className="px-6 py-4 font-semibold">
                       ₹{paisaToRupee(txn.amount)}
                     </td>
+                    <td className="px-6 py-4 font-semibold">
+                      ₹
+                      {paisaToRupee(
+                        Number(txn.pricing.gstProvider) +
+                          Number(txn.pricing.gstProvider),
+                      )}
+                    </td>
+                    <td className="px-6 py-4 font-semibold">
+                      ₹{paisaToRupee(txn.pricing.surcharge)}
+                    </td>
+                    <td className="px-6 py-4 font-semibold">
+                      ₹{paisaToRupee(txn.pricing.totalDebit)}
+                    </td>
 
                     <td className="px-6 py-4">
-                      <ProviderStatusBadge status={providerStatus} />
+                      <ProviderStatusBadge status={txn.status} />
                     </td>
 
                     <td className="px-6 py-4 text-sm">
                       {new Date(txn.initiatedAt).toLocaleString()}
                     </td>
-
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() =>
-                          setExpandedTxn(expandedTxn === index ? null : index)
-                        }
-                      >
-                        {expandedTxn === index ? (
-                          <ChevronUp className="w-5 h-5" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5" />
-                        )}
-                      </button>
+                    {console.log(txn)}
+                    <td className="px-6 py-4 text-sm">
+                      {new Date(txn.completedAt).toLocaleString()}
                     </td>
                   </tr>
-
-                  {/* Expanded Panel */}
-                  {expandedTxn === index && isAdmin && (
-                    <tr className="bg-gray-50">
-                      <td colSpan="8" className="p-6 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* Pricing */}
-                          {txn.pricing && (
-                            <div className="bg-white border border-gray-300 rounded-xl p-5 shadow-sm">
-                              <h3 className="font-semibold mb-4">Pricing</h3>
-
-                              <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span>Total</span>
-                                  <span>₹{txn.pricing.total}</span>
-                                </div>
-
-                                <div className="flex justify-between">
-                                  <span>Surcharge</span>
-                                  <span>₹{txn.pricing.surcharge}</span>
-                                </div>
-
-                                <div className="flex justify-between">
-                                  <span>Provider Cost</span>
-                                  <span>₹{txn.pricing.providerCost}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Provider Info */}
-                          <div className="bg-white border border-gray-300 rounded-xl p-5 shadow-sm">
-                            <h3 className="font-semibold mb-4">
-                              Provider Info
-                            </h3>
-
-                            <div className="text-sm space-y-2">
-                              <div>
-                                <div className="text-xs text-gray-500">
-                                  Reference
-                                </div>
-                                {txn.providerReference}
-                              </div>
-
-                              <div>
-                                <div className="text-xs text-gray-500">
-                                  Idempotency
-                                </div>
-                                <div className="break-all text-xs font-mono">
-                                  {txn.idempotencyKey}
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="text-xs text-gray-500">
-                                  Latency
-                                </div>
-                                <span className="text-green-600 font-semibold">
-                                  {latency}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* API Response */}
-                        <div className="bg-white border border-gray-300 rounded-xl p-5 shadow-sm">
-                          <h3 className="font-semibold mb-4">API Response</h3>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
-                            {Object.entries(response)
-                              .filter(
-                                ([k, v]) =>
-                                  !HIDE_KEYS.includes(k) &&
-                                  v !== null &&
-                                  v !== "",
-                              )
-                              .map(([key, value]) => {
-                                if (typeof value === "object") {
-                                  return (
-                                    <div
-                                      key={key}
-                                      className="col-span-2 md:col-span-3 border border-gray-300 rounded-lg p-3 bg-gray-50"
-                                    >
-                                      <div className="font-medium mb-2">
-                                        {formatKey(key)}
-                                      </div>
-
-                                      <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-                                        {Object.entries(value).map(([k, v]) => (
-                                          <div
-                                            key={k}
-                                            className="flex justify-between"
-                                          >
-                                            <span className="text-gray-500">
-                                              {formatKey(k)}
-                                            </span>
-
-                                            <span className="font-medium">
-                                              {String(v)}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <div
-                                    key={key}
-                                    className="flex justify-between items-start border-b border-gray-100 py-2"
-                                  >
-                                    <span className="text-gray-500">
-                                      {formatKey(key)}
-                                    </span>
-
-                                    <span className="break-words text-right max-w-[220px]">
-                                      {String(value)}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        </div>
-
-                        {/* JSON Viewer */}
-                        <details className="mt-6">
-                          <summary className="cursor-pointer text-blue-600 text-sm font-semibold">
-                            View Raw JSON
-                          </summary>
-
-                          <div className="relative mt-3 rounded-lg p-4 max-h-96 overflow-auto">
-                            <button
-                              onClick={() => copyJSON(txn.providerResponse)}
-                              className="absolute top-2 right-2 flex items-center gap-1 text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded"
-                            >
-                              <Copy size={14} /> Copy
-                            </button>
-
-                            <ObjectInspector
-                              data={txn.providerResponse}
-                              expandLevel={2}
-                            />
-                          </div>
-                        </details>
-                      </td>
-                    </tr>
-                  )}
                 </Fragment>
               );
             })}

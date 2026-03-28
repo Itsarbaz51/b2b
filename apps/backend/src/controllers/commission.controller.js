@@ -70,16 +70,10 @@ export class CommissionEarningController {
   static getEarnings = asyncHandler(async (req, res) => {
     const filters = { ...req.query };
 
-    const role = req.user?.role;
-    const roleType = req.user?.roleType;
-
-    // Normal user → only own
-    if (role !== "ADMIN" && roleType !== "employee") {
-      filters.userId = req.user.id;
-    }
-
-    const earnings =
-      await CommissionEarningService.getCommissionEarnings(filters);
+    const earnings = await CommissionEarningService.getCommissionEarnings(
+      filters,
+      req.user
+    );
 
     return res
       .status(200)
@@ -112,7 +106,11 @@ export class CommissionSlabController {
     return res
       .status(200)
       .json(
-        ApiResponse.success(Helper.serializeBigInt(slab), "Commission slab operation successful", 200)
+        ApiResponse.success(
+          Helper.serializeBigInt(slab),
+          "Commission slab operation successful",
+          200
+        )
       );
   });
 }

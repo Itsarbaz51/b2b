@@ -166,6 +166,7 @@ export default class TransactionService {
       netAmount: true,
       status: true,
       initiatedAt: true,
+      processedAt: true,
       completedAt: true,
       providerReference: true,
 
@@ -202,7 +203,6 @@ export default class TransactionService {
     if (isAdminOrEmployee) {
       selectFields.idempotencyKey = true;
       selectFields.pricing = true;
-      selectFields.providerResponse = true;
       selectFields.apiEntityId = true;
     }
 

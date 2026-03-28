@@ -366,10 +366,9 @@ export default class CommissionEarningService {
     });
   }
 
-  static async getCommissionEarnings(filters = {}) {
+  static async getCommissionEarnings(filters = {}, authUser) {
     const {
       userId,
-      fromUserId,
       serviceId,
       transactionId,
       startDate,
@@ -378,10 +377,18 @@ export default class CommissionEarningService {
       limit = 10,
     } = filters;
 
+    const { id: loggedInUserId, role, roleType } = authUser;
+
     const where = {};
 
-    if (userId) where.userId = userId;
-    if (fromUserId) where.fromUserId = fromUserId;
+    if (role === "ADMIN" || roleType == "employee") {
+      if (userId) {
+        where.userId = userId;
+      }
+    } else {
+      where.userId = loggedInUserId;
+    }
+
     if (transactionId) where.transactionId = transactionId;
 
     if (serviceId) {
@@ -392,23 +399,19 @@ export default class CommissionEarningService {
 
     if (startDate || endDate) {
       where.createdAt = {};
-
       if (startDate) where.createdAt.gte = new Date(startDate);
       if (endDate) where.createdAt.lte = new Date(endDate);
     }
 
     const skip = (page - 1) * limit;
 
-    // total count
     const total = await Prisma.commissionEarning.count({ where });
 
     const earningData = await Prisma.commissionEarning.findMany({
       where,
       skip,
       take: Number(limit),
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         amount: true,
@@ -420,11 +423,7 @@ export default class CommissionEarningService {
         createdAt: true,
 
         transaction: {
-          select: {
-            txnId: true,
-            amount: true,
-            status: true,
-          },
+          select: { txnId: true, amount: true, status: true },
         },
 
         user: {
@@ -446,17 +445,12 @@ export default class CommissionEarningService {
         serviceProviderMapping: {
           select: {
             service: {
-              select: {
-                name: true,
-                code: true,
-              },
+              select: { name: true, code: true },
             },
           },
         },
       },
     });
-
-    const totalPages = Math.ceil(total / limit);
 
     return {
       earnings: Helper.serializeBigInt(earningData),
@@ -464,7 +458,7 @@ export default class CommissionEarningService {
         page: Number(page),
         limit: Number(limit),
         total,
-        totalPages,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
