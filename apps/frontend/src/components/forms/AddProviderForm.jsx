@@ -80,7 +80,9 @@ export default function AddProviderForm({ editData, onClose, onSuccess }) {
           <InputField
             label={"Provider Code"}
             value={form.code}
-            onChange={(e) => setForm({ ...form, code: e.target.value })}
+            onChange={(e) =>
+              setForm({ ...form, code: e.target.value.toUpperCase() })
+            }
           />
 
           {/* Status */}

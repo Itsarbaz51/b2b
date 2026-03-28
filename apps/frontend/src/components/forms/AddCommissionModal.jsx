@@ -270,7 +270,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
       const result = await dispatch(createOrUpdateCommissionSetting(payload));
 
-      if (result?.payload?.data || result?.payload) {
+      if (result?.data || result?.success) {
         setMessage({
           type: "success",
           text: editData
