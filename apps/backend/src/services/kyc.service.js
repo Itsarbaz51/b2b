@@ -310,47 +310,42 @@ class KycServices {
   static async storeUserKyc(payload, req = null, res = null) {
     let currentUserId = req.user.id;
 
-    if (payload.kycType === "API") {
-      const [panTxn, aadhaarTxn] = await Promise.all([
-        Prisma.transaction.findFirst({
-          where: {
-            userId: currentUserId,
-            status: "SUCCESS",
-            serviceProviderMapping: { service: { code: "PAN" } },
-          },
-          orderBy: { completedAt: "desc" },
-        }),
-        Prisma.transaction.findFirst({
-          where: {
-            userId: currentUserId,
-            status: "SUCCESS",
-            serviceProviderMapping: { service: { code: "AADHAAR" } },
-          },
-          orderBy: { completedAt: "desc" },
-        }),
-      ]);
-      console.log({
-        pan: panTxn?.providerResponse,
-        aadhaar: aadhaarTxn?.providerResponse,
-      });
-
-      const panName = panTxn?.providerResponse?.name?.trim();
-      const aadhaarName = aadhaarTxn?.providerResponse?.name?.trim();
-
-      if (!panName || !aadhaarName) {
-        throw ApiError.badRequest("PAN or Aadhaar verification name missing");
-      }
-
-      if (
-        !NameMatch.isMatch(panName.toUpperCase(), aadhaarName.toUpperCase())
-      ) {
-        throw ApiError.badRequest(
-          `PAN and Aadhaar name mismatch. PAN: "${panName}" | Aadhaar: "${aadhaarName}"`
-        );
-      }
-    }
-
     try {
+      if (payload.kycType === "API") {
+        const [panTxn, aadhaarTxn] = await Promise.all([
+          Prisma.transaction.findFirst({
+            where: {
+              userId: currentUserId,
+              status: "SUCCESS",
+              serviceProviderMapping: { service: { code: "PAN" } },
+            },
+            orderBy: { completedAt: "desc" },
+          }),
+          Prisma.transaction.findFirst({
+            where: {
+              userId: currentUserId,
+              status: "SUCCESS",
+              serviceProviderMapping: { service: { code: "AADHAAR" } },
+            },
+            orderBy: { completedAt: "desc" },
+          }),
+        ]);
+
+        const panName = panTxn?.providerResponse?.name?.trim();
+        const aadhaarName = aadhaarTxn?.providerResponse?.name?.trim();
+
+        if (!panName || !aadhaarName) {
+          throw ApiError.badRequest("PAN or Aadhaar verification name missing");
+        }
+
+        if (
+          !NameMatch.isMatch(panName.toUpperCase(), aadhaarName.toUpperCase())
+        ) {
+          throw ApiError.badRequest(
+            `PAN and Aadhaar name mismatch. PAN: "${panName}" | Aadhaar: "${aadhaarName}"`
+          );
+        }
+      }
       const userExists = await Prisma.user.findUnique({
         where: { id: payload.userId },
         select: { id: true, email: true, firstName: true, lastName: true },
@@ -552,7 +547,10 @@ class KycServices {
         kycRejectionReason: createdKyc.kycRejectionReason ?? "",
       };
     } catch (error) {
-      throw ApiError.internal("storeUserKyc failed:", error.message);
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw ApiError.internal("storeUserKyc failed: " + error.message);
     } finally {
       const allFiles = [
         payload.panFile?.path,
