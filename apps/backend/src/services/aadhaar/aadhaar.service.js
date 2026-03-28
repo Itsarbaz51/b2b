@@ -177,7 +177,10 @@ export default class AadhaarService {
           transactionId: transaction.id,
           status: "SUCCESS",
           providerReference: referenceId,
-          providerResponse,
+          providerResponse: {
+            ...providerResponse,
+            name: providerResponse?.data?.name,
+          },
         });
 
         return providerResponse.data;

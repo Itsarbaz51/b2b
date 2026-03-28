@@ -82,7 +82,10 @@ export default class PanService {
         await TransactionService.update(tx, {
           transactionId: transaction.id,
           status: "SUCCESS",
-          providerResponse,
+          providerResponse: {
+            ...providerResponse,
+            name: providerResponse?.data?.registered_name,
+          },
         });
 
         return providerResponse;

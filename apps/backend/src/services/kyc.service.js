@@ -329,6 +329,10 @@ class KycServices {
           orderBy: { completedAt: "desc" },
         }),
       ]);
+      console.log({
+        pan: panTxn?.providerResponse,
+        aadhaar: aadhaarTxn?.providerResponse,
+      });
 
       const panName = panTxn?.providerResponse?.name?.trim();
       const aadhaarName = aadhaarTxn?.providerResponse?.name?.trim();
