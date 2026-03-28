@@ -20,6 +20,7 @@ import transactionRoutes from "./transaction.routes.js";
 // import bankVerificationRoutes from "./bankVerification/bankVerification.routes.js";
 import dashboardRoutes from "./dashboard.routes.js";
 import ledgerRoutes from "./ledger.routes.js";
+import reportRoutes from "./report.routes.js";
 
 export function StaticRoutes(app) {
   app.use("/api/v1/addresses", addressRoutes);
@@ -44,4 +45,5 @@ export function StaticRoutes(app) {
   // app.use("/api/v1/bank-verification", bankVerificationRoutes);
   app.use("/api/v1/dashboard", dashboardRoutes);
   app.use("/api/v1/ledger", ledgerRoutes);
+  app.use("/api/v1/report", reportRoutes);
 }
