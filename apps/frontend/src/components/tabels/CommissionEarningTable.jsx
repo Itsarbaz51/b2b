@@ -53,7 +53,7 @@ const CommissionEarningTable = ({
             </th>
 
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
-              Commission
+              Earning
             </th>
 
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
@@ -134,9 +134,12 @@ const CommissionEarningTable = ({
                   ₹{paisaToRupee(earning.amount)}
                 </td>
 
-                {/* Commission */}
+                {/* Commission / surchage */}
                 <td className="px-6 py-5 text-sm font-semibold text-green-600">
-                  ₹{paisaToRupee(earning.commissionAmount)}
+                  ₹
+                  {earning.mode == "SURCHARGE"
+                    ? paisaToRupee(earning.surchargeAmount)
+                    : paisaToRupee(earning.commissionAmount)}
                 </td>
 
                 {/* Net */}
