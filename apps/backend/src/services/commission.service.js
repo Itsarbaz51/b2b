@@ -40,6 +40,92 @@ export class CommissionSettingService {
       throw ApiError.badRequest("targetUserId is required for USER scope");
     }
 
+    // ---------------- PARENT VALIDATION ----------------
+    if (mode === "SURCHARGE" || mode === "COMMISSION") {
+      let userIdForCheck = null;
+
+      // USER scope → direct
+      if (scope === "USER") {
+        userIdForCheck = targetUserId;
+      }
+
+      // ROLE scope → pick any user of that role
+      if (scope === "ROLE") {
+        const roleUser = await Prisma.user.findFirst({
+          where: { roleId },
+          select: { id: true },
+        });
+
+        if (!roleUser) {
+          throw ApiError.badRequest("No user found for this role");
+        }
+
+        userIdForCheck = roleUser.id;
+      }
+
+      if (userIdForCheck) {
+        const parent = await Prisma.user.findUnique({
+          where: { id: userIdForCheck },
+          select: { parentId: true },
+        });
+
+        if (parent?.parentId) {
+          let parentSetting = null;
+
+          // USER level
+          parentSetting = await Prisma.commissionSetting.findFirst({
+            where: {
+              scope: "USER",
+              targetUserId: parent.parentId,
+              serviceProviderMappingId: serviceProviderMappingId ?? null,
+              mode,
+              isActive: true,
+            },
+          });
+
+          // ROLE fallback
+          if (!parentSetting) {
+            const parentUser = await Prisma.user.findUnique({
+              where: { id: parent.parentId },
+              select: { roleId: true },
+            });
+
+            if (parentUser?.roleId) {
+              parentSetting = await Prisma.commissionSetting.findFirst({
+                where: {
+                  scope: "ROLE",
+                  roleId: parentUser.roleId,
+                  serviceProviderMappingId: serviceProviderMappingId ?? null,
+                  mode,
+                  isActive: true,
+                },
+              });
+            }
+          }
+
+          // FINAL VALIDATION
+          if (parentSetting) {
+            const parentValue = BigInt(parentSetting.value);
+            const currentValue = BigInt(value);
+
+            // SURCHARGE RULE
+            if (mode === "SURCHARGE" && currentValue < parentValue) {
+              throw ApiError.badRequest(
+                `Surcharge cannot be less than parent (${parentValue})`
+              );
+            }
+
+            // COMMISSION RULE
+            if (mode === "COMMISSION" && currentValue > parentValue) {
+              throw ApiError.badRequest(
+                `Commission cannot be greater than parent (${parentValue})`
+              );
+            }
+          }
+        }
+      }
+    }
+
     // ---------------- VERIFY REFERENCES ----------------
     if (serviceProviderMappingId) {
       const service = await Prisma.serviceProviderMapping.findUnique({

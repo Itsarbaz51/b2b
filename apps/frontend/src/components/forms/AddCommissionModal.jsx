@@ -5,7 +5,7 @@ import { createOrUpdateCommissionSetting } from "../../redux/slices/commissionSl
 import { getAllRoles, getAllRolesByType } from "../../redux/slices/roleSlice";
 import { getAllBusinessUsersByParentId } from "../../redux/slices/userSlice";
 import { getAllServices } from "../../redux/slices/serviceSlice";
-import { rupeesToPaise } from "../../utils/lib";
+import { paisaToRupee, rupeesToPaise } from "../../utils/lib";
 import HeaderSection from "../ui/HeaderSection";
 
 const scopes = ["ROLE", "USER"];
@@ -60,7 +60,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
         mode: editData.mode || "COMMISSION",
         type: editData.type || "FLAT",
-        value: editData.value || "",
+        value: paisaToRupee(editData.value) || "",
 
         applyTDS: editData.applyTDS || false,
         tdsPercent: editData.tdsPercent ?? "",
