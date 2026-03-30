@@ -96,11 +96,6 @@ const Dashboard = () => {
           icon: Percent,
         },
         {
-          title: "Total Volume",
-          value: paisaToRupee(summary.totalVolume || 0),
-          icon: BarChart3,
-        },
-        {
           title: "Total Profit",
           value: paisaToRupee(summary.totalProfit || 0),
           icon: TrendingUp,

@@ -265,8 +265,6 @@ export default class DashboardService {
     //  FINAL RESPONSE
     return {
       summary: {
-        totalVolume: txnAgg._sum.amount || 0,
-
         totalProfit: earningAgg._sum.amount || 0,
         totalGST: gstAgg._sum.amount || 0,
         totalTDS: tdsAgg._sum.amount || 0,
