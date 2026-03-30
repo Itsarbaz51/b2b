@@ -145,6 +145,14 @@ const Sidebar = () => {
           staticRoles: ["ADMIN"],
         },
         {
+          id: "report",
+          label: "Report",
+          icon: BarChart3,
+          path: "/reports",
+          employeePermission: PERMISSIONS.REPORT,
+          staticRoles: BUSINESS_ROLE_LIST,
+        },
+        {
           id: "ledger",
           label: "Ledger",
           icon: BarChart3,

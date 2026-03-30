@@ -315,10 +315,6 @@ export default class CommissionEarningService {
       amount = 0n,
       mode,
       type,
-      commissionAmount = 0n,
-      surchargeAmount = null,
-      tdsAmount = null,
-      gstAmount = null,
       netAmount = 0n,
       metadata = null,
       createdBy,
@@ -352,12 +348,6 @@ export default class CommissionEarningService {
 
         mode,
         type,
-
-        commissionAmount: BigInt(commissionAmount ?? 0),
-        surchargeAmount:
-          surchargeAmount !== null ? BigInt(surchargeAmount) : null,
-        tdsAmount: BigInt(tdsAmount ?? 0),
-        gstAmount: BigInt(gstAmount ?? 0),
 
         netAmount: BigInt(netAmount ?? 0),
 
@@ -415,8 +405,6 @@ export default class CommissionEarningService {
       select: {
         id: true,
         amount: true,
-        commissionAmount: true,
-        surchargeAmount: true,
         netAmount: true,
         mode: true,
         type: true,
@@ -534,11 +522,6 @@ export default class CommissionEarningService {
           amount: earning.amount,
           mode: earning.mode,
           type: earning.type,
-
-          commissionAmount: earning.commissionAmount,
-          surchargeAmount: earning.surchargeAmount,
-          tdsAmount: earning.tdsAmount,
-          gstAmount: earning.gstAmount,
 
           // 🔁 reverse amount
           netAmount: -earning.netAmount,

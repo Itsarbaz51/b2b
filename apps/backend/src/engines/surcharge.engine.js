@@ -110,8 +110,6 @@ export default class SurchargeEngine {
         amount,
         mode: "SURCHARGE",
         type: txnRule.type,
-        commissionAmount: 0n,
-        surchargeAmount: amount,
         netAmount: amount,
         createdBy,
       });
@@ -173,8 +171,6 @@ export default class SurchargeEngine {
           amount: baseAmount,
           mode: "SURCHARGE",
           type: rule ? rule.type : "FLAT",
-          commissionAmount: 0n,
-          surchargeAmount: profit,
           netAmount: profit,
           createdBy,
         });

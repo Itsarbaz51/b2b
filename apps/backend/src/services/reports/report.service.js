@@ -1,105 +1,148 @@
-import Prisma from "../../db/db.js";
+import prisma from "../../db/db.js";
 
 export default class ReportService {
-  static async getProfitBreakdown({ userId, fromDate, toDate, role }) {
-    const where = {
-      createdAt: {
-        gte: new Date(fromDate),
-        lte: new Date(toDate),
-      },
+  /**
+   * 🔥 USER REPORT (CORRECT LOGIC)
+   */
+  static async getUserReport({ userId }) {
+    const data = await prisma.ledgerEntry.groupBy({
+      by: ["entryType"],
+      where: { createdBy: userId },
+      _sum: { amount: true },
+    });
+
+    let credit = 0;
+    let debit = 0;
+
+    data.forEach((item) => {
+      const amt = Number(item._sum.amount || 0);
+
+      if (item.entryType === "CREDIT") {
+        credit += amt;
+      } else if (item.entryType === "DEBIT") {
+        debit += amt;
+      }
+    });
+
+    // 🔥 breakdown (NO EXTRA MATH)
+    const breakdown = await prisma.ledgerEntry.groupBy({
+      by: ["referenceType", "entryType"],
+      where: { createdBy: userId },
+      _sum: { amount: true },
+    });
+
+    const summary = {};
+
+    breakdown.forEach((item) => {
+      const key = item.referenceType;
+      const amt = Number(item._sum.amount || 0);
+
+      if (!summary[key]) {
+        summary[key] = 0;
+      }
+
+      if (item.entryType === "CREDIT") {
+        summary[key] += amt;
+      } else {
+        summary[key] -= amt;
+      }
+    });
+
+    return {
+      totalCredit: credit,
+      totalDebit: debit,
+      netProfit: credit - debit, // 🔥 FINAL TRUTH
+      breakdown: summary,
     };
+  }
 
-    //  user specific
-    if (role !== "ADMIN") {
-      where.userId = userId;
-    }
+  /**
+   * 🔥 ADMIN REPORT (ALL USERS)
+   */
+  static async getAdminReport() {
+    const data = await prisma.ledgerEntry.groupBy({
+      by: ["referenceType", "entryType"],
+      _sum: { amount: true },
+    });
 
-    const data = await Prisma.commissionEarning.findMany({
+    let totalCredit = 0;
+    let totalDebit = 0;
+    let profit = 0;
+
+    // ✅ define earning types (future safe)
+    const EARNING_TYPES = ["SURCHARGE", "USER_GST"];
+
+    data.forEach((item) => {
+      const amt = Number(item._sum.amount || 0);
+      const ref = item.referenceType;
+      const type = item.entryType;
+
+      if (type === "CREDIT") totalCredit += amt;
+      if (type === "DEBIT") totalDebit += amt;
+
+      // 🔥 PROFIT ONLY FROM EARNING TYPES
+      if (type === "CREDIT" && EARNING_TYPES.includes(ref)) {
+        profit += amt;
+      }
+    });
+
+    return {
+      totalCredit,
+      totalDebit,
+      netProfit: profit,
+    };
+  }
+
+  /**
+   * 🔥 SERVICE + PROVIDER REPORT (CORRECT)
+   */
+  static async getServiceReport({ userId }) {
+    const where = userId ? { userId } : {};
+
+    const data = await prisma.ledgerEntry.findMany({
       where,
-      select: {
-        userId: true,
-        surchargeAmount: true,
-        commissionAmount: true,
-        netAmount: true,
-        createdAt: true,
-        transactionId: true,
+      include: {
+        serviceProviderMapping: {
+          include: {
+            service: true,
+            provider: true,
+          },
+        },
       },
     });
 
-    //  aggregation
-    const summary = {};
+    const result = {};
 
-    for (const row of data) {
-      if (!summary[row.userId]) {
-        summary[row.userId] = {
-          totalProfit: 0,
-          totalTxn: 0,
+    // 🔥 only earning types
+    const EARNING_TYPES = ["SURCHARGE", "USER_GST"];
+
+    data.forEach((item) => {
+      const service = item.serviceProviderMapping?.service?.code || "UNKNOWN";
+      const provider = item.serviceProviderMapping?.provider?.code || "UNKNOWN";
+
+      const ref = item.referenceType;
+
+      // ❌ skip non-earning (important)
+      if (!EARNING_TYPES.includes(ref)) return;
+
+      const key = `${service}__${provider}`;
+
+      if (!result[key]) {
+        result[key] = {
+          service,
+          provider,
+          profit: 0,
         };
       }
 
-      summary[row.userId].totalProfit += Number(row.netAmount);
-      summary[row.userId].totalTxn += 1;
-    }
+      const amt = Number(item.amount || 0);
 
-    return summary;
-  }
-
-  // CA REPORT (GST + PROFIT)
-  static async getCAReport({ fromDate, toDate }) {
-    const where = {
-      createdAt: {
-        gte: new Date(fromDate),
-        lte: new Date(toDate),
-      },
-    };
-
-    // 🔹 Total surcharge collected
-    const surcharge = await Prisma.commissionEarning.aggregate({
-      _sum: { surchargeAmount: true },
-      where,
+      // ✅ only CREDIT earning
+      if (item.entryType === "CREDIT") {
+        result[key].profit += amt;
+      }
     });
 
-    // 🔹 GST collected from user
-    const gstOut = await Prisma.ledgerEntry.aggregate({
-      _sum: { amount: true },
-      where: {
-        referenceType: "USER_GST",
-        createdAt: where.createdAt,
-      },
-    });
-
-    // 🔹 GST paid to provider
-    const gstIn = await Prisma.ledgerEntry.aggregate({
-      _sum: { amount: true },
-      where: {
-        referenceType: "PROVIDER_GST",
-        createdAt: where.createdAt,
-      },
-    });
-
-    // 🔹 Total distributor payout
-    const payout = await Prisma.commissionEarning.aggregate({
-      _sum: { netAmount: true },
-      where,
-    });
-
-    const totalRevenue = Number(surcharge._sum.surchargeAmount || 0);
-    const totalGSTOut = Number(gstOut._sum.amount || 0);
-    const totalGSTIn = Number(gstIn._sum.amount || 0);
-    const totalPayout = Number(payout._sum.netAmount || 0);
-
-    return {
-      revenue: totalRevenue,
-
-      gst: {
-        outputGST: totalGSTOut,
-        inputGST: totalGSTIn,
-        payableGST: totalGSTOut - totalGSTIn,
-      },
-
-      payoutToUsers: totalPayout,
-
-      netProfit: totalRevenue - totalPayout - (totalGSTOut - totalGSTIn),
-    };
+    return Object.values(result);
   }
 }

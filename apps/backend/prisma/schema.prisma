@@ -130,6 +130,7 @@ model User {
   wallets                       Wallet[]
   limits                        UserLimit?
   loginEvents                   LoginEvent[]
+  ledgerEntries                 LedgerEntry[]
 
   @@index([parentId])
   @@index([hierarchyLevel])
@@ -387,8 +388,6 @@ model CommissionEarning {
 
   commissionAmount BigInt @map("commission_amount")
   surchargeAmount  BigInt @map("surcharge_amount")
-  tdsAmount        BigInt @map("tds_amount")
-  gstAmount        BigInt @map("gst_amount")
 
   netAmount BigInt @map("net_amount")
 
@@ -626,6 +625,7 @@ model LedgerEntry {
 
   serviceProviderMappingId String?
   serviceProviderMapping   ServiceProviderMapping? @relation(fields: [serviceProviderMappingId], references: [id])
+  createdByUser            User                    @relation(fields: [createdBy], references: [id])
 
   @@unique([idempotencyKey])
   @@index([transactionId])

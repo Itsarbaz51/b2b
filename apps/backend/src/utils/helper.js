@@ -105,10 +105,6 @@ class Helper {
 
     const bigIntFields = [
       "amount",
-      "commissionAmount",
-      "tdsAmount",
-      "gstAmount",
-      "surchargeAmount",
       "netAmount",
       "minAmount",
       "maxAmount",
@@ -128,7 +124,6 @@ class Helper {
       "commissionValue",
       "tdsPercent",
       "gstPercent",
-      "surchargeAmount",
     ];
     decimalFields.forEach((field) => {
       if (serialized[field] !== undefined && serialized[field] !== null) {

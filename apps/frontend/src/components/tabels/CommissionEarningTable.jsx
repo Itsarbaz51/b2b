@@ -47,12 +47,6 @@ const CommissionEarningTable = ({
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Amount
             </th>
-
-            {/* FIXED HEADER */}
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
-              Earning
-            </th>
-
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">
               Net Amount
             </th>
@@ -81,12 +75,7 @@ const CommissionEarningTable = ({
           ) : (
             earnings.map((earning, index) => {
               const amount = toNumber(earning.amount);
-              const commission = toNumber(earning.commissionAmount);
-              const surcharge = toNumber(earning.surchargeAmount);
               const net = toNumber(earning.netAmount);
-
-              const earningValue =
-                earning.mode === "SURCHARGE" ? surcharge : commission;
 
               return (
                 <tr
@@ -144,11 +133,6 @@ const CommissionEarningTable = ({
                   {/* Amount */}
                   <td className="px-6 py-5 text-sm font-semibold">
                     ₹{paisaToRupee(amount)}
-                  </td>
-
-                  {/* Earning */}
-                  <td className="px-6 py-5 text-sm font-semibold text-green-600">
-                    ₹{paisaToRupee(earningValue)}
                   </td>
 
                   {/* Net */}

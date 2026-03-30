@@ -38,6 +38,7 @@ import FundRequestPage from "../pages/services/FundRequestPage.jsx";
 import FundAddPage from "../pages/services/FundAddPage.jsx";
 import PayoutPage from "../pages/services/PayoutPage.jsx";
 import Ledger from "../pages/Ledger.jsx";
+import Reports from "../pages/Reports.jsx";
 
 export const createRouter = () => {
   return createBrowserRouter(
@@ -68,6 +69,7 @@ export const createRouter = () => {
             path="commission-management"
             element={<CommissionManagement />}
           />
+          <Route path="reports" element={<Reports />} />
           <Route path="ledger" element={<Ledger />} />
           <Route path="request-fund" element={<FundRequestPage />} />
           <Route path="payout" element={<PayoutPage />} />
