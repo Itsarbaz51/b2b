@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { getUserById } from "./userSlice";
+import { verifyAuth } from "./authSlice";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -59,7 +60,7 @@ export const transferCommissionToPrimary = (payload) => async (dispatch) => {
     );
 
     dispatch(walletSuccess(data));
-    await dispatch(getUserById());
+    await dispatch(verifyAuth());
 
     return data;
   } catch (error) {

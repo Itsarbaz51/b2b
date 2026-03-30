@@ -6,6 +6,7 @@ import StateCard from "../components/ui/StateCard";
 import { getReports } from "../redux/slices/reportSlice";
 import ReportTable from "../components/tabels/ReportTable";
 import { paisaToRupee } from "../utils/lib";
+import { useDebounce } from "use-debounce";
 
 const ReportsPage = () => {
   const dispatch = useDispatch();
@@ -14,15 +15,25 @@ const ReportsPage = () => {
   const [serviceWise, setServiceWise] = useState(false);
   const [userId, setUserId] = useState("");
 
+  const { currentUser } = useSelector((s) => s.auth);
+  const isAdmin = currentUser?.role?.name === "ADMIN" || currentUser.role.type;
+
+  const DEBOUNCE_DELAY = 400;
+
+  const [debouncedSearch] = useDebounce(userId, DEBOUNCE_DELAY);
   // FETCH API
   useEffect(() => {
     const params = {};
 
     if (serviceWise) params.service = true;
-    if (userId) params.userId = userId;
+
+    //  debounce use karo (NOT userId)
+    if (isAdmin && debouncedSearch?.trim()) {
+      params.search = debouncedSearch.trim();
+    }
 
     dispatch(getReports(params));
-  }, [dispatch, serviceWise, userId]);
+  }, [dispatch, serviceWise, debouncedSearch, isAdmin]);
 
   const isArray = Array.isArray(reports);
 
@@ -62,26 +73,28 @@ const ReportsPage = () => {
         </div>
 
         {/* User Filter */}
-        <div className="flex gap-2 items-center">
-          <User className="w-5 h-5 text-gray-400" />
+        {isAdmin && (
+          <div className="flex gap-2 items-center">
+            <User className="w-5 h-5 text-gray-400" />
 
-          <input
-            type="text"
-            placeholder="Enter User ID"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg"
-          />
+            <input
+              type="text"
+              placeholder="Search by User ID / Username"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              className="px-4 py-2 border border-gray-200 rounded-lg"
+            />
 
-          {userId && (
-            <button
-              onClick={() => setUserId("")}
-              className="px-3 py-2 bg-red-100 text-red-600 rounded-lg"
-            >
-              Clear
-            </button>
-          )}
-        </div>
+            {userId && (
+              <button
+                onClick={() => setUserId("")}
+                className="px-3 py-2 bg-red-100 text-red-600 rounded-lg"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* SUMMARY CARDS */}

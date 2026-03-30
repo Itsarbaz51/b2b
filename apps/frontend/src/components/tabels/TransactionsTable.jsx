@@ -63,17 +63,31 @@ const TransactionsTable = ({
 
             <button
               onClick={() => {
-                setActiveTab("transactions");
+                setActiveTab("success");
                 setSelectedCategory("all");
               }}
               className={`flex items-center space-x-2 py-4 px-6 border-b-2 text-sm ${
-                activeTab === "transactions"
-                  ? "border-blue-500 text-blue-600 bg-blue-50"
+                activeTab === "success"
+                  ? "border-green-500 text-green-600 bg-blue-50"
                   : "border-transparent text-gray-500"
               }`}
             >
               <Activity className="w-5 h-5" />
-              Transactions
+              Success Transactions
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("failed");
+                setSelectedCategory("all");
+              }}
+              className={`flex items-center space-x-2 py-4 px-6 border-b-2 text-sm ${
+                activeTab === "failed"
+                  ? "border-red-500 text-red-600 bg-blue-50"
+                  : "border-transparent text-gray-500"
+              }`}
+            >
+              <Activity className="w-5 h-5" />
+              Failed Transactions
             </button>
           </nav>
         </div>
@@ -180,7 +194,9 @@ const TransactionsTable = ({
 
                     <td className="px-6 py-4 flex items-center gap-2">
                       <Icon className="w-4 h-4" />
-                      {service?.name}
+                      {txn?.apiEntity?.requestPayload?.type && service?.name
+                        ? `${txn?.apiEntity?.requestPayload.type} - ${service?.name}`
+                        : txn?.apiEntity?.requestPayload?.type || service?.name}
                     </td>
 
                     <td className="px-6 py-4">
@@ -196,15 +212,15 @@ const TransactionsTable = ({
                     <td className="px-6 py-4 font-semibold">
                       ₹
                       {paisaToRupee(
-                        Number(txn.pricing.gstProvider) +
-                          Number(txn.pricing.gstProvider),
+                        Number(txn.pricing?.gstSurcharge) +
+                          Number(txn.pricing?.gstProvider),
                       )}
                     </td>
                     <td className="px-6 py-4 font-semibold">
-                      ₹{paisaToRupee(txn.pricing.surcharge)}
+                      ₹{paisaToRupee(txn.pricing?.surcharge)}
                     </td>
                     <td className="px-6 py-4 font-semibold">
-                      ₹{paisaToRupee(txn.pricing.totalDebit)}
+                      ₹{paisaToRupee(txn.pricing?.totalDebit)}
                     </td>
 
                     <td className="px-6 py-4">

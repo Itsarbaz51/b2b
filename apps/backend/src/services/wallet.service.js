@@ -3,11 +3,14 @@ import LedgerEngine from "../engines/ledger.engine.js";
 import TransactionService from "./transaction.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import Prisma from "../db/db.js";
+import Helper from "../utils/helper.js";
 
 export default class WalletService {
   static async transferCommissionToPrimary(payload, userId) {
     const { amount, idempotencyKey } = payload;
     const amt = BigInt(amount);
+
+    const txnId = Helper.generateTxnId("TXN");
 
     if (amt <= 0n) {
       throw ApiError.badRequest("Invalid amount");
@@ -29,6 +32,7 @@ export default class WalletService {
 
       // 🔹 create transaction
       const { transaction } = await TransactionService.create(tx, {
+        txnId,
         userId,
         walletId: commissionWallet.id,
         serviceProviderMappingId: null,

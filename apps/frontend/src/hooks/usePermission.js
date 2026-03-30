@@ -36,16 +36,16 @@ export const usePermissions = (serviceCode) => {
   }
 
   if (roleType === "employee") {
-    const allowed = currentUser?.permissions?.includes(
-      serviceCode?.toLowerCase(),
-    );
+    const normalizedService = serviceCode?.toLowerCase()?.replaceAll("_", " ");
+
+    const allowed = currentUser?.permissions?.includes(normalizedService);
 
     return {
       canView: allowed,
       canProcess: allowed,
       providers: [],
-      getProviderByCode: () => null,
       defaultProvider: null,
+      getProviderByCode: () => null,
     };
   }
 

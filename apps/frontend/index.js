@@ -12,7 +12,7 @@ export const protectedRoute = [
   "/employee-management",
   "/wallet",
   "/kyc-request",
-  "/request-fund",
+  "/fund-request",
   "/permission",
   "/profile/:id",
   "/logs",
@@ -40,7 +40,7 @@ export const navbarTitleConfig = {
     tagLine: "Overview of your system",
     icon: BarChart3,
   },
-  "/request-fund": {
+  "/fund-request": {
     title: "Add Fund Request",
     tagLine: "Manage fund request",
     icon: BadgeIndianRupee,

@@ -65,8 +65,6 @@ const AddRazorpayFundForm = ({
 
         modal: {
           ondismiss: async function (response) {
-            console.log(response);
-
             await dispatch(
               verifyFundRequest({
                 transactionId: res?.data?.transactionId,

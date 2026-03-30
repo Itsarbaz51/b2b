@@ -36,8 +36,10 @@ const AddEmployeePermissions = ({
   const COMMON_PERMISSIONS = [
     "dashboard",
     "transactions",
-    "commission",
+    "commission management",
+    "fund request",
     "reports",
+    "ledger",
     "kyc request",
     "users",
     "General Settings",
@@ -47,7 +49,6 @@ const AddEmployeePermissions = ({
     "API Integration",
     "profile",
     "logs",
-    "employee management",
   ];
 
   const MAX_PERMISSIONS = 20;

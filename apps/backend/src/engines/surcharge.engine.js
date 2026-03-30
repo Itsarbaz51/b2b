@@ -223,6 +223,25 @@ export default class SurchargeEngine {
     const userGST = BigInt(pricing?.gstSurcharge || 0n);
 
     if (userGST > 0n) {
+      //  1. USER DEBIT (IMPORTANT FIX)
+      const userWallet = await WalletEngine.getWallet({
+        tx,
+        userId: userId,
+        walletType: "PRIMARY",
+      });
+
+      await LedgerEngine.create(tx, {
+        walletId: userWallet.id,
+        transactionId,
+        entryType: "DEBIT", //  USER PAY
+        referenceType: "USER_GST",
+        serviceProviderMappingId,
+        amount: userGST,
+        narration: "GST charged from user",
+        createdBy,
+      });
+
+      //  2. ADMIN CREDIT (already there)
       const gstWallet = await WalletEngine.getWallet({
         tx,
         userId: admin.id,
@@ -234,7 +253,7 @@ export default class SurchargeEngine {
       await LedgerEngine.create(tx, {
         walletId: gstWallet.id,
         transactionId,
-        entryType: "CREDIT",
+        entryType: "CREDIT", // ADMIN EARN
         referenceType: "USER_GST",
         serviceProviderMappingId,
         amount: userGST,

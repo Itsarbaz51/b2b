@@ -197,6 +197,11 @@ export default class TransactionService {
           },
         },
       },
+      apiEntity: {
+        select: {
+          requestPayload: true,
+        },
+      },
     };
 
     /* EXTRA FIELDS ONLY FOR ADMIN / EMPLOYEE */

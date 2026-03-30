@@ -8,17 +8,23 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, currentUser } = useSelector((state) => state.auth);
   const currentPath = location.pathname;
 
-  // PUBLIC ROUTES
-  if (ROUTE_CONFIG.PUBLIC.includes(currentPath)) {
-    return children;
-  }
-
   const serviceCodeFromPath = currentPath
     .replace("/", "")
     .replaceAll("-", "_")
     .toUpperCase();
 
-  const permission = usePermissions(serviceCodeFromPath);
+  const roleType = currentUser?.role?.type;
+
+  // ONLY for business
+  let permission = null;
+
+  if (roleType === "business") {
+    permission = usePermissions(serviceCodeFromPath);
+    // PUBLIC ROUTES
+    if (ROUTE_CONFIG.PUBLIC.includes(currentPath)) {
+      return children;
+    }
+  }
 
   // AUTH CHECK
   if (!isAuthenticated || !currentUser) {
@@ -39,7 +45,7 @@ const ProtectedRoute = ({ children }) => {
 
   const walletBalance = Number(primaryWallet?.balance || 0);
 
-  // ---------------- WALLET CHECK ----------------
+  // WALLET CHECK
   if (
     isBusinessUser &&
     walletBalance === 0 &&
@@ -49,7 +55,7 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/add-fund" replace />;
   }
 
-  // ---------------- KYC CHECK ----------------
+  // KYC CHECK
   if (
     isBusinessUser &&
     walletBalance > 0 &&
@@ -63,7 +69,7 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // ---------------- SERVICE PERMISSIONS ----------------
+  // SERVICE PERMISSIONS
   if (currentUser?.role?.type === "business") {
     if (Object.values(SERVICES).includes(serviceCodeFromPath)) {
       if (!permission.canView) {
@@ -72,13 +78,14 @@ const ProtectedRoute = ({ children }) => {
     }
   }
 
-  // ---------------- EMPLOYEE PERMISSIONS ----------------
-  if (currentUser?.role?.type === "employee") {
+  // EMPLOYEE PERMISSIONS
+  if (currentUser?.role?.type == "employee") {
     const employeePermissions = currentUser?.permissions || [];
 
     const permissionFromPath = currentPath
       .replace("/", "")
-      .replaceAll("-", "_");
+      .replaceAll("-", " ")
+      .toLowerCase();
 
     if (!employeePermissions.includes(permissionFromPath)) {
       if (employeePermissions.includes("dashboard")) {
@@ -87,9 +94,9 @@ const ProtectedRoute = ({ children }) => {
 
       if (employeePermissions.length > 0) {
         const firstPermission = employeePermissions[0].replaceAll("_", "-");
-
         return <Navigate to={`/${firstPermission}`} replace />;
       }
+
       return <Navigate to="/permission-denied" replace />;
     }
   }

@@ -71,7 +71,7 @@ export const createRouter = () => {
           />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="ledger" element={<Ledger />} />
-          <Route path="request-fund" element={<FundRequestPage />} />
+          <Route path="fund-request" element={<FundRequestPage />} />
           <Route path="payout" element={<PayoutPage />} />
           <Route path="kyc-request" element={<RequestKYC />} />
           <Route path="users" element={<UsersTable />} />

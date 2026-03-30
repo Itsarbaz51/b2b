@@ -137,19 +137,19 @@ export function RoleTable({
               </td>
 
               {/* ACTIONS */}
-
               <td className="px-6 py-4">
                 <div className="flex gap-2">
                   {/* PERMISSION (FOR BOTH TYPES) */}
 
-                  <button
-                    onClick={() => onPermission(role)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-medium rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all shadow-sm"
-                  >
-                    <Shield size={14} />
-                    Permission
-                  </button>
-
+                  {role?.type !== "employee" && (
+                    <button
+                      onClick={() => onPermission(role)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-linear-to-r from-cyan-500 to-blue-600 text-white text-sm font-medium rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all shadow-sm"
+                    >
+                      <Shield size={14} />
+                      Permission
+                    </button>
+                  )}
                   {/* EDIT + DELETE ONLY FOR EMPLOYEE */}
 
                   {allowActions && (

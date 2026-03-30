@@ -47,7 +47,12 @@ const TransactionsPage = () => {
         limit: itemsPerPage,
         type: selectedCategory?.toUpperCase(),
         search: searchTerm,
-        status: activeTab === "pending" ? "PENDING" : "SUCCESS",
+        status:
+          activeTab === "pending"
+            ? "PENDING"
+            : activeTab === "failed"
+              ? "FAILED"
+              : "SUCCESS",
         date: dateFilter,
       }),
     );
@@ -75,7 +80,12 @@ const TransactionsPage = () => {
         limit: itemsPerPage,
         type: selectedCategory?.toUpperCase(),
         search: searchTerm,
-        status: activeTab === "pending" ? "PENDING" : "SUCCESS",
+        status:
+          activeTab === "pending"
+            ? "PENDING"
+            : activeTab === "failed"
+              ? "FAILED"
+              : "SUCCESS",
         date: dateFilter,
       }),
     );

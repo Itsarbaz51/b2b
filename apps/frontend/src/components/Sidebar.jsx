@@ -12,6 +12,7 @@ import {
   Wallet,
   BadgeIndianRupee,
   FileCode,
+  FileChartColumnIncreasing,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, verifyAuth } from "../redux/slices/authSlice";
@@ -93,7 +94,7 @@ const Sidebar = () => {
           id: "add-fund",
           label: "Add Fund",
           icon: BadgeIndianRupee,
-          path: "/request-fund",
+          path: "/fund-request",
           businessUserPermission: fundRequestPermissions.canView,
           employeePermission: PERMISSIONS.FUND_REQUEST,
           staticRoles: [
@@ -147,7 +148,7 @@ const Sidebar = () => {
         {
           id: "report",
           label: "Report",
-          icon: BarChart3,
+          icon: FileChartColumnIncreasing,
           path: "/reports",
           employeePermission: PERMISSIONS.REPORT,
           staticRoles: BUSINESS_ROLE_LIST,
