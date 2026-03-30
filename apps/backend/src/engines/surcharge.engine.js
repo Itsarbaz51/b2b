@@ -263,7 +263,6 @@ export default class SurchargeEngine {
         createdBy,
       });
     }
-    console.log({ distribution, pricing });
 
     //  FINAL RETURN
     return {

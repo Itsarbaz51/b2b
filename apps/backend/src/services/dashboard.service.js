@@ -107,7 +107,7 @@ export default class DashboardService {
       _sum: { amount: true },
       where: {
         referenceType: "USER_GST",
-        ...(isAdmin ? {} : { userId }),
+        ...(isAdmin ? {} : { createdBy: userId }),
       },
     });
 
@@ -116,7 +116,7 @@ export default class DashboardService {
       _sum: { amount: true },
       where: {
         referenceType: "TDS",
-        ...(isAdmin ? {} : { userId }),
+        ...(isAdmin ? {} : { createdBy: userId }),
       },
     });
 

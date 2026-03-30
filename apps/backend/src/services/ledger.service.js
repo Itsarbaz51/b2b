@@ -82,6 +82,17 @@ export default class LedgerService {
               },
             },
           },
+          createdByUser: {
+            select: {
+              id: true,
+              username: true,
+              role: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
           transaction: {
             select: {
               txnId: true,

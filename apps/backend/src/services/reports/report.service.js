@@ -5,9 +5,17 @@ export default class ReportService {
    * 🔥 USER REPORT (CORRECT LOGIC)
    */
   static async getUserReport({ userId }) {
+    // ✅ user ke wallet entries nikalo
+    const where = {
+      wallet: {
+        userId: userId,
+      },
+    };
+
+    // ✅ TOTAL CREDIT / DEBIT
     const data = await prisma.ledgerEntry.groupBy({
       by: ["entryType"],
-      where: { createdBy: userId },
+      where,
       _sum: { amount: true },
     });
 
@@ -17,41 +25,44 @@ export default class ReportService {
     data.forEach((item) => {
       const amt = Number(item._sum.amount || 0);
 
-      if (item.entryType === "CREDIT") {
-        credit += amt;
-      } else if (item.entryType === "DEBIT") {
-        debit += amt;
-      }
+      if (item.entryType === "CREDIT") credit += amt;
+      if (item.entryType === "DEBIT") debit += amt;
     });
 
-    // 🔥 breakdown (NO EXTRA MATH)
+    // 🔥 BREAKDOWN
     const breakdown = await prisma.ledgerEntry.groupBy({
       by: ["referenceType", "entryType"],
-      where: { createdBy: userId },
+      where,
       _sum: { amount: true },
     });
 
     const summary = {};
+    let profit = 0;
+
+    const EARNING_TYPES = ["SURCHARGE", "COMMISSION"];
 
     breakdown.forEach((item) => {
       const key = item.referenceType;
       const amt = Number(item._sum.amount || 0);
 
-      if (!summary[key]) {
-        summary[key] = 0;
-      }
+      if (!summary[key]) summary[key] = 0;
 
       if (item.entryType === "CREDIT") {
         summary[key] += amt;
       } else {
         summary[key] -= amt;
       }
+
+      // ✅ PROFIT = sirf jo user ko mila
+      if (item.entryType === "CREDIT" && EARNING_TYPES.includes(key)) {
+        profit += amt;
+      }
     });
 
     return {
       totalCredit: credit,
       totalDebit: debit,
-      netProfit: credit - debit, // 🔥 FINAL TRUTH
+      netProfit: profit,
       breakdown: summary,
     };
   }
@@ -70,7 +81,7 @@ export default class ReportService {
     let profit = 0;
 
     // ✅ define earning types (future safe)
-    const EARNING_TYPES = ["SURCHARGE", "USER_GST"];
+    const EARNING_TYPES = ["SURCHARGE"];
 
     data.forEach((item) => {
       const amt = Number(item._sum.amount || 0);
@@ -97,7 +108,13 @@ export default class ReportService {
    * 🔥 SERVICE + PROVIDER REPORT (CORRECT)
    */
   static async getServiceReport({ userId }) {
-    const where = userId ? { userId } : {};
+    const where = userId
+      ? {
+          wallet: {
+            userId,
+          },
+        }
+      : {};
 
     const data = await prisma.ledgerEntry.findMany({
       where,
@@ -113,17 +130,21 @@ export default class ReportService {
 
     const result = {};
 
-    // 🔥 only earning types
-    const EARNING_TYPES = ["SURCHARGE", "USER_GST"];
+    // 🔥 earning types
+    const EARNING_TYPES = ["SURCHARGE", "COMMISSION"];
 
     data.forEach((item) => {
-      const service = item.serviceProviderMapping?.service?.code || "UNKNOWN";
-      const provider = item.serviceProviderMapping?.provider?.code || "UNKNOWN";
-
       const ref = item.referenceType;
 
-      // ❌ skip non-earning (important)
+      // ❌ skip non-earning
       if (!EARNING_TYPES.includes(ref)) return;
+
+      // ❌ only CREDIT (profit hi lena hai)
+      if (item.entryType !== "CREDIT") return;
+
+      const service = item.serviceProviderMapping?.service?.code || "UNKNOWN";
+
+      const provider = item.serviceProviderMapping?.provider?.code || "UNKNOWN";
 
       const key = `${service}__${provider}`;
 
@@ -132,15 +153,14 @@ export default class ReportService {
           service,
           provider,
           profit: 0,
+          txnCount: 0,
         };
       }
 
       const amt = Number(item.amount || 0);
 
-      // ✅ only CREDIT earning
-      if (item.entryType === "CREDIT") {
-        result[key].profit += amt;
-      }
+      result[key].profit += amt;
+      result[key].txnCount += 1;
     });
 
     return Object.values(result);

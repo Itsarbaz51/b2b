@@ -214,7 +214,6 @@ const TransactionsTable = ({
                     <td className="px-6 py-4 text-sm">
                       {new Date(txn.initiatedAt).toLocaleString()}
                     </td>
-                    {console.log(txn)}
                     <td className="px-6 py-4 text-sm">
                       {new Date(txn.completedAt).toLocaleString()}
                     </td>

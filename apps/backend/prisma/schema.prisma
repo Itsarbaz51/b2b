@@ -386,9 +386,6 @@ model CommissionEarning {
   mode PricingMode
   type CommissionType
 
-  commissionAmount BigInt @map("commission_amount")
-  surchargeAmount  BigInt @map("surcharge_amount")
-
   netAmount BigInt @map("net_amount")
 
   metadata Json? @map("meta_data")

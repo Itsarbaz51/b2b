@@ -21,37 +21,6 @@ class CommissionValidationSchemas {
       supportsSlab: z.boolean().optional(),
     });
   }
-
-  static get createCommissionEarningSchema() {
-    return z.object({
-      userId: z.string().uuid({ message: "userId must be a valid UUID" }),
-      fromUserId: z
-        .string()
-        .uuid({ message: "fromUserId must be a valid UUID" })
-        .optional(),
-
-      serviceId: z
-        .string()
-        .uuid({ message: "serviceId must be a valid UUID" })
-        .optional(),
-
-      transactionId: z
-        .string()
-        .uuid({ message: "transactionId must be a valid UUID" }),
-
-      amount: z.coerce.bigint().positive(),
-      commissionAmount: z.coerce.bigint().positive(),
-
-      commissionType: z.enum(["FLAT", "PERCENTAGE"]),
-
-      tdsAmount: z.coerce.bigint().nonnegative().optional().default(0),
-      gstAmount: z.coerce.bigint().nonnegative().optional().default(0),
-
-      netAmount: z.coerce.bigint().positive(),
-
-      metadata: z.any().optional(),
-    });
-  }
 }
 
 export default CommissionValidationSchemas;
