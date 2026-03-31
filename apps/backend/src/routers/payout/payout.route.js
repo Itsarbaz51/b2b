@@ -29,14 +29,14 @@ router.post(
 );
 
 // BALANCE
-router.post(
-  "/balance",
-  AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize(["ADMIN", "employee"]),
-  validateRequest({
-    body: PayoutValidationSchemas.BalanceSchema,
-  }),
-  PayoutController.checkBalance
-);
+// router.post(
+//   "/balance",
+//   AuthMiddleware.isAuthenticated,
+//   AuthMiddleware.authorize(["ADMIN", "employee"]),
+//   validateRequest({
+//     body: PayoutValidationSchemas.BalanceSchema,
+//   }),
+//   PayoutController.checkBalance
+// );
 
 export default router;
