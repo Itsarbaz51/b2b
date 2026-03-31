@@ -322,11 +322,11 @@ const Ledger = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Balance
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     From
-                  </th>
+                  </th> */}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    To
+                    User
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -364,14 +364,14 @@ const Ledger = () => {
                       {paisaToRupee(entry.runningBalance)}
                     </td>
                     {/* FROM (kisne diya) */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {entry.createdByUser?.username || "SYSTEM"}
                       </div>
                       <div className="text-xs text-gray-500">
                         {entry.createdByUser?.role?.name}
                       </div>
-                    </td>
+                    </td> */}
 
                     {/* TO (kisko mila) */}
                     <td className="px-6 py-4 whitespace-nowrap">

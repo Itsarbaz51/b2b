@@ -90,12 +90,6 @@ export default class DashboardService {
       }),
     ]);
 
-    //  TOTAL VOLUME
-    const txnAgg = await Prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: baseFilter,
-    });
-
     //  PROFIT (LEDGER BASED ONLY)
     const earningAgg = await Prisma.ledgerEntry.aggregate({
       _sum: { amount: true },
@@ -104,7 +98,11 @@ export default class DashboardService {
         referenceType: {
           in: ["SURCHARGE", "COMMISSION"],
         },
-        ...ledgerUserFilter,
+
+        wallet: {
+          userId,
+        },
+
         ...(dateFilter && {
           createdAt: {
             gte: dateFilter.startDate,

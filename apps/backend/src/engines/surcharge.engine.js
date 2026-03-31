@@ -35,6 +35,17 @@ export default class SurchargeEngine {
 
     if (!currentUser) throw ApiError.notFound("User not found");
 
+    const admin = await tx.user.findFirst({
+      where: { parentId: null },
+      select: { id: true },
+    });
+
+    const userWallet = await WalletEngine.getWallet({
+      tx,
+      userId,
+      walletType: "PRIMARY",
+    });
+
     //  MAP RULES
     const userRules = new Map();
     const roleRules = new Map();
@@ -47,7 +58,7 @@ export default class SurchargeEngine {
     const resolveRule = (user) =>
       userRules.get(user.id) || roleRules.get(user.roleId);
 
-    //  COMMON CALCULATION (SLAB + % + FLAT)
+    //  CALCULATE RULE AMOUNT
     const calculateRuleAmount = async (rule, txnAmount) => {
       let value = BigInt(rule.value);
 
@@ -76,60 +87,79 @@ export default class SurchargeEngine {
 
     const baseAmount = BigInt(pricing.txnAmount);
 
-    //  FINAL DISTRIBUTION ARRAY
-    const distribution = [];
+    //  STEP 1: PROVIDER COST
+    const providerCost = BigInt(pricing?.providerCost || 0n);
 
-    //  ADMIN ONLY MODE
-    if (mapping.commissionStartLevel === "ADMIN_ONLY") {
-      const amount = BigInt(pricing.surcharge);
+    if (providerCost > 0n) {
+      // USER DEBIT
+      await LedgerEngine.create(tx, {
+        walletId: userWallet.id,
+        transactionId,
+        entryType: "DEBIT",
+        referenceType: "PROVIDER_COST",
+        serviceProviderMappingId,
+        amount: providerCost,
+        narration: "Provider cost charged",
+        createdBy,
+      });
 
-      const wallet = await WalletEngine.getWallet({
+      // ADMIN DEBIT (expense)
+      const adminWallet = await WalletEngine.getWallet({
         tx,
-        userId: currentUser.id,
+        userId: admin.id,
         walletType: "COMMISSION",
       });
 
-      await WalletEngine.credit(tx, wallet, amount);
-
       await LedgerEngine.create(tx, {
-        walletId: wallet.id,
+        walletId: adminWallet.id,
         transactionId,
-        entryType: "CREDIT",
-        referenceType: "SURCHARGE",
+        entryType: "DEBIT",
+        referenceType: "PROVIDER_COST",
         serviceProviderMappingId,
-        amount,
-        narration: "Admin surcharge",
+        amount: providerCost,
+        narration: "Provider service cost",
         createdBy,
       });
-
-      await CommissionEarningService.create(tx, {
-        transactionId,
-        userId: currentUser.id,
-        fromUserId: userId,
-        serviceProviderMappingId,
-        amount,
-        mode: "SURCHARGE",
-        type: txnRule.type,
-        netAmount: amount,
-        createdBy,
-      });
-
-      distribution.push({
-        userId: currentUser.id,
-        profit: amount,
-        type: txnRule.type,
-      });
-
-      return {
-        distribution,
-        summary: {
-          totalSurcharge: pricing.surcharge,
-        },
-      };
     }
 
-    //  HIERARCHY MODE
+    //  STEP 2: PROVIDER GST (INPUT)
+    const providerGST = BigInt(pricing?.gstProvider || 0n);
+
+    if (providerGST > 0n) {
+      // USER DEBIT
+      await LedgerEngine.create(tx, {
+        walletId: userWallet.id,
+        transactionId,
+        entryType: "DEBIT",
+        referenceType: "PROVIDER_GST",
+        serviceProviderMappingId,
+        amount: providerGST,
+        narration: "Provider GST charged",
+        createdBy,
+      });
+
+      // ADMIN DEBIT (input tax)
+      const gstWallet = await WalletEngine.getWallet({
+        tx,
+        userId: admin.id,
+        walletType: "GST",
+      });
+
+      await LedgerEngine.create(tx, {
+        walletId: gstWallet.id,
+        transactionId,
+        entryType: "DEBIT",
+        referenceType: "PROVIDER_GST",
+        serviceProviderMappingId,
+        amount: providerGST,
+        narration: "Provider GST (Input)",
+        createdBy,
+      });
+    }
+
+    //  STEP 3: SURCHARGE DISTRIBUTION
     let previousRate = BigInt(pricing.surcharge);
+    const distribution = [];
 
     while (currentUser) {
       const rule = resolveRule(currentUser);
@@ -142,8 +172,20 @@ export default class SurchargeEngine {
 
       const profit = previousRate > ruleValue ? previousRate - ruleValue : 0n;
 
-      // ❗ skip self (R)
       if (profit > 0n && currentUser.id !== userId) {
+        // USER DEBIT
+        await LedgerEngine.create(tx, {
+          walletId: userWallet.id,
+          transactionId,
+          entryType: "DEBIT",
+          referenceType: "SURCHARGE",
+          serviceProviderMappingId,
+          amount: profit,
+          narration: "Surcharge charged",
+          createdBy,
+        });
+
+        // ADMIN / PARENT CREDIT
         const wallet = await WalletEngine.getWallet({
           tx,
           userId: currentUser.id,
@@ -175,11 +217,9 @@ export default class SurchargeEngine {
           createdBy,
         });
 
-        //  ADD TO RESPONSE
         distribution.push({
           userId: currentUser.id,
           profit,
-          type: rule ? rule.type : "FLAT",
         });
       }
 
@@ -193,92 +233,39 @@ export default class SurchargeEngine {
       });
     }
 
-    //  PROVIDER COST + GST
-    const admin = await tx.user.findFirst({
-      where: { parentId: null },
-      select: { id: true },
-    });
+    //  STEP 4: SURCHARGE GST (OUTPUT)
+    const surchargeGST = BigInt(pricing?.gstSurcharge || 0n);
 
-    const providerCost = BigInt(pricing?.providerCost || 0n);
-
-    if (providerCost > 0n) {
-      const wallet = await WalletEngine.getWallet({
-        tx,
-        userId: admin.id,
-        walletType: "COMMISSION",
-      });
-
-      await LedgerEngine.create(tx, {
-        walletId: wallet.id,
-        transactionId,
-        entryType: "DEBIT",
-        referenceType: "PROVIDER_COST",
-        serviceProviderMappingId,
-        amount: providerCost,
-        narration: "Provider service cost",
-        createdBy,
-      });
-    }
-
-    const userGST = BigInt(pricing?.gstSurcharge || 0n);
-
-    if (userGST > 0n) {
-      //  1. USER DEBIT (IMPORTANT FIX)
-      const userWallet = await WalletEngine.getWallet({
-        tx,
-        userId: userId,
-        walletType: "PRIMARY",
-      });
-
+    if (surchargeGST > 0n) {
+      // USER DEBIT
       await LedgerEngine.create(tx, {
         walletId: userWallet.id,
         transactionId,
-        entryType: "DEBIT", //  USER PAY
-        referenceType: "USER_GST",
-        serviceProviderMappingId,
-        amount: userGST,
-        narration: "GST charged from user",
-        createdBy,
-      });
-
-      //  2. ADMIN CREDIT (already there)
-      const gstWallet = await WalletEngine.getWallet({
-        tx,
-        userId: admin.id,
-        walletType: "GST",
-      });
-
-      await WalletEngine.credit(tx, gstWallet, userGST);
-
-      await LedgerEngine.create(tx, {
-        walletId: gstWallet.id,
-        transactionId,
-        entryType: "CREDIT", // ADMIN EARN
-        referenceType: "USER_GST",
-        serviceProviderMappingId,
-        amount: userGST,
-        narration: "GST collected from user",
-        createdBy,
-      });
-    }
-
-    const providerGST = BigInt(pricing?.gstProvider || 0n);
-
-    if (providerGST > 0n) {
-      const gstWallet = await WalletEngine.getWallet({
-        tx,
-        userId: admin.id,
-        walletType: "GST",
-      });
-
-      await LedgerEngine.create(tx, {
-        walletId: gstWallet.id,
-        transactionId,
         entryType: "DEBIT",
-        referenceType: "PROVIDER_GST",
+        referenceType: "SURCHARGE_GST",
         serviceProviderMappingId,
-        amount: providerGST,
-        narration: "Provider GST (Input Tax)",
+        amount: surchargeGST,
+        narration: "GST on surcharge",
+        createdBy,
+      });
+
+      // ADMIN CREDIT
+      const gstWallet = await WalletEngine.getWallet({
+        tx,
+        userId: admin.id,
+        walletType: "GST",
+      });
+
+      await WalletEngine.credit(tx, gstWallet, surchargeGST);
+
+      await LedgerEngine.create(tx, {
+        walletId: gstWallet.id,
+        transactionId,
+        entryType: "CREDIT",
+        referenceType: "SURCHARGE_GST",
+        serviceProviderMappingId,
+        amount: surchargeGST,
+        narration: "GST collected",
         createdBy,
       });
     }

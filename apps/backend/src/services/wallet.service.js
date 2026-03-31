@@ -38,7 +38,7 @@ export default class WalletService {
         serviceProviderMappingId: null,
         amount: amt,
         idempotencyKey,
-        requestPayload: { type: "COMMISSION_TRANSFER" },
+        requestPayload: { type: "WALLET TRANSFER" },
       });
 
       await WalletEngine.debit(tx, commissionWallet, amt);

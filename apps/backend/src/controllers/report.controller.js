@@ -9,110 +9,57 @@ export default class ReportController {
 
     const loggedInUserId = req.user?.id;
 
-    const { userId, username, search, service } = req.query;
-
-    const serviceWise = service === "true";
+    const { service, search } = req.query;
 
     const isAdmin = role === "ADMIN";
     const isEmployee = role === "employee";
 
     let userIds = [];
 
-    // 🔹 HELPER → get downline (1 level)
-    const getDownlineUserIds = async (parentId) => {
-      const users = await prisma.user.findMany({
-        where: {
-          OR: [{ id: parentId }, { parentId: parentId }],
-        },
-        select: { id: true },
-      });
-
-      return users.map((u) => u.id);
-    };
-
     // 👤 USER
     if (!isAdmin && !isEmployee) {
       userIds = [loggedInUserId];
     }
 
-    // 🧑‍💼 EMPLOYEE → own + children
-    else if (isEmployee) {
-      userIds = await getDownlineUserIds(loggedInUserId);
-    }
-
     // 👑 ADMIN
     else if (isAdmin) {
-      if (userId || username || search) {
-        let user;
-
-        if (userId) {
-          user = { id: userId };
-        } else if (username) {
-          user = await prisma.user.findUnique({
-            where: { username },
-            select: { id: true },
-          });
-        } else {
-          user = await prisma.user.findFirst({
-            where: {
-              OR: [{ id: search }, { username: { contains: search } }],
-            },
-            select: { id: true },
-          });
-        }
+      if (search) {
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [{ id: search }, { username: { contains: search } }],
+          },
+          select: { id: true },
+        });
 
         if (!user) throw ApiError.notFound("User not found");
 
-        userIds = [user.id];
+        userIds = [user.id]; // ✅ selected user
       } else {
-        userIds = []; // all users
+        userIds = [loggedInUserId]; // ✅ ALL users (for service-wise default)
       }
+    }
+
+    // 🧑‍💼 EMPLOYEE
+    else if (isEmployee) {
+      const admin = await prisma.user.findFirst({
+        where: { role: "ADMIN" },
+        select: { id: true },
+      });
+
+      if (!admin) throw ApiError.notFound("Admin not found");
+
+      userIds = [admin.id];
     }
 
     let data;
-    let type;
 
-    // 🔹 USER / EMPLOYEE FLOW
-    if (!isAdmin) {
-      if (serviceWise) {
-        data = await ReportService.getServiceReport({
-          userIds,
-        });
-      } else {
-        data = await ReportService.getUserReport({
-          userIds,
-        });
-      }
-
-      type = isEmployee ? "EMPLOYEE_REPORT" : "USER_REPORT";
+    // ✅ Toggle based only
+    if (service === "true") {
+      data = await ReportService.getServiceReport({ userIds });
+    } else {
+      data = await ReportService.getUserReport({ userIds });
     }
 
-    // 🔹 ADMIN FLOW
-    else {
-      if (userIds.length > 0) {
-        if (serviceWise) {
-          data = await ReportService.getServiceReport({
-            userIds,
-          });
-        } else {
-          data = await ReportService.getUserReport({
-            userIds,
-          });
-        }
-
-        type = "ADMIN_USER_REPORT";
-      } else {
-        if (serviceWise) {
-          data = await ReportService.getServiceReport({});
-        } else {
-          data = await ReportService.getAdminReport();
-        }
-
-        type = "ADMIN_REPORT";
-      }
-    }
-
-    return res.status(200).json(ApiResponse.success(data, `All ${type}`));
+    return res.status(200).json(ApiResponse.success(data, "Reports fetched"));
   }
 }
-  
