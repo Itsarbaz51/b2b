@@ -1,4 +1,4 @@
-import { CreditCard, Eye, CheckCircle, XCircle } from "lucide-react";
+import { CreditCard, CheckCircle } from "lucide-react";
 import { paisaToRupee } from "../../../utils/lib";
 import ActionMenu from "../../ui/ActionMenu";
 
@@ -13,7 +13,7 @@ const getStatusStyle = (status) => {
   }
 };
 
-const FundRequestTable = ({ requests = [], handleAction }) => {
+const PayoutTable = ({ requests = [], handleAction }) => {
   if (!requests.length) {
     return (
       <div className="text-center py-12">
@@ -44,6 +44,10 @@ const FundRequestTable = ({ requests = [], handleAction }) => {
               </th>
 
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Details
+              </th>
+
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Amount
               </th>
 
@@ -69,15 +73,16 @@ const FundRequestTable = ({ requests = [], handleAction }) => {
 
           <tbody className="bg-white divide-y divide-gray-200">
             {requests.map((request) => {
-              const isRazorpay =
-                request?.serviceProviderMapping?.provider?.code === "RAZORPAY";
+              const payload = request?.apiEntity?.requestPayload || {};
 
               return (
                 <tr key={request.id} className="hover:bg-gray-50">
+                  {/* Txn ID */}
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">
                     {request.txnId}
                   </td>
 
+                  {/* Method */}
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {request?.serviceProviderMapping?.service?.code?.replace(
                       "_",
@@ -85,24 +90,50 @@ const FundRequestTable = ({ requests = [], handleAction }) => {
                     )}
                   </td>
 
+                  {/* Details */}
+                  <td className="px-6 py-4 text-sm text-gray-800 space-y-1">
+                    <div>
+                      <span className="font-medium">Name:</span>{" "}
+                      {payload.beneficiaryName || "-"}
+                    </div>
+                    <div>
+                      <span className="font-medium">Mobile:</span>{" "}
+                      {payload.number || "-"}
+                    </div>
+                    <div className="font-mono text-xs text-gray-600">
+                      A/C: {payload.accountNo || "-"}
+                    </div>
+                    <div className="font-mono text-xs text-gray-600">
+                      IFSC: {payload.ifscCode || "-"}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Mode: {payload.transferMode || "-"}
+                    </div>
+                  </td>
+
+                  {/* Amount */}
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     ₹{paisaToRupee(request.amount)}
                   </td>
 
+                  {/* RRN */}
                   <td className="px-6 py-4 text-sm text-gray-700 font-mono">
                     {request.providerReference || "-"}
                   </td>
 
+                  {/* Initiated */}
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {new Date(request.initiatedAt).toLocaleString()}
                   </td>
 
+                  {/* Completed */}
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {request.completedAt
                       ? new Date(request.completedAt).toLocaleString()
                       : "-"}
                   </td>
 
+                  {/* Status */}
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusStyle(
@@ -112,6 +143,8 @@ const FundRequestTable = ({ requests = [], handleAction }) => {
                       {request.status}
                     </span>
                   </td>
+
+                  {/* Action */}
                   <td className="px-6 py-4 relative">
                     <ActionMenu
                       items={[
@@ -141,4 +174,4 @@ const FundRequestTable = ({ requests = [], handleAction }) => {
   );
 };
 
-export default FundRequestTable;
+export default PayoutTable;

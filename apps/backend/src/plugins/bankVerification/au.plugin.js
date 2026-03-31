@@ -1,9 +1,7 @@
-// plugins/bankVerification/au.plugin.js
-
 import axios from "axios";
 import crypto from "crypto";
-import { v4 as uuid } from "uuid";
 import BankVerificationInterface from "./bankVerification.interface.js";
+import { ApiError } from "../../utils/ApiError.js";
 
 class AUBankVerificationPlugin extends BankVerificationInterface {
   constructor(config) {
@@ -20,60 +18,70 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
     this.tokenExpiry = null;
   }
 
-  validateKeys() {
-    if (this.config.encryptionKey.length !== 32) {
-      throw new Error("Encryption key must be 32 bytes");
+  // 🔥 KEY + IV PARSE
+  getCryptoConfig() {
+    const key = Buffer.from(this.config.encryptionKey, "base64");
+    const iv = Buffer.from(this.config.saltKey, "base64");
+
+    console.log("KEY LENGTH:", key.length);
+    console.log("IV LENGTH:", iv.length);
+
+    if (iv.length !== 16) {
+      throw ApiError.internal(`Invalid IV length: ${iv.length}`);
     }
-    if (this.config.saltKey.length !== 12) {
-      throw new Error("IV must be 12 bytes");
+
+    let algorithm;
+
+    if (key.length === 16) {
+      algorithm = "aes-128-cbc";
+    } else if (key.length === 24) {
+      algorithm = "aes-192-cbc";
+    } else if (key.length === 32) {
+      algorithm = "aes-256-cbc";
+    } else {
+      throw ApiError.internal(`Unsupported key length: ${key.length}`);
     }
+
+    console.log("USING ALGO:", algorithm);
+
+    return { key, iv, algorithm };
   }
 
+  // 🔐 ENCRYPT
   encrypt(data) {
-    this.validateKeys();
+    try {
+      const { key, iv, algorithm } = this.getCryptoConfig();
 
-    const cipher = crypto.createCipheriv(
-      "aes-256-gcm",
-      Buffer.from(this.config.encryptionKey),
-      Buffer.from(this.config.saltKey)
-    );
+      const cipher = crypto.createCipheriv(algorithm, key, iv);
 
-    const encrypted = Buffer.concat([
-      cipher.update(JSON.stringify(data)),
-      cipher.final(),
-    ]);
+      let encrypted = cipher.update(JSON.stringify(data), "utf8", "base64");
+      encrypted += cipher.final("base64");
 
-    const authTag = cipher.getAuthTag();
-
-    return Buffer.concat([encrypted, authTag]).toString("base64");
+      return encrypted;
+    } catch (err) {
+      console.log("❌ ENCRYPT ERROR:", err.message);
+      throw ApiError.internal(err.message);
+    }
   }
 
+  // 🔓 DECRYPT
   decrypt(encvalue) {
     try {
-      const data = Buffer.from(encvalue, "base64");
+      const { key, iv, algorithm } = this.getCryptoConfig();
 
-      const encrypted = data.slice(0, -16);
-      const authTag = data.slice(-16);
+      const decipher = crypto.createDecipheriv(algorithm, key, iv);
 
-      const decipher = crypto.createDecipheriv(
-        "aes-256-gcm",
-        Buffer.from(this.config.encryptionKey),
-        Buffer.from(this.config.saltKey)
-      );
+      let decrypted = decipher.update(encvalue, "base64", "utf8");
+      decrypted += decipher.final("utf8");
 
-      decipher.setAuthTag(authTag);
-
-      const decrypted = Buffer.concat([
-        decipher.update(encrypted),
-        decipher.final(),
-      ]);
-
-      return JSON.parse(decrypted.toString());
-    } catch {
+      return JSON.parse(decrypted);
+    } catch (err) {
+      console.log("❌ DECRYPT ERROR:", err.message);
       return null;
     }
   }
 
+  // 🔑 TOKEN
   async getToken() {
     if (this.accessToken && Date.now() < this.tokenExpiry) {
       return this.accessToken;
@@ -89,14 +97,19 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
       }
     );
 
+    if (!res.data?.access_token) {
+      throw ApiError.internal("Token generation failed");
+    }
+
     this.accessToken = res.data.access_token;
     this.tokenExpiry = Date.now() + (parseInt(res.data.expires_in) - 60) * 1000;
 
     return this.accessToken;
   }
 
+  // 🔥 MAIN
   async verifyAccount(params) {
-    const method = this.config.verificationMethod;
+    const method = this.config.verificationMethod || "PENNILESS";
 
     switch (method) {
       case "PENNILESS":
@@ -106,18 +119,18 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
         return this.verifyPennyDrop(params);
 
       default:
-        throw new Error("Invalid verification method");
+        throw ApiError.badRequest("Invalid verification method");
     }
   }
 
-  async verifyPenniless({ accountNo, ifsc }) {
+  // ✅ PENNILESS
+  async verifyPenniless({ accountNo, ifscCode, requestId }) {
     const token = await this.getToken();
-    const requestId = uuid();
 
     const payload = {
       RemitterAccountNo: this.config.remitterAccount,
       BeneficiaryAccountNo: accountNo,
-      BeneficiaryIFSCCode: ifsc,
+      BeneficiaryIFSCCode: ifscCode,
       RequestId: requestId,
       ReferenceNumber: requestId,
       OriginatingChannel: this.config.channel,
@@ -128,38 +141,63 @@ class AUBankVerificationPlugin extends BankVerificationInterface {
       RetrievalReferenceNumber: requestId,
     };
 
+    console.log("📤 ORIGINAL PAYLOAD:", payload);
+
     const encvalue = this.encrypt(payload);
+
+    console.log("🔐 ENCRYPTED:", encvalue);
 
     const res = await this.client.post(
       "/CBSIMPSBeneficiaryNameInqService/IMPSBeneficiary",
       { encvalue },
       {
-        headers: { "Key-Authentication": `Bearer ${token}` },
+        headers: {
+          "Key-Authentication": `Bearer ${token}`,
+        },
         responseType: "text",
       }
     );
 
-    const parsed = JSON.parse(res.data);
+    console.log("📥 RAW RESPONSE:", res.data);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(res.data);
+    } catch {
+      throw ApiError.internal("Invalid JSON response from AU");
+    }
+
+    if (!parsed.encvalue) {
+      throw ApiError.internal("Missing encvalue in AU response");
+    }
+
     const decrypted = this.decrypt(parsed.encvalue);
 
-    if (!decrypted || decrypted.TransactionStatus.ResponseCode !== "0") {
+    console.log("🔓 DECRYPTED:", decrypted);
+
+    if (!decrypted || decrypted.TransactionStatus?.ResponseCode !== "0") {
       return {
         status: false,
         message:
           decrypted?.TransactionStatus?.ResponseMessage ||
           "Verification failed",
+        raw: decrypted,
       };
     }
 
     return {
       status: true,
-      name: decrypted.BeneficiaryName,
-      rrn: decrypted.RetrievalReferenceNumber,
+      data: {
+        name: decrypted.BeneficiaryName,
+        rrn: decrypted.RetrievalReferenceNumber,
+        accountNo,
+        ifscCode,
+      },
     };
   }
 
   async verifyPennyDrop() {
-    throw new Error("Penny drop not implemented yet");
+    throw ApiError.internal("Penny drop not implemented yet");
   }
 }
 

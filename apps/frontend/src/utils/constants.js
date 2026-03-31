@@ -32,6 +32,7 @@ export const SERVICES = {
   PAN: "PAN",
   AADHAAR: "AADHAAR",
   PAYOUT: "PAYOUT",
+  BANK_VERIFICATION: "BANK_VERIFICATION",
 };
 
 // Static Business Roles

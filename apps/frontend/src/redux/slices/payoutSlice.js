@@ -117,33 +117,6 @@ export const createPayout = (payload) => async (dispatch) => {
 
 /*
 --------------------------------
-VERIFY ACCOUNT
---------------------------------
-*/
-
-export const verifyPayoutAccount = (payload) => async (dispatch) => {
-  try {
-    dispatch(payoutRequest());
-
-    const { data } = await axios.post(`/payout/verify-account`, payload);
-
-    dispatch(payoutSuccess(data));
-
-    toast.success("Account verified");
-
-    return data;
-  } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
-
-    dispatch(payoutFail(errMsg));
-    toast.error(errMsg);
-
-    throw error;
-  }
-};
-
-/*
---------------------------------
 CHECK PROVIDER BALANCE
 --------------------------------
 */

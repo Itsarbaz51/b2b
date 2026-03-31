@@ -17,6 +17,7 @@ import transactionReducer from "./slices/transactionSlice.js";
 import dashboardReducer from "./slices/dashboardSlice.js";
 import ledgerReducer from "./slices/ledgerSlice.js";
 import reportReducer from "./slices/reportSlice.js";
+import bankVerificationReducer from "./slices/bankVerificationSlice.js";
 
 const store = configureStore({
   reducer: {
@@ -38,6 +39,7 @@ const store = configureStore({
     dashboard: dashboardReducer,
     ledger: ledgerReducer,
     report: reportReducer,
+    bankVerification: bankVerificationReducer,
   },
 });
 

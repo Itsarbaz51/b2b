@@ -37,13 +37,16 @@ const AddPayoutForm = ({
       [name]: value,
     }));
 
-    // 🔥 reset verify if bank fields change
     if (["accountNo", "ifscCode", "mobile"].includes(name)) {
       setIsVerified(false);
     }
 
+    if (name === "transferMode") {
+      setIsVerified(false);
+    }
+
     if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -81,7 +84,12 @@ const AddPayoutForm = ({
 
   const handleVerify = () => {
     if (!form.accountNo || !form.ifscCode || !form.mobile) {
-      return alert("Account No, IFSC & Mobile required");
+      setErrors({
+        accountNo: !form.accountNo && "Required",
+        ifscCode: !form.ifscCode && "Required",
+        mobile: !form.mobile && "Required",
+      });
+      return;
     }
 
     onVerify(form, (beneficiaryName) => {

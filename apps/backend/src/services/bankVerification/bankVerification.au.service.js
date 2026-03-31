@@ -10,7 +10,13 @@ export default class AUBankVerificationService {
     return getBankVerificationPlugin(provider.code, mapping.config);
   }
 
-  static async verifyAccount(serviceProviderMapping, provider, payload, actor) {
+  static async verifyAccount(
+    serviceProviderMapping,
+    provider,
+    service,
+    payload,
+    actor
+  ) {
     const plugin = this.getPlugin(provider, serviceProviderMapping);
 
     const txnId = Helper.generateTxnId("BANK_VERIFY");
@@ -31,6 +37,7 @@ export default class AUBankVerificationService {
           status: transaction.status,
         };
       }
+      console.log(isDuplicate);
 
       // 🔁 ALREADY PROCESSED
       if (["SUCCESS", "FAILED"].includes(transaction.status)) {
@@ -41,10 +48,13 @@ export default class AUBankVerificationService {
       }
 
       try {
+        console.log("init api");
+
         const response = await plugin.verifyAccount({
           ...payload,
           requestId: txnId,
         });
+        console.log(response);
 
         if (!response.status) {
           throw new Error(response.message || "Verification failed");

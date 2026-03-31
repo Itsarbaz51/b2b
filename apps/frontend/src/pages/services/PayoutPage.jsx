@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   checkPayoutStatus,
   createPayout,
-  verifyPayoutAccount,
 } from "../../redux/slices/payoutSlice";
 import { getTransactions } from "../../redux/slices/transactionSlice";
 
@@ -20,6 +19,7 @@ import PayoutTable from "../../components/tabels/services/PayoutTable";
 import AddPayoutForm from "../../components/forms/services/AddPayoutForm";
 import { v4 as uuidv4 } from "uuid";
 import ConfirmCard from "../../components/ui/ConfirmCard";
+import { verifyBankAccount } from "../../redux/slices/bankVerificationSlice";
 
 const PayoutPage = () => {
   const dispatch = useDispatch();
@@ -45,14 +45,16 @@ const PayoutPage = () => {
 
   const { canProcess, defaultProvider } = usePermissions(SERVICES.PAYOUT);
 
-  const serviceProviderMappingId = defaultProvider.serviceProviderMappingId;
+  const { defaultProvider: defaultProviderBankVerify } = usePermissions(
+    SERVICES.BANK_VERIFICATION,
+  );
+
+  const serviceProviderMappingId = defaultProvider?.serviceProviderMappingId;
+
+  const bankVerifyId = defaultProviderBankVerify?.serviceProviderMappingId;
 
   const fetchRequests = () => {
-    dispatch(
-      getTransactions({
-        type: "PAYOUT",
-      }),
-    );
+    dispatch(getTransactions({ type: "PAYOUT" }));
   };
 
   useEffect(() => {
@@ -77,20 +79,19 @@ const PayoutPage = () => {
       setVerifying(true);
 
       const res = await dispatch(
-        verifyPayoutAccount({
-          provider: "WONDERPAY",
-          serviceProviderMappingId,
+        verifyBankAccount({
+          serviceProviderMappingId: bankVerifyId,
           number: form.mobile,
           accountNo: form.accountNo,
           ifscCode: form.ifscCode,
-          clientOrderId: Date.now().toString(),
+          idempotencyKey,
         }),
       );
 
-      if (res?.success || res?.payload?.success) {
+      if (res?.payload?.success) {
         setIsVerified(true);
 
-        callback(res?.data?.beneficiaryName);
+        callback(res?.payload?.data?.beneficiaryName || "");
       }
     } catch (err) {
       console.error(err);
@@ -119,7 +120,7 @@ const PayoutPage = () => {
         }),
       );
 
-      if (result?.success || result?.payload?.success) {
+      if (result?.payload?.success) {
         resetForm();
         fetchRequests();
       }
@@ -151,7 +152,7 @@ const PayoutPage = () => {
         }),
       );
 
-      fetchRequests(); // refresh
+      fetchRequests();
       setConfirmAction(null);
     } catch (err) {
       console.error(err);
@@ -175,69 +176,29 @@ const PayoutPage = () => {
         description="Transfer funds to bank account"
       />
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StateCard title="Total Payout" value={stats.total} icon={CreditCard} />
-
-        <StateCard
-          title="Pending"
-          value={stats.pending}
-          icon={Clock}
-          iconColor="text-yellow-600"
-        />
-
-        <StateCard
-          title="Success"
-          value={stats.success}
-          icon={Landmark}
-          iconColor="text-green-600"
-        />
-
-        <StateCard
-          title="Refund"
-          value={0}
-          icon={Landmark}
-          iconColor="text-red-600"
-        />
+        <StateCard title="Pending" value={stats.pending} icon={Clock} />
+        <StateCard title="Success" value={stats.success} icon={Landmark} />
+        <StateCard title="Refund" value={0} icon={Landmark} />
       </div>
 
-      {/* ACTION BAR */}
-
-      <div className="bg-white p-6 rounded-xl border border-gray-300 shadow-sm flex flex-col lg:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full lg:max-w-md">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-
-          <input
-            type="text"
-            placeholder="Search Txn ID"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg"
-          />
-        </div>
+      <div className="bg-white p-6 rounded-xl border flex justify-between">
+        <input
+          placeholder="Search Txn ID"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border px-3 py-2 rounded-lg"
+        />
 
         <div className="flex gap-3">
-          <button
-            onClick={fetchRequests}
-            className="px-4 py-2 border border-gray-300 rounded-lg flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
+          <button onClick={fetchRequests}>Refresh</button>
 
           {canProcess && (
-            <button
-              onClick={() => setMethod(true)}
-              className="px-5 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
-            >
-              <CreditCard className="w-4 h-4" />
-              Payout
-            </button>
+            <button onClick={() => setMethod(true)}>Payout</button>
           )}
         </div>
       </div>
-
-      {/* TABLE */}
 
       <PayoutTable
         requests={filteredRequests}
@@ -245,19 +206,18 @@ const PayoutPage = () => {
         handleAction={handleAction}
       />
 
-      {/* FORM */}
-
       {method && (
         <AddPayoutForm
           resetForm={resetForm}
           onSubmit={handleSubmit}
           onVerify={handleVerify}
-          serviceProviderMappingId={serviceProviderMappingId}
           isVerified={isVerified}
+          setIsVerified={setIsVerified}
           verifying={verifying}
           isLoading={processing}
         />
       )}
+
       {confirmAction && (
         <ConfirmCard
           actionType="Activate"

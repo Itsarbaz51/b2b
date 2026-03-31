@@ -10,10 +10,7 @@ export default class BankVerificationService {
   }
 
   static async checkPermission(userId, mappingId) {
-    await ServicePermissionResolver.validateHierarchyServiceAccess(
-      userId,
-      mappingId
-    );
+    await ServicePermissionResolver.validateByMappingId(userId, mappingId);
   }
 
   static async resolveProvider(mappingId) {
