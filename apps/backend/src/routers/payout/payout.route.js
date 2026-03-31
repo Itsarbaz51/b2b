@@ -21,7 +21,7 @@ router.post(
 router.post(
   "/status",
   AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize(["ADMIN", "employee"]),
+  AuthMiddleware.authorize(["business", "employee"]),
   validateRequest({
     body: PayoutValidationSchemas.StatusSchema,
   }),

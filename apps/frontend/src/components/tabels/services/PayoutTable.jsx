@@ -1,5 +1,6 @@
 import { CreditCard, Eye, CheckCircle, XCircle } from "lucide-react";
 import { paisaToRupee } from "../../../utils/lib";
+import ActionMenu from "../../ui/ActionMenu";
 
 const getStatusStyle = (status) => {
   switch (status) {
@@ -12,7 +13,7 @@ const getStatusStyle = (status) => {
   }
 };
 
-const FundRequestTable = ({ requests = [] }) => {
+const FundRequestTable = ({ requests = [], handleAction }) => {
   if (!requests.length) {
     return (
       <div className="text-center py-12">
@@ -59,6 +60,9 @@ const FundRequestTable = ({ requests = [] }) => {
 
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Action
               </th>
             </tr>
           </thead>
@@ -107,6 +111,25 @@ const FundRequestTable = ({ requests = [] }) => {
                     >
                       {request.status}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 relative">
+                    <ActionMenu
+                      items={[
+                        {
+                          icon: CheckCircle,
+                          label:
+                            request.status === "PENDING"
+                              ? "Check Status"
+                              : "Already Checked",
+                          disabled: request.status !== "PENDING",
+                          onClick: () => {
+                            if (request.status === "PENDING") {
+                              handleAction("check-status", request);
+                            }
+                          },
+                        },
+                      ]}
+                    />
                   </td>
                 </tr>
               );

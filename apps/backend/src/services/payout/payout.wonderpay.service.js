@@ -162,6 +162,7 @@ export default class WonderpayPayoutService {
           tx,
           actor,
           transaction,
+          referenceType: "PAYOUT",
           wallet,
           pricing: transaction.pricing,
           serviceProviderMapping,

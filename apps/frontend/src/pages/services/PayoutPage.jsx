@@ -3,6 +3,7 @@ import { CreditCard, Landmark, Search, RefreshCw, Clock } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
+  checkPayoutStatus,
   createPayout,
   verifyPayoutAccount,
 } from "../../redux/slices/payoutSlice";
@@ -18,6 +19,7 @@ import { SERVICES } from "../../utils/constants";
 import PayoutTable from "../../components/tabels/services/PayoutTable";
 import AddPayoutForm from "../../components/forms/services/AddPayoutForm";
 import { v4 as uuidv4 } from "uuid";
+import ConfirmCard from "../../components/ui/ConfirmCard";
 
 const PayoutPage = () => {
   const dispatch = useDispatch();
@@ -30,6 +32,7 @@ const PayoutPage = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [search, setSearch] = useState("");
   const [idempotencyKey] = useState(uuidv4());
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const resetForm = () => {
     setMethod(null);
@@ -137,6 +140,33 @@ const PayoutPage = () => {
     );
   }, [transactions, search]);
 
+  const handleConfirmSubmit = async () => {
+    try {
+      const { request, serviceProviderMappingId } = confirmAction;
+
+      await dispatch(
+        checkPayoutStatus({
+          txnId: request.txnId,
+          serviceProviderMappingId,
+        }),
+      );
+
+      fetchRequests(); // refresh
+      setConfirmAction(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAction = (type, request) => {
+    if (type === "check-status") {
+      setConfirmAction({
+        request,
+        serviceProviderMappingId,
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -209,7 +239,11 @@ const PayoutPage = () => {
 
       {/* TABLE */}
 
-      <PayoutTable requests={filteredRequests} isAdmin={isAdmin} />
+      <PayoutTable
+        requests={filteredRequests}
+        isAdmin={isAdmin}
+        handleAction={handleAction}
+      />
 
       {/* FORM */}
 
@@ -222,6 +256,14 @@ const PayoutPage = () => {
           isVerified={isVerified}
           verifying={verifying}
           isLoading={processing}
+        />
+      )}
+      {confirmAction && (
+        <ConfirmCard
+          actionType="Activate"
+          user={confirmAction.request}
+          isClose={() => setConfirmAction(null)}
+          isSubmit={handleConfirmSubmit}
         />
       )}
     </div>
