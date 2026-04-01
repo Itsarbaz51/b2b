@@ -18,6 +18,12 @@ export default class PayoutController {
       throw new ApiError("User not authenticated", 401);
     }
 
+    const amount = Number(req.body?.amount);
+
+    if (!amount || amount < 100) {
+      throw ApiError.badRequest("Minimum payout amount is ₹100");
+    }
+
     const result = await PayoutService.transfer(req.body, req.user);
 
     return res

@@ -12,7 +12,7 @@ class PayoutValidationSchemas {
         number: z.string().min(10, "Invalid mobile number"),
 
         amount: z.number().min(100, "Amount must be at least 100"),
-        transferMode: z.enum(["IMPS", "NEFT", "RTGS", "UPI"]),
+        transferMode: z.enum(["IMPS", "NEFT", "UPI"]),
 
         accountNo: z.string().optional(),
         ifscCode: z.string().optional(),
