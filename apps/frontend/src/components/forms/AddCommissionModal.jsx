@@ -684,7 +684,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                           placeholder="GST Percentage"
                           step="0.01"
                           min="0"
-                          max="100"
                         />
                         {errors.gstPercent && (
                           <p className="text-red-500 text-sm mt-1">

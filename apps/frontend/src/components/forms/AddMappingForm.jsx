@@ -238,6 +238,7 @@ export default function AddMappingForm({
                     setForm({ ...form, providerCost: e.target.value })
                   }
                   min={0}
+                  step="0.01"
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
