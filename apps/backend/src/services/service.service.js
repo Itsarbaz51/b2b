@@ -1,5 +1,6 @@
 import Prisma from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
+import { CryptoService } from "../utils/cryptoService.js";
 
 export class ServiceService {
   // CREATE
@@ -327,6 +328,10 @@ export class MappingService {
     });
 
     if (exists) throw ApiError.conflict("Mapping already exists");
+    let encryptedConfig = null;
+    if (config) {
+      encryptedConfig = CryptoService.encrypt(JSON.stringify(config));
+    }
 
     return Prisma.serviceProviderMapping.create({
       data: {
@@ -348,7 +353,7 @@ export class MappingService {
 
         applyGST: applyGST ?? false,
         gstPercent: applyGST ? BigInt(gstPercent) : null,
-        config: config,
+        config: encryptedConfig,
         priority: priority ?? 1,
         isActive: isActive ?? true,
       },
@@ -425,6 +430,13 @@ export class MappingService {
     // =========================
     // UPDATE
     // =========================
+    let encryptedConfig;
+
+    if (config !== undefined || config !== null) {
+      encryptedConfig = config
+        ? CryptoService.encrypt(JSON.stringify(config))
+        : null; // allow clearing config
+    }
 
     return Prisma.serviceProviderMapping.update({
       where: { id },
@@ -461,7 +473,7 @@ export class MappingService {
               ? null
               : undefined,
 
-        config: config ?? mapping.config,
+        config: config !== undefined ? encryptedConfig : undefined,
         priority: priority ?? mapping.priority,
         isActive: isActive ?? mapping.isActive,
       },
@@ -523,8 +535,20 @@ export class MappingService {
       Prisma.serviceProviderMapping.count({ where }),
     ]);
 
+    const decryptedData = data.map((item) => {
+      if (item.config) {
+        try {
+          item.config = JSON.parse(CryptoService.decrypt(item.config));
+        } catch (e) {
+          console.error("Config decrypt failed", e);
+          item.config = null;
+        }
+      }
+      return item;
+    });
+
     return {
-      data,
+      data: decryptedData,
       total,
       page,
       totalPages: Math.ceil(total / limit),
