@@ -89,10 +89,17 @@ export default class RazorpayFundRequestService {
     providerData,
     serviceProviderMapping
   ) {
-    const plugin = getFundRequestPlugin(
-      providerData.code,
-      serviceProviderMapping.config
-    );
+    let parsedConfig = {};
+
+    try {
+      parsedConfig =
+        typeof serviceProviderMapping.config === "string"
+          ? JSON.parse(CryptoService.decrypt(serviceProviderMapping.config))
+          : serviceProviderMapping.config;
+    } catch (err) {
+      throw ApiError.internal("Invalid provider config", err?.message);
+    }
+    const plugin = getFundRequestPlugin(providerData.code, parsedConfig);
 
     //  STEP 1: FIND TRANSACTION
     const transaction = await Prisma.transaction.findFirst({

@@ -8,7 +8,17 @@ import BeneficiaryService from "../beneficiary.service.js";
 
 export default class AUBankVerificationService {
   static getPlugin(provider, mapping) {
-    return getBankVerificationPlugin(provider.code, mapping.config);
+    let parsedConfig = {};
+
+    try {
+      parsedConfig =
+        typeof mapping.config === "string"
+          ? JSON.parse(CryptoService.decrypt(mapping.config))
+          : mapping.config;
+    } catch (err) {
+      throw ApiError.internal("Invalid provider config", err?.message);
+    }
+    return getBankVerificationPlugin(provider.code, parsedConfig);
   }
 
   static async verifyAccount(
