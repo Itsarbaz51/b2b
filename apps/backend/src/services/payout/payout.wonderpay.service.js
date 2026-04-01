@@ -12,7 +12,7 @@ export default class WonderpayPayoutService {
   }
 
   static async transfer(serviceProviderMapping, provider, payload, actor) {
-    // const plugin = this.getPlugin(provider, serviceProviderMapping);
+    const plugin = this.getPlugin(provider, serviceProviderMapping);
 
     const clientOrderId = Helper.generateTxnId("PAYOUT");
     return Prisma.$transaction(async (tx) => {
@@ -53,23 +53,13 @@ export default class WonderpayPayoutService {
         };
       }
 
-      let response = {
-        utr: null,
-        amount: (Number(pricing.txnAmount) / 100).toString(),
-        status: 5,
-        addBene: false,
-        message: "Request accepted successfully",
-        orderId: "WOPAY17746499",
-        statusCode: 1,
-        clientOrderId,
-        beneficiaryName: "Arbaz khan",
-      };
+      let response;
       try {
-        // const response = await plugin.payout({
-        //   ...payload,
-        //   amount: (Number(pricing.txnAmount) / 100).toString(),
-        //   clientOrderId,
-        // });
+        response = await plugin.payout({
+          ...payload,
+          amount: (Number(pricing.txnAmount) / 100).toString(),
+          clientOrderId,
+        });
 
         await TransactionService.update(tx, {
           transactionId: transaction.id,
@@ -124,7 +114,7 @@ export default class WonderpayPayoutService {
     payload,
     actor
   ) {
-    // const plugin = this.getPlugin(provider, serviceProviderMapping);
+    const plugin = this.getPlugin(provider, serviceProviderMapping);
 
     const { txnId } = payload;
 
@@ -156,18 +146,7 @@ export default class WonderpayPayoutService {
         throw ApiError.badRequest("Wallet not found");
       }
 
-      // const response = await plugin.checkStatus({ txnId });
-      const response = {
-        statusCode: 1,
-        message: "Completed",
-        clientOrderId: "260314173248957F3F",
-        orderId: "WOPAY17746499",
-        beneficiaryName: "Arbaz khan",
-        utr: "607317443437",
-        status: 1,
-        addBene: false,
-        amount: "100.0000",
-      };
+      const response = await plugin.checkStatus({ txnId });
 
       const status = response.status;
 

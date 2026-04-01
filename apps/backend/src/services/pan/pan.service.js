@@ -53,19 +53,9 @@ export default class PanService {
       });
 
       // CALL PROVIDER
-      // const plugin = getPanPlugin(provider.code, serviceProviderMapping.config);
+      const plugin = getPanPlugin(provider.code, serviceProviderMapping.config);
 
-      // const providerResponse = await plugin.verifyPan({ panNumber });
-
-      const providerResponse = {
-        status: true,
-        statusCode: 200,
-        data: {
-          pan: "HFIPM21790",
-          registered_name: "SOHAIL AHMED MANIYAR",
-          valid: true,
-        },
-      };
+      const providerResponse = await plugin.verifyPan({ panNumber });
 
       try {
         // SUCCESS SETTLEMENT
