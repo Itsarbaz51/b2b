@@ -68,7 +68,7 @@ export const verifyBankAccount = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(bankVerificationFail(errMsg));
     toast.error(errMsg);

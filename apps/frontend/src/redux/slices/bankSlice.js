@@ -107,7 +107,8 @@ export const updateBank = (payload) => async (dispatch) => {
     dispatch(bankActionSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(bankFail(errMsg));
   }
 };
@@ -122,7 +123,7 @@ export const getAllBanks =
       dispatch(bankListSuccess(data));
       return data;
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
+      const errMsg = ZodErrorCatch(error);
       dispatch(bankFail(errMsg));
     }
   };
@@ -135,7 +136,7 @@ export const getAllMyBanks = () => async (dispatch) => {
     dispatch(myBankListSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(bankFail(errMsg));
   }
 };
@@ -148,7 +149,7 @@ export const getBankDetail = (bankId) => async (dispatch) => {
     dispatch(bankDetailSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(bankFail(errMsg));
   }
 };
@@ -162,7 +163,7 @@ export const verifyBank = (payload) => async (dispatch) => {
     dispatch(getAllBanks());
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.errors[0].message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(bankFail(errMsg));
   }
 };
@@ -174,7 +175,7 @@ export const deleteBank = (bankId) => async (dispatch) => {
     const { data } = await axios.delete(`/banks/bank-delete/${bankId}`);
     dispatch(bankActionSuccess(data));
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(bankFail(errMsg));
   }
 };
@@ -186,7 +187,7 @@ export const getAdminPrimaryBank = () => async (dispatch) => {
     dispatch(bankDetailSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(bankFail(errMsg));
   }
 };

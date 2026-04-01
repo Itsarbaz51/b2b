@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { verifyAuth } from "./authSlice";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 const initialState = {
   fundRequests: [],
@@ -111,7 +112,7 @@ export const createFundRequest = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(fundFail(errMsg));
     toast.error(errMsg);
@@ -137,7 +138,7 @@ export const verifyFundRequest = (payload) => async (dispatch) => {
     dispatch(verifyAuth());
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(fundFail(errMsg));
     toast.error(errMsg);

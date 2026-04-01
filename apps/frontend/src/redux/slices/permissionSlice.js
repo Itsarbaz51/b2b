@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 // Axios setup
 axios.defaults.withCredentials = true;
@@ -96,10 +97,8 @@ export const getPermissionById = (userId) => async (dispatch) => {
     dispatch(permissionSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch user permission";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(permissionFail(errMsg));
     throw new Error(errMsg);
   }
@@ -118,10 +117,8 @@ export const upsertPermission = (permissionData) => async (dispatch) => {
     toast.success(data.message || "User permission saved");
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to upsert user permission";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(permissionFail(errMsg));
     throw new Error(errMsg);
   }
@@ -138,10 +135,8 @@ export const getPermissionRoleById = (roleId) => async (dispatch) => {
     dispatch(permissionSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch role permission";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(permissionFail(errMsg));
     throw new Error(errMsg);
   }
@@ -160,10 +155,8 @@ export const upsertRolePermission = (permissionData) => async (dispatch) => {
     toast.success(data.message || "Role permission saved");
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to upsert role permission";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(permissionFail(errMsg));
     throw new Error(errMsg);
   }

@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 const initialState = {
   users: [], // Business users
@@ -76,7 +77,7 @@ const userSlice = createSlice({
 
       // Update in users array
       const userIndex = state.users.findIndex(
-        (user) => user.id === updatedUser.id
+        (user) => user.id === updatedUser.id,
       );
       if (userIndex !== -1) {
         state.users[userIndex] = { ...state.users[userIndex], ...updatedUser };
@@ -84,7 +85,7 @@ const userSlice = createSlice({
 
       // Update in usersByRole array
       const roleIndex = state.usersByRole.findIndex(
-        (user) => user.id === updatedUser.id
+        (user) => user.id === updatedUser.id,
       );
       if (roleIndex !== -1) {
         state.usersByRole[roleIndex] = {
@@ -95,7 +96,7 @@ const userSlice = createSlice({
 
       // Update in childrenUsers array
       const childrenIndex = state.childrenUsers.findIndex(
-        (user) => user.id === updatedUser.id
+        (user) => user.id === updatedUser.id,
       );
       if (childrenIndex !== -1) {
         state.childrenUsers[childrenIndex] = {
@@ -176,8 +177,8 @@ export const registerUser = (userData) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errorResponse = error?.response?.data;
-    dispatch(userFail(errorResponse || error.message));
+    const errMsg = ZodErrorCatch(error);
+    dispatch(userFail(errMsg));
 
     throw error;
   }
@@ -193,7 +194,7 @@ export const updateUserProfileImage =
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
 
       dispatch(userSuccess(data));
@@ -205,10 +206,8 @@ export const updateUserProfileImage =
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Profile image update failed";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(userFail(errMsg));
       toast.error(errMsg);
       throw new Error(errMsg);
@@ -228,7 +227,7 @@ export const updateUserProfile = (userId, profileData) => async (dispatch) => {
     const { data } = await axios.put(
       `/users/${userId}/profile`,
       profileData,
-      config
+      config,
     );
 
     dispatch(userSuccess(data));
@@ -240,8 +239,8 @@ export const updateUserProfile = (userId, profileData) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errorResponse = error?.response?.data;
-    dispatch(userFail(errorResponse || error.message));
+    const errMsg = ZodErrorCatch(error);
+    dispatch(userFail(errMsg));
     throw error;
   }
 };
@@ -256,10 +255,8 @@ export const getUserById = (userId) => async (dispatch) => {
     dispatch(userSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch user";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(userFail(errMsg));
     throw new Error(errMsg);
   }
@@ -275,10 +272,8 @@ export const getCurrentUserProfile = () => async (dispatch) => {
     dispatch(userSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch profile";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(userFail(errMsg));
     throw new Error(errMsg);
   }
@@ -294,10 +289,8 @@ export const getAllUsersByRole = (roleId) => async (dispatch) => {
     dispatch(userSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch users by role";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(userFail(errMsg));
     throw new Error(errMsg);
   }
@@ -340,14 +333,14 @@ export const getAllBusinessUsersByParentId =
           totalPages:
             data.data.totalPages ??
             Math.ceil((data.data.total || 0) / (filters.limit || 10)),
-        })
+        }),
       );
 
       dispatch(userSuccess(data));
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message || "Failed to fetch business users";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(userFail(errMsg));
       throw new Error(errMsg);
     }
@@ -363,10 +356,8 @@ export const getAllUsersByChildrenId = (userId) => async (dispatch) => {
     dispatch(userSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch children users";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(userFail(errMsg));
     throw new Error(errMsg);
   }
@@ -394,10 +385,8 @@ export const deactivateUser =
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to deactivate user";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(userFail(errMsg));
       toast.error(errMsg);
       throw new Error(errMsg);
@@ -426,10 +415,8 @@ export const reactivateUser =
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to reactivate user";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(userFail(errMsg));
       toast.error(errMsg);
       throw new Error(errMsg);
@@ -458,10 +445,8 @@ export const deleteUser =
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to delete user";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(userFail(errMsg));
       toast.error(errMsg);
       throw new Error(errMsg);

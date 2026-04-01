@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -64,10 +65,8 @@ export const verifyPan = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "PAN verification failed";
+    const errMsg = ZodErrorCatch(error);
+
     toast.error(errMsg);
     dispatch(panFail(errMsg));
     throw error;

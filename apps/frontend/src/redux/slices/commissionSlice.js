@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 const initialState = {
   commissionSettings: [],
@@ -129,7 +130,7 @@ export const getCommissionSettingsByCreatedBy =
       dispatch(commissionSuccess(data));
       return data;
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
+      const errMsg = ZodErrorCatch(error);
       dispatch(commissionFail(errMsg));
       throw error;
     }
@@ -150,7 +151,7 @@ export const createOrUpdateCommissionSetting =
 
       return data;
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
+      const errMsg = ZodErrorCatch(error);
       dispatch(commissionFail(errMsg));
       toast.error(errMsg);
       throw error;
@@ -180,7 +181,7 @@ export const getCommissionEarnings =
 
       dispatch(commissionSuccess(data.message));
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
+      const errMsg = ZodErrorCatch(error);
       dispatch(commissionFail(errMsg));
     }
   };
@@ -197,7 +198,7 @@ export const getCommissionSummary = () => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(commissionFail(errMsg));
     throw error;
@@ -218,7 +219,7 @@ export const createCommissionSlab = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(commissionFail(errMsg));
     toast.error(errMsg);

@@ -60,7 +60,9 @@ export const getLedger =
       const { data } = await axios.get("/ledger", { params });
 
       dispatch(success(data));
-    } catch (err) {
-      dispatch(fail(err?.response?.data?.message || "Something went wrong"));
+    } catch (error) {
+      const errMsg = ZodErrorCatch(error);
+
+      dispatch(fail(errMsg));
     }
   };

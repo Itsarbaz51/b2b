@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 const initialState = {
   payouts: [],
@@ -106,7 +107,7 @@ export const createPayout = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(payoutFail(errMsg));
     toast.error(errMsg);
@@ -131,7 +132,7 @@ export const checkPayoutBalance = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(payoutFail(errMsg));
     toast.error(errMsg);
@@ -156,7 +157,7 @@ export const checkPayoutStatus = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(payoutFail(errMsg));
     toast.error(errMsg);

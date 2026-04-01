@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 // Configure axios once
 if (!axios.defaults.baseURL) {
@@ -182,8 +183,7 @@ export const login = (credentials) => async (dispatch) => {
     dispatch(verifyAuth());
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message || error?.message || "Login failed";
+    const errMsg = ZodErrorCatch(error);
     dispatch(setAuthentication(false));
     dispatch(authFail(errMsg));
     throw error;
@@ -199,8 +199,7 @@ export const logout = () => async (dispatch) => {
     dispatch(logoutUser());
     toast.success("Logout successful");
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message || error?.message || "Logout failed";
+    const errMsg = ZodErrorCatch(error);
     dispatch(setAuthentication(false));
     dispatch(logoutUser());
     dispatch(authFail(errMsg));
@@ -214,10 +213,6 @@ export const refreshToken = () => async (dispatch) => {
     dispatch(authSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Token refresh failed";
     dispatch(setAuthentication(false));
     throw error;
   }
@@ -252,10 +247,7 @@ export const updateCredentials =
       toast.success("Credentials updated successfully");
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Credentials update failed";
+      const errMsg = ZodErrorCatch(error);
       dispatch(credentialsUpdateFail(errMsg));
       throw error;
     }
@@ -269,10 +261,7 @@ export const passwordReset = (email) => async (dispatch) => {
     toast.success(data.message || "Password reset email sent");
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Password reset failed";
+    const errMsg = ZodErrorCatch(error);
     dispatch(authFail(errMsg));
     throw error;
   }
@@ -288,10 +277,7 @@ export const verifyPasswordReset = (token) => async (dispatch) => {
     toast.success(data.message || "Password reset successful");
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Password reset failed";
+    const errMsg = ZodErrorCatch(error);
     dispatch(authFail(errMsg));
     throw error;
   }
@@ -305,10 +291,7 @@ export const verifyEmail = (token) => async (dispatch) => {
     toast.success(data.message || "Email verified successfully");
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Email verification failed";
+    const errMsg = ZodErrorCatch(error);
     dispatch(authFail(errMsg));
     throw error;
   }

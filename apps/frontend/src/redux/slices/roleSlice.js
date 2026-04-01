@@ -2,6 +2,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 const initialState = {
   roles: [],
@@ -74,14 +75,14 @@ const roleSlice = createSlice({
       // Update in specific arrays based on type
       if (updatedRole.type === "employee") {
         const employeeIndex = state.employeeRoles.findIndex(
-          (role) => role.id === updatedRole.id
+          (role) => role.id === updatedRole.id,
         );
         if (employeeIndex !== -1) {
           state.employeeRoles[employeeIndex] = updatedRole;
         }
       } else if (updatedRole.type === "business") {
         const businessIndex = state.businessRoles.findIndex(
-          (role) => role.id === updatedRole.id
+          (role) => role.id === updatedRole.id,
         );
         if (businessIndex !== -1) {
           state.businessRoles[businessIndex] = updatedRole;
@@ -97,11 +98,11 @@ const roleSlice = createSlice({
       // Remove from specific arrays based on type
       if (roleToDelete?.type === "employee") {
         state.employeeRoles = state.employeeRoles.filter(
-          (role) => role.id !== roleId
+          (role) => role.id !== roleId,
         );
       } else if (roleToDelete?.type === "business") {
         state.businessRoles = state.businessRoles.filter(
-          (role) => role.id !== roleId
+          (role) => role.id !== roleId,
         );
       }
     },
@@ -145,10 +146,7 @@ export const getAllRoles = () => async (dispatch) => {
     dispatch(roleSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch roles";
+    const errMsg = ZodErrorCatch(error);
     dispatch(roleFail(errMsg));
     throw new Error(errMsg);
   }
@@ -173,10 +171,8 @@ export const getAllRolesByType = (type) => async (dispatch) => {
     dispatch(roleSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch roles";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(roleFail(errMsg));
     throw new Error(errMsg);
   }
@@ -194,10 +190,7 @@ export const createRole = (roleData) => async (dispatch) => {
     toast.success(data.message || "Role created successfully");
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to create role";
+    const errMsg = ZodErrorCatch(error);
     dispatch(roleFail(errMsg));
     throw new Error(errMsg);
   }
@@ -215,10 +208,7 @@ export const updateRole = (roleId, roleData) => async (dispatch) => {
     toast.success(data.message || "Role updated successfully");
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to update role";
+    const errMsg = ZodErrorCatch(error);
     dispatch(roleFail(errMsg));
     throw new Error(errMsg);
   }
@@ -235,10 +225,7 @@ export const deleteRole = (roleId) => async (dispatch) => {
     toast.success(data.message || "Role deleted successfully");
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to delete role";
+    const errMsg = ZodErrorCatch(error);
     dispatch(roleFail(errMsg));
     throw new Error(errMsg);
   }

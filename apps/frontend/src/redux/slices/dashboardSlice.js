@@ -41,7 +41,9 @@ export const getDashboard =
       const { data } = await axios.get(url);
 
       dispatch(success(data));
-    } catch (err) {
-      dispatch(fail());
+    } catch (error) {
+      const errMsg = ZodErrorCatch(error);
+
+      dispatch(fail(errMsg));
     }
   };

@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -91,11 +92,8 @@ export const getLoginLogs =
       dispatch(logsListSuccess(data));
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.response?.data.error ||
-        error?.message ||
-        "Failed to fetch login logs";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(logsFail(errMsg));
       throw error;
     }
@@ -137,11 +135,8 @@ export const getAuditLogs =
       dispatch(logsListSuccess(data));
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Failed to fetch audit logs";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(logsFail(errMsg));
       throw error;
     }

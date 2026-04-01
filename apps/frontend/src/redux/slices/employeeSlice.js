@@ -2,6 +2,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 const initialState = {
   employees: [],
@@ -98,7 +99,7 @@ const employeeSlice = createSlice({
     updateEmployeeInList: (state, action) => {
       const updatedEmployee = action.payload;
       const index = state.employees.findIndex(
-        (employee) => employee.id === updatedEmployee.id
+        (employee) => employee.id === updatedEmployee.id,
       );
       if (index !== -1) {
         state.employees[index] = {
@@ -179,7 +180,7 @@ export const registerEmployee = (employeeData) => async (dispatch) => {
     const { data } = await axios.post(
       `/employees/register`,
       employeeData,
-      config
+      config,
     );
 
     dispatch(employeeSuccess(data));
@@ -190,8 +191,8 @@ export const registerEmployee = (employeeData) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errorResponse = error?.response?.data;
-    dispatch(employeeFail(errorResponse || error.message));
+    const errMsg = ZodErrorCatch(error);
+    dispatch(employeeFail(errMsg));
     throw error;
   }
 };
@@ -234,14 +235,14 @@ export const getAllEmployeesByParentId =
           totalPages:
             data.data.totalPages ??
             Math.ceil((data.data.total || 0) / requestedLimit),
-        })
+        }),
       );
 
       dispatch(employeeSuccess(data));
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message || "Failed to fetch employees";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(employeeFail(errMsg));
       throw new Error(errMsg);
     }
@@ -257,10 +258,8 @@ export const getEmployeeById = (employeeId) => async (dispatch) => {
     dispatch(employeeSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch employee";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(employeeFail(errMsg));
     throw new Error(errMsg);
   }
@@ -280,7 +279,7 @@ export const updateEmployeeProfile =
       const { data } = await axios.put(
         `/employees/${employeeId}/profile`,
         profileData,
-        config
+        config,
       );
 
       dispatch(employeeSuccess(data));
@@ -292,8 +291,8 @@ export const updateEmployeeProfile =
 
       return data;
     } catch (error) {
-      const errorResponse = error?.response?.data;
-      dispatch(employeeFail(errorResponse || error.message));
+      const errMsg = ZodErrorCatch(error);
+      dispatch(employeeFail(errMsg));
       throw error;
     }
   };
@@ -308,7 +307,7 @@ export const updateEmployeeProfileImage =
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
 
       dispatch(employeeSuccess(data));
@@ -316,16 +315,13 @@ export const updateEmployeeProfileImage =
 
       if (data.message) {
         toast.success(
-          data.message || "Employee profile image updated successfully!"
+          data.message || "Employee profile image updated successfully!",
         );
       }
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Employee profile image update failed";
+      const errMsg = ZodErrorCatch(error);
       dispatch(employeeFail(errMsg));
       toast.error(errMsg);
       throw new Error(errMsg);
@@ -346,16 +342,14 @@ export const updateEmployeePermissions =
 
       if (data.message) {
         toast.success(
-          data.message || "Employee permissions updated successfully!"
+          data.message || "Employee permissions updated successfully!",
         );
       }
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to update employee permissions";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(employeeFail(errMsg));
       throw new Error(errMsg);
     }
@@ -371,10 +365,8 @@ export const getEmployeePermissions = (employeeId) => async (dispatch) => {
     dispatch(employeeSuccess(data));
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to fetch employee permissions";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(employeeFail(errMsg));
     throw new Error(errMsg);
   }
@@ -393,7 +385,7 @@ export const deactivateEmployee =
         `/employees/${employeeId}/deactivate`,
         {
           reason: finalReason,
-        }
+        },
       );
 
       dispatch(employeeSuccess(data));
@@ -405,10 +397,8 @@ export const deactivateEmployee =
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to deactivate employee";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(employeeFail(errMsg));
       toast.error(errMsg);
       throw new Error(errMsg);
@@ -428,7 +418,7 @@ export const reactivateEmployee =
         `/employees/${employeeId}/reactivate`,
         {
           reason: finalReason,
-        }
+        },
       );
 
       dispatch(employeeSuccess(data));
@@ -440,10 +430,8 @@ export const reactivateEmployee =
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to reactivate employee";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(employeeFail(errMsg));
       toast.error(errMsg);
       throw new Error(errMsg);
@@ -471,10 +459,8 @@ export const deleteEmployee =
 
       return data;
     } catch (error) {
-      const errMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to delete employee";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(employeeFail(errMsg));
       toast.error(errMsg);
       throw new Error(errMsg);

@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -138,7 +139,7 @@ export const getAllServices =
 
       return data;
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error.message;
+      const errMsg = ZodErrorCatch(error);
       dispatch(serviceFail(errMsg));
       throw error;
     }
@@ -156,7 +157,7 @@ export const createService = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(serviceFail(errMsg));
     throw error;
   }
@@ -174,7 +175,7 @@ export const updateService = (id, payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(serviceFail(errMsg));
     throw error;
   }
@@ -192,7 +193,7 @@ export const getServices =
       dispatch(setCurrentItem(data.data));
       return data;
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error.message;
+      const errMsg = ZodErrorCatch(error);
       dispatch(serviceFail(errMsg));
       throw error;
     }
@@ -213,7 +214,7 @@ export const createProviderSlab = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(serviceFail(errMsg));
     toast.error(errMsg);

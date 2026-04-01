@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 const initialState = {
   transactions: [],
@@ -111,7 +112,7 @@ export const getTransactions =
 
       return data;
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
+      const errMsg = ZodErrorCatch(error);
 
       dispatch(transactionFail(errMsg));
       toast.error(errMsg);

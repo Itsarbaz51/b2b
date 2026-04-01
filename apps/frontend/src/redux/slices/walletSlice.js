@@ -1,7 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { getUserById } from "./userSlice";
 import { verifyAuth } from "./authSlice";
 
 axios.defaults.withCredentials = true;
@@ -64,7 +63,7 @@ export const transferCommissionToPrimary = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message || "Failed";
+    const errMsg = ZodErrorCatch(error);
 
     dispatch(walletFail(errMsg));
     throw error;

@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -80,7 +81,7 @@ export const kycSubmit = (kycPayload) => async (dispatch) => {
     dispatch(kycActionSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(kycFail(errMsg));
   }
 };
@@ -101,8 +102,8 @@ export const updatekycSubmit =
       return response.data;
     } catch (error) {
       console.error("KYC Update Error:", error);
-      const errMsg =
-        error?.response?.data?.message || error?.message || "KYC update failed";
+      const errMsg = ZodErrorCatch(error);
+
       dispatch(kycFail(errMsg));
       toast.error(errMsg);
       throw error;
@@ -117,7 +118,7 @@ export const getbyId = (id) => async (dispatch) => {
     dispatch(kycDetailSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(kycFail(errMsg));
   }
 };
@@ -139,7 +140,7 @@ export const getKycAll =
       dispatch(kycListSuccess(data));
       return data;
     } catch (error) {
-      const errMsg = error?.response?.data?.message || error?.message;
+      const errMsg = ZodErrorCatch(error);
       dispatch(kycFail(errMsg));
     }
   };
@@ -155,14 +156,9 @@ export const verifyKyc = (payload) => async (dispatch) => {
     dispatch(getKycAll());
     return data;
   } catch (error) {
-    const errMsg =
-      error?.response?.data?.errors?.[0]?.message ||
-      error?.response?.data?.message ||
-      error?.message ||
-      "KYC verification failed";
+    const errMsg = ZodErrorCatch(error);
+
     dispatch(kycFail(errMsg));
     toast.error(errMsg);
   }
 };
-
-

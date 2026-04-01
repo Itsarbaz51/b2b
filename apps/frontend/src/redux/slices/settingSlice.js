@@ -4,6 +4,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -57,7 +58,7 @@ export const upsertSystemSetting = (formData) => async (dispatch) => {
     toast.success(data?.message || "Settings updated successfully!");
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(settingFail(errMsg));
   }
 };
@@ -69,7 +70,7 @@ export const fetchSystemSetting = () => async (dispatch) => {
     dispatch(settingSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(settingFail(errMsg));
   }
 };
@@ -80,7 +81,7 @@ export const fetchSystemSettingPublic = () => async (dispatch) => {
     dispatch(settingSuccess(data));
     return data;
   } catch (error) {
-    const errMsg = error?.response?.data?.message || error?.message;
+    const errMsg = ZodErrorCatch(error);
     dispatch(settingFail(errMsg));
   }
 };
