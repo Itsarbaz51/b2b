@@ -119,8 +119,9 @@ const PayoutPage = () => {
           idempotencyKey,
         }),
       );
+      console.log(result);
 
-      if (result?.payload?.success) {
+      if (result?.success) {
         resetForm();
         fetchRequests();
       }

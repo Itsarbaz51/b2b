@@ -37,7 +37,7 @@ export default class BeneficiaryService {
       where: {
         userId,
         ...(mobile && { mobile }),
-        isVerified: true,
+        // isVerified: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -73,10 +73,12 @@ export default class BeneficiaryService {
 
   // Get or throw (auto mode payout)
   static async getOrThrow({ userId, payload }) {
+    console.log(payload);
+
     const beneficiary = await Prisma.beneficiary.findFirst({
       where: {
         userId,
-        accountNumber: payload.accountNumber,
+        accountNumber: payload.accountNumber || payload.accountNo,
         ifsc: payload.ifscCode,
         isVerified: true,
       },
@@ -84,6 +86,30 @@ export default class BeneficiaryService {
 
     if (!beneficiary) {
       throw ApiError.badRequest("Please verify bank first");
+    }
+
+    return beneficiary;
+  }
+  static async getOrCreate(tx, { userId, payload }) {
+    let beneficiary = await tx.beneficiary.findFirst({
+      where: {
+        userId,
+        accountNumber: payload.accountNo,
+        ifsc: payload.ifscCode,
+      },
+    });
+
+    if (!beneficiary) {
+      beneficiary = await tx.beneficiary.create({
+        data: {
+          userId,
+          accountNumber: payload.accountNo,
+          ifsc: payload.ifscCode,
+          name: payload.beneficiaryName || "Unknown",
+          mobile: payload.mobile || payload.number,
+          isVerified: false,
+        },
+      });
     }
 
     return beneficiary;

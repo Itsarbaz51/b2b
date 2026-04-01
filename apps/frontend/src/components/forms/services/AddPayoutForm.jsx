@@ -29,6 +29,7 @@ const AddPayoutForm = ({
     mobile: "",
     amount: "",
     vpa: "",
+    beneficiaryId: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -159,25 +160,31 @@ const AddPayoutForm = ({
               {beneficiaries.length > 0 && (
                 <DropdownField
                   label="Select Bank"
+                  value={form.beneficiaryId || ""}
                   options={beneficiaries.map((b) => ({
-                    label: `${b.name} - ${b.accountNumber}`,
-                    value: b.id,
+                    id: b.id,
+                    label: `${b.name} - ${b.accountNumber} ${
+                      b.isVerified ? "✅" : "⚠️"
+                    }`,
                   }))}
                   onChange={(e) => {
+                    const value = e.target.value;
+
                     const selected = beneficiaries.find(
-                      (b) => b.id === e.target.value,
+                      (b) => String(b.id) === String(value),
                     );
 
                     if (!selected) return;
 
                     setForm((prev) => ({
                       ...prev,
+                      beneficiaryId: selected.id,
                       accountNo: selected.accountNumber,
                       ifscCode: selected.ifsc,
                       beneficiaryName: selected.name,
                     }));
 
-                    setIsVerified(true);
+                    setIsVerified(selected.isVerified);
                   }}
                 />
               )}

@@ -24,12 +24,9 @@ export default class WonderpayPayoutService {
           userId: actor.id,
         });
       } else {
-        beneficiary = await BeneficiaryService.getOrThrow({
+        beneficiary = await BeneficiaryService.getOrCreate(tx, {
           userId: actor.id,
-          payload: {
-            accountNumber: payload.accountNo,
-            ifsc: payload.ifscCode,
-          },
+          payload,
         });
       }
 
