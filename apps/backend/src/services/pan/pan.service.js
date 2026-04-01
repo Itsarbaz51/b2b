@@ -7,6 +7,7 @@ import { CommissionSettingService } from "../commission.service.js";
 import { getPanPlugin } from "../../plugin_registry/pan/pluginRegistry.js";
 import { ApiError } from "../../utils/ApiError.js";
 import Helper from "../../utils/helper.js";
+import { CryptoService } from "../../utils/cryptoService.js";
 
 export default class PanService {
   static async verifyPan(payload, actor) {
@@ -52,8 +53,18 @@ export default class PanService {
         serviceProviderMapping,
       });
 
+      let parsedConfig = {};
+
+      try {
+        parsedConfig =
+          typeof serviceProviderMapping.config === "string"
+            ? JSON.parse(CryptoService.decrypt(serviceProviderMapping.config))
+            : serviceProviderMapping.config;
+      } catch (err) {
+        throw ApiError.internal("Invalid provider config", err?.message);
+      }
       // CALL PROVIDER
-      const plugin = getPanPlugin(provider.code, serviceProviderMapping.config);
+      const plugin = getPanPlugin(provider.code, parsedConfig);
 
       const providerResponse = await plugin.verifyPan({ panNumber });
 

@@ -7,6 +7,7 @@ import { CommissionSettingService } from "../commission.service.js";
 import SettlementEngine from "../../engines/settlement.engine.js";
 import Helper from "../../utils/helper.js";
 import WalletEngine from "../../engines/wallet.engine.js";
+import { CryptoService } from "../../utils/cryptoService.js";
 
 export default class AadhaarService {
   // STEP 1 — SEND OTP
@@ -45,11 +46,18 @@ export default class AadhaarService {
         payload: { ...payload, txnId },
         serviceProviderMapping,
       });
+      let parsedConfig = {};
 
-      const plugin = getAadhaarPlugin(
-        provider.code,
-        serviceProviderMapping.config
-      );
+      try {
+        parsedConfig =
+          typeof serviceProviderMapping.config === "string"
+            ? JSON.parse(CryptoService.decrypt(serviceProviderMapping.config))
+            : serviceProviderMapping.config;
+      } catch (err) {
+        throw ApiError.internal("Invalid provider config", err?.message);
+      }
+
+      const plugin = getAadhaarPlugin(provider.code, parsedConfig);
 
       let providerResponse;
 
@@ -102,10 +110,19 @@ export default class AadhaarService {
       }
 
       const { service, provider, serviceProviderMapping } = transaction;
+      let parsedConfig = {};
 
+      try {
+        parsedConfig =
+          typeof serviceProviderMapping.config === "string"
+            ? JSON.parse(CryptoService.decrypt(serviceProviderMapping.config))
+            : serviceProviderMapping.config;
+      } catch (err) {
+        throw ApiError.internal("Invalid provider config", err?.message);
+      }
       const plugin = getAadhaarPlugin(
         serviceProviderMapping.provider.code,
-        serviceProviderMapping.config
+        parsedConfig
       );
 
       let providerResponse;

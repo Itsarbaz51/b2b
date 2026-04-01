@@ -33,13 +33,7 @@ userRoutes.get(
 userRoutes.get(
   "/children/:userId",
   AuthMiddleware.isAuthenticated,
-  AuthMiddleware.authorize([
-    "ADMIN",
-    "STATE HEAD",
-    "MASTER DISTRIBUTOR",
-    "DISTRIBUTOR",
-    "employee",
-  ]),
+  AuthMiddleware.authorize(["ADMIN", "employee"]),
   UserController.getAllUsersByChildrenId
 );
 

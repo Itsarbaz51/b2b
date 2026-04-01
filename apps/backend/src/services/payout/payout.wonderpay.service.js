@@ -5,10 +5,21 @@ import SettlementEngine from "../../engines/settlement.engine.js";
 import Helper from "../../utils/helper.js";
 import { ApiError } from "../../utils/ApiError.js";
 import BeneficiaryService from "../beneficiary.service.js";
+import { CryptoService } from "../../utils/cryptoService.js";
 
 export default class WonderpayPayoutService {
   static getPlugin(provider, mapping) {
-    return getPayoutPlugin(provider.code, mapping.config);
+    let parsedConfig = {};
+
+    try {
+      parsedConfig =
+        typeof mapping.config === "string"
+          ? JSON.parse(CryptoService.decrypt(mapping.config))
+          : mapping.config;
+    } catch (err) {
+      throw ApiError.internal("Invalid provider config", err?.message);
+    }
+    return getPayoutPlugin(provider.code, parsedConfig);
   }
 
   static async transfer(serviceProviderMapping, provider, payload, actor) {

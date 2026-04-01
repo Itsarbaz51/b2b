@@ -7,15 +7,24 @@ import LedgerEngine from "../../engines/ledger.engine.js";
 import PricingEngine from "../../engines/pricing.engine.js";
 import { ApiError } from "../../utils/ApiError.js";
 import Helper from "../../utils/helper.js";
+import { CryptoService } from "../../utils/cryptoService.js";
 
 export default class RazorpayFundRequestService {
   static async create(payload, actor, serviceProviderMapping, provider) {
     await TransactionService.checkDuplicate(payload.idempotencyKey);
 
-    const plugin = getFundRequestPlugin(
-      provider.code,
-      serviceProviderMapping.config
-    );
+    let parsedConfig = {};
+
+    try {
+      parsedConfig =
+        typeof serviceProviderMapping.config === "string"
+          ? JSON.parse(CryptoService.decrypt(serviceProviderMapping.config))
+          : serviceProviderMapping.config;
+    } catch (err) {
+      throw ApiError.internal("Invalid provider config", err?.message);
+    }
+
+    const plugin = getFundRequestPlugin(provider.code, parsedConfig);
 
     const amount = BigInt(payload.amount);
 
@@ -69,7 +78,7 @@ export default class RazorpayFundRequestService {
         transactionId: transaction.id,
         orderId: providerResponse.orderId,
         amount: Number(finalAmount) / 100,
-        key: serviceProviderMapping.config.keyId,
+        key: parsedConfig.keyId,
       };
     });
   }

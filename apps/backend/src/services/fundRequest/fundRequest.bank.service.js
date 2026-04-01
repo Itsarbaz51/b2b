@@ -7,6 +7,7 @@ import ApiEntityService from "../apiEntity.service.js";
 import S3Service from "../../utils/S3Service.js";
 import Helper from "../../utils/helper.js";
 import LedgerEngine from "../../engines/ledger.engine.js";
+import { CryptoService } from "../../utils/cryptoService.js";
 
 export default class BankFundRequestService {
   static async create(payload, actor, serviceProviderMapping, provider) {
@@ -29,10 +30,18 @@ export default class BankFundRequestService {
         );
       }
 
-      const plugin = getFundRequestPlugin(
-        provider.code,
-        serviceProviderMapping.config
-      );
+      let parsedConfig = {};
+
+      try {
+        parsedConfig =
+          typeof serviceProviderMapping.config === "string"
+            ? JSON.parse(CryptoService.decrypt(serviceProviderMapping.config))
+            : serviceProviderMapping.config;
+      } catch (err) {
+        throw ApiError.internal("Invalid provider config", err?.message);
+      }
+
+      const plugin = getFundRequestPlugin(provider.code, parsedConfig);
 
       const providerResponse = await plugin.createRequest(payload);
 
