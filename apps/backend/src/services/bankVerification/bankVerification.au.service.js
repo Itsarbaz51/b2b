@@ -4,6 +4,7 @@ import TransactionService from "../transaction.service.js";
 import SettlementEngine from "../../engines/settlement.engine.js";
 import Helper from "../../utils/helper.js";
 import { ApiError } from "../../utils/ApiError.js";
+import BeneficiaryService from "../beneficiary.service.js";
 
 export default class AUBankVerificationService {
   static getPlugin(provider, mapping) {
@@ -22,6 +23,20 @@ export default class AUBankVerificationService {
     const txnId = Helper.generateTxnId("BANK_VERIFY");
 
     return Prisma.$transaction(async (tx) => {
+      const existing = await BeneficiaryService.findVerified({
+        userId: actor.id,
+        accountNumber: payload.accountNumber,
+        ifsc: payload.ifsc,
+      });
+
+      if (existing) {
+        return {
+          status: "SUCCESS",
+          message: "Bank already verified",
+          beneficiaryId: existing.id,
+        };
+      }
+
       const { transaction, wallet, pricing, isDuplicate } =
         await SettlementEngine.execute({
           tx,
@@ -37,7 +52,6 @@ export default class AUBankVerificationService {
           status: transaction.status,
         };
       }
-      console.log(isDuplicate);
 
       // 🔁 ALREADY PROCESSED
       if (["SUCCESS", "FAILED"].includes(transaction.status)) {
@@ -67,6 +81,12 @@ export default class AUBankVerificationService {
           wallet,
           pricing,
           serviceProviderMapping,
+        });
+
+        await BeneficiaryService.upsertVerified(tx, {
+          userId: actor.id,
+          payload,
+          response,
         });
 
         await TransactionService.update(tx, {

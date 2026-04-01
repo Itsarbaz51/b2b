@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Landmark, ShieldCheck } from "lucide-react";
 
 import InputField from "../../ui/InputField";
 import ButtonField from "../../ui/ButtonField";
 import HeaderSection from "../../ui/HeaderSection";
 import { DropdownField } from "../../ui/DropdownField";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  clearBeneficiaries,
+  fetchBeneficiaries,
+} from "../../../redux/slices/beneficiarySlice";
+import { useDebounce } from "use-debounce";
 
 const AddPayoutForm = ({
   resetForm,
@@ -26,7 +32,10 @@ const AddPayoutForm = ({
   });
 
   const [errors, setErrors] = useState({});
+  const [debouncedMobile] = useDebounce(form.mobile, 500);
+  const dispatch = useDispatch();
 
+  const { beneficiaries = [] } = useSelector((state) => state.beneficiary);
   /* ---------------- CHANGE ---------------- */
 
   const handleChange = (e) => {
@@ -49,6 +58,18 @@ const AddPayoutForm = ({
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
+
+  useEffect(() => {
+    if (debouncedMobile?.length >= 10) {
+      dispatch(fetchBeneficiaries(debouncedMobile));
+    }
+  }, [debouncedMobile]);
+
+  useEffect(() => {
+    if (debouncedMobile?.length < 10) {
+      dispatch(clearBeneficiaries());
+    }
+  }, [debouncedMobile]);
 
   /* ---------------- VALIDATE ---------------- */
 
@@ -129,10 +150,37 @@ const AddPayoutForm = ({
               <InputField
                 label="Mobile"
                 name="mobile"
+                type="number"
                 value={form.mobile}
                 onChange={handleChange}
                 error={errors.mobile}
+                maxLength={10}
               />
+              {beneficiaries.length > 0 && (
+                <DropdownField
+                  label="Select Bank"
+                  options={beneficiaries.map((b) => ({
+                    label: `${b.name} - ${b.accountNumber}`,
+                    value: b.id,
+                  }))}
+                  onChange={(e) => {
+                    const selected = beneficiaries.find(
+                      (b) => b.id === e.target.value,
+                    );
+
+                    if (!selected) return;
+
+                    setForm((prev) => ({
+                      ...prev,
+                      accountNo: selected.accountNumber,
+                      ifscCode: selected.ifsc,
+                      beneficiaryName: selected.name,
+                    }));
+
+                    setIsVerified(true);
+                  }}
+                />
+              )}
 
               <InputField
                 label="Amount"

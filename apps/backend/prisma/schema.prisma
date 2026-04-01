@@ -242,6 +242,24 @@ model BankDetail {
   @@map("bank_details")
 }
 
+model Beneficiary {
+  id            String  @id @default(cuid())
+  userId        String  @map("user_id")
+  accountNumber String  @map("account_number")
+  ifsc          String
+  name          String
+  mobile        String  @db.VarChar(15)
+  isVerified    Boolean @default(false) @map("is_verified")
+  metaData      Json?   @map("meta_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, accountNumber, ifsc])
+  @@index([userId])
+  @@map("beneficiarys")
+}
+
 model State {
   id        String    @id @default(uuid())
   stateName String    @map("state_name")

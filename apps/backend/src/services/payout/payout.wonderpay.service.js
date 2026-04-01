@@ -4,6 +4,7 @@ import TransactionService from "../transaction.service.js";
 import SettlementEngine from "../../engines/settlement.engine.js";
 import Helper from "../../utils/helper.js";
 import { ApiError } from "../../utils/ApiError.js";
+import BeneficiaryService from "../beneficiary.service.js";
 
 export default class WonderpayPayoutService {
   static getPlugin(provider, mapping) {
@@ -15,6 +16,23 @@ export default class WonderpayPayoutService {
 
     const clientOrderId = Helper.generateTxnId("PAYOUT");
     return Prisma.$transaction(async (tx) => {
+      let beneficiary;
+
+      if (payload.beneficiaryId) {
+        beneficiary = await BeneficiaryService.findById({
+          id: payload.beneficiaryId,
+          userId: actor.id,
+        });
+      } else {
+        beneficiary = await BeneficiaryService.getOrThrow({
+          userId: actor.id,
+          payload: {
+            accountNumber: payload.accountNo,
+            ifsc: payload.ifscCode,
+          },
+        });
+      }
+
       const { transaction, wallet, pricing, isDuplicate } =
         await SettlementEngine.execute({
           tx,
