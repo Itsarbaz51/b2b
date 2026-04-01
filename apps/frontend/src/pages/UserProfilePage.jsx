@@ -33,7 +33,7 @@ const UserProfilePage = ({ onClose }) => {
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
 
   const { currentUser, isLoading: userLoading } = useSelector(
-    (state) => state.users
+    (state) => state.users,
   );
   const { currentUser: authUser } = useSelector((state) => state.auth);
 
@@ -85,7 +85,7 @@ const UserProfilePage = ({ onClose }) => {
       await dispatch(passwordReset(email));
       setForgotPasswordMode(false);
       setSuccess(
-        "Password reset link sent to your email! Please check your inbox."
+        "Password reset link sent to your email! Please check your inbox.",
       );
 
       dispatch(logout());
@@ -170,7 +170,7 @@ const UserProfilePage = ({ onClose }) => {
       <div className="flex items-center space-x-6">
         <div className="relative">
           <img
-            src={userData.profileImage || "/default-avatar.png"}
+            src={userData.profileImage || ""}
             alt="Profile"
             className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
           />
@@ -224,8 +224,10 @@ const UserProfilePage = ({ onClose }) => {
           </div>
           {authUser?.role?.type !== "employee" && (
             <div>
-              <div className="text-2xl font-bold text-purple-600">
-                {userData.kycInfo?.isKycSubmitted ? "Verified" : "Pending"}
+              <div
+                className={`text-2xl font-bold ${userData.isKycVerified ? "text-green-600" : "text-amber-600 "}`}
+              >
+                {userData.isKycVerified ? "Verified" : "Pending"}
               </div>
               <div className="text-xs text-gray-500">KYC</div>
             </div>
