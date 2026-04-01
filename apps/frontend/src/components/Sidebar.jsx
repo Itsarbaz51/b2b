@@ -305,7 +305,7 @@ const Sidebar = () => {
               <Play className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Payment System</h2>
+              <h2 className="text-lg font-bold">Fintech System</h2>
               <p className="text-xs text-gray-600">Loading...</p>
             </div>
           </div>
@@ -336,7 +336,7 @@ const Sidebar = () => {
             <Play className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold">Payment System</h2>
+            <h2 className="text-lg font-bold">Fintech System</h2>
             <p className="text-xs text-gray-600">{getPanelType()}</p>
           </div>
         </div>

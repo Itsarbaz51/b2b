@@ -16,6 +16,7 @@ import {
 } from "../redux/slices/commissionSlice";
 import CommissionSettingTable from "../components/tabels/CommissionSettingTable";
 import AddCommissionSlabForm from "../components/forms/AddCommissionSlabForm";
+import RefreshToast from "../components/ui/RefreshToast";
 
 const CommissionSetting = () => {
   const [search, setSearch] = useState("");
@@ -231,20 +232,7 @@ const CommissionSetting = () => {
             </div>
 
             {/* Refresh Button */}
-            <button
-              onClick={handleManualRefresh}
-              disabled={isLoading}
-              className={`px-4 py-3 border border-gray-300 rounded-lg flex items-center gap-2 transition-colors ${
-                isLoading
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900"
-              }`}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-              />
-              {isLoading ? "Refreshing..." : "Refresh"}
-            </button>
+            <RefreshToast isLoading={isLoading} onClick={handleManualRefresh} />
 
             {(currentUser.role.name === "ADMIN" ||
               currentUser.role.type === "employee") && (

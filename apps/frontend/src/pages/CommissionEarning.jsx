@@ -14,6 +14,7 @@ import {
   getCommissionSummary,
 } from "../redux/slices/commissionSlice";
 import { paisaToRupee } from "../utils/lib";
+import RefreshToast from "../components/ui/RefreshToast";
 
 const CommissionEarning = () => {
   const [search, setSearch] = useState("");
@@ -159,20 +160,8 @@ const CommissionEarning = () => {
             </div>
 
             {/* Refresh */}
-            <button
-              onClick={handleManualRefresh}
-              disabled={isLoading}
-              className={`px-4 py-3 border border-gray-300 rounded-lg flex items-center gap-2 ${
-                isLoading
-                  ? "bg-gray-100 text-gray-400"
-                  : "bg-white hover:bg-gray-50"
-              }`}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-              />
-              {isLoading ? "Refreshing..." : "Refresh"}
-            </button>
+
+            <RefreshToast isLoading={isLoading} onClick={handleManualRefresh} />
           </div>
         </div>
       </div>

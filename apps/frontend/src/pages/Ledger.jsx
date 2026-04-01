@@ -14,6 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { paisaToRupee } from "../utils/lib";
+import RefreshToast from "../components/ui/RefreshToast";
 
 const Ledger = () => {
   const dispatch = useDispatch();
@@ -149,7 +150,7 @@ const Ledger = () => {
     <div className="min-h-screen ">
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4  py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -174,17 +175,8 @@ const Ledger = () => {
                   </span>
                 )}
               </button>
-              <button
-                onClick={fetchLedger}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </button>
-              {/* <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </button> */}
+
+              <RefreshToast isLoading={loading} onClick={fetchLedger} />
             </div>
           </div>
 

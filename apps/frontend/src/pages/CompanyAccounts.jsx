@@ -10,6 +10,7 @@ import {
 import AddBank from "../components/forms/AddBank";
 import RefreshToast from "../components/ui/RefreshToast";
 import ConfirmCard from "../components/ui/ConfirmCard";
+import ButtonField from "../components/ui/ButtonField";
 
 export const AccountType = Object.freeze({
   PERSONAL: "PERSONAL",
@@ -247,13 +248,12 @@ const CompanyAccounts = () => {
             </div>
             <div className="flex items-center gap-3">
               <RefreshToast isLoading={isLoading} onClick={fetchHandle} />
-              <button
-                onClick={() => setShowAccountForm(!showAccountForm)}
-                className="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Account
-              </button>
+
+              <ButtonField
+                name="Add Account"
+                isOpen={() => setShowAccountForm(!showAccountForm)}
+                icon={Plus}
+              />
             </div>
           </div>
 

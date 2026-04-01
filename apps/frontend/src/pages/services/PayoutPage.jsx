@@ -1,5 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
-import { CreditCard, Landmark, Search, RefreshCw, Clock } from "lucide-react";
+import {
+  CreditCard,
+  Landmark,
+  Search,
+  RefreshCw,
+  Clock,
+  Users,
+} from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -20,6 +27,8 @@ import AddPayoutForm from "../../components/forms/services/AddPayoutForm";
 import { v4 as uuidv4 } from "uuid";
 import ConfirmCard from "../../components/ui/ConfirmCard";
 import { verifyBankAccount } from "../../redux/slices/bankVerificationSlice";
+import RefreshToast from "../../components/ui/RefreshToast";
+import ButtonField from "../../components/ui/ButtonField";
 
 const PayoutPage = () => {
   const dispatch = useDispatch();
@@ -184,19 +193,24 @@ const PayoutPage = () => {
         <StateCard title="Refund" value={0} icon={Landmark} />
       </div>
 
-      <div className="bg-white p-6 rounded-xl border flex justify-between">
+      <div className="bg-white p-6 rounded-xl border border-gray-300 flex justify-between">
         <input
           placeholder="Search Txn ID"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border px-3 py-2 rounded-lg"
+          className="border px-3 py-2 rounded-lg border-gray-300"
         />
 
         <div className="flex gap-3">
-          <button onClick={fetchRequests}>Refresh</button>
-
+          <RefreshToast isLoading={processing} onClick={fetchRequests} />
           {canProcess && (
-            <button onClick={() => setMethod(true)}>Payout</button>
+            <ButtonField
+              name="Payout"
+              isOpen={() => {
+                setMethod(true);
+              }}
+              icon={Users}
+            />
           )}
         </div>
       </div>

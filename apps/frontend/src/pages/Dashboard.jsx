@@ -24,6 +24,7 @@ import DashboardChart from "../components/DashboardChart";
 import { useDispatch, useSelector } from "react-redux";
 import { paisaToRupee } from "../utils/lib";
 import { getDashboard } from "../redux/slices/dashboardSlice";
+import RefreshToast from "../components/ui/RefreshToast";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -179,9 +180,7 @@ const Dashboard = () => {
             className="text-black px-2 rounded"
           />
 
-          <button onClick={handleRefresh}>
-            <RefreshCw className={refreshing ? "animate-spin" : ""} />
-          </button>
+          <RefreshToast isLoading={refreshing} onClick={handleRefresh} />
         </div>
       </div>
 

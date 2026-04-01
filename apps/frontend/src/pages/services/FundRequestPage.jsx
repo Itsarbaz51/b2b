@@ -24,6 +24,8 @@ import ConfirmCard from "../../components/ui/ConfirmCard";
 import AddRazorpayFundForm from "../../components/forms/services/AddRazorpayFundForm";
 import { usePermissions } from "../../hooks/usePermission";
 import { SERVICES } from "../../utils/constants";
+import ButtonField from "../../components/ui/ButtonField";
+import RefreshToast from "../../components/ui/RefreshToast";
 
 const FundRequestPage = () => {
   const dispatch = useDispatch();
@@ -190,31 +192,20 @@ const FundRequestPage = () => {
         </div>
 
         <div className="flex gap-3">
-          <button
-            onClick={fetchRequests}
-            className="px-4 py-2 border border-gray-300 rounded-lg flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
+          <RefreshToast isLoading={isLoading} onClick={fetchRequests} />
 
           {!isAdmin && canProcess && (
             <>
-              <button
-                onClick={() => setMethod("razorpay")}
-                className="px-5 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
-              >
-                <CreditCard className="w-4 h-4" />
-                Razorpay
-              </button>
-
-              <button
-                onClick={() => setMethod("bank")}
-                className="px-5 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
-              >
-                <Landmark className="w-4 h-4" />
-                Bank Transfer
-              </button>
+              <ButtonField
+                name="Razorpay"
+                isOpen={() => setMethod("razorpay")}
+                icon={CreditCard}
+              />
+              <ButtonField
+                name="Bank Transfer"
+                isOpen={() => setMethod("bank")}
+                icon={Landmark}
+              />
             </>
           )}
         </div>
