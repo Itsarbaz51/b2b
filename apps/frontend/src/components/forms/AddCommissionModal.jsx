@@ -536,11 +536,13 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                   <option value="">
                     {servicesLoading ? "Loading services..." : "Select Service"}
                   </option>
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {formatServiceDisplayName(service)}
-                    </option>
-                  ))}
+                  {services
+                    .filter((s) => s.commissionStartLevel !== "NONE")
+                    .map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {formatServiceDisplayName(service)}
+                      </option>
+                    ))}
                 </select>
                 {errors.serviceProviderMappingId && (
                   <p className="text-red-500 text-sm mt-1">
