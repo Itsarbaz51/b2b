@@ -11,7 +11,7 @@ export class CommissionSettingService {
       serviceProviderMappingId,
       mode,
       type,
-      value,
+      value = 0,
       applyTDS,
       tdsPercent,
       applyGST,
@@ -20,8 +20,18 @@ export class CommissionSettingService {
     } = data;
 
     // ---------------- VALIDATIONS ----------------
-    if (!mode || !type || value === undefined || value === null) {
-      throw ApiError.badRequest("mode, type and value are required");
+    if (!mode || !type) {
+      throw ApiError.badRequest("mode, type are required");
+    }
+
+    if (!supportsSlab) {
+      if (value === undefined || value === null) {
+        throw ApiError.badRequest("value is required when slab is disabled");
+      }
+
+      if (BigInt(value) <= 0n) {
+        throw ApiError.badRequest("value must be greater than 0");
+      }
     }
 
     if (mode === "COMMISSION" && applyTDS && !tdsPercent) {

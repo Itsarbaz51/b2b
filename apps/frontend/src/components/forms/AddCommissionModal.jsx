@@ -111,10 +111,25 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    let updatedValue = type === "checkbox" ? checked : value;
+
+    setFormData((prev) => {
+      // 🔥 Service change → slab reset
+      if (name === "serviceProviderMappingId") {
+        return {
+          ...prev,
+          serviceProviderMappingId: updatedValue,
+          supportsSlab: false,
+          value: "",
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: updatedValue,
+        ...(name === "supportsSlab" && checked ? { value: "" } : {}),
+      };
+    });
 
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -175,13 +190,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
       newErrors.serviceProviderMappingId = "Service is required";
     }
 
-    // Value
-    if (formData.value === "" || formData.value === null) {
-      newErrors.value = "Value is required";
-    } else if (isNaN(formData.value) || parseFloat(formData.value) < 0) {
-      newErrors.value = "Value must be a valid positive number";
-    }
-
     // Scope validation
     if (formData.scope === "ROLE" && !formData.roleId) {
       newErrors.roleId = "Role is required for ROLE scope";
@@ -214,6 +222,14 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         newErrors.gstPercent = "GST percentage is required";
       } else if (formData.gstPercent < 0 || formData.gstPercent > 100) {
         newErrors.gstPercent = "GST percentage must be between 0 and 100";
+      }
+    }
+    // Value (only when slab is disabled)
+    if (!formData.supportsSlab) {
+      if (formData.value === "" || formData.value === null) {
+        newErrors.value = "Value is required";
+      } else if (isNaN(formData.value) || parseFloat(formData.value) < 0) {
+        newErrors.value = "Value must be a valid positive number";
       }
     }
 
@@ -557,6 +573,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
               </div>
 
               {/*  Type */}
+              {/* Type */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Type *
@@ -572,147 +589,159 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                 </select>
               </div>
 
-              {/* Value */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Value *
-                </label>
-                <input
-                  type="number"
-                  name="value"
-                  value={formData.value}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                    errors.value
-                      ? "border-red-400 focus:ring-red-300 bg-red-50"
-                      : "border-gray-300 focus:ring-blue-400"
-                  }`}
-                  placeholder={
-                    formData.type === "PERCENTAGE"
-                      ? "Enter percentage"
-                      : "Enter amount (₹)"
-                  }
-                  step={formData.type === "PERCENTAGE" ? "0.01" : "1"}
-                />
-                {errors.value && (
-                  <p className="text-red-500 text-sm mt-1">{errors.value}</p>
-                )}
-              </div>
+              {/* 🔥 Slab (right side of Type) */}
+              {formData.serviceProviderMappingId && (
+                <div className="flex items-center justify-start md:pt-8">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="supportsSlab"
+                      name="supportsSlab"
+                      checked={formData.supportsSlab}
+                      onChange={handleChange}
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="supportsSlab"
+                      className="text-sm font-semibold text-gray-700"
+                    >
+                      Enable Slab
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* 🔥 Value full width */}
+              {!formData.supportsSlab && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Value *
+                  </label>
+                  <input
+                    type="number"
+                    name="value"
+                    value={formData.value}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
+                      errors.value
+                        ? "border-red-400 focus:ring-red-300 bg-red-50"
+                        : "border-gray-300 focus:ring-blue-400"
+                    }`}
+                    placeholder={
+                      formData.type === "PERCENTAGE"
+                        ? "Enter percentage"
+                        : "Enter amount (₹)"
+                    }
+                    step={formData.type === "PERCENTAGE" ? "0.01" : "1"}
+                  />
+                  {errors.value && (
+                    <p className="text-red-500 text-sm mt-1">{errors.value}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* TDS Settings */}
-              {formData.mode === "COMMISSION" && (
-                <div className="w-full mt-6">
-                  <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
-                    <div className="flex items-center space-x-3 ">
-                      <input
-                        type="checkbox"
-                        id="applyTDS"
-                        name="applyTDS"
-                        checked={formData.applyTDS}
-                        onChange={handleChange}
-                        className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label
-                        htmlFor="applyTDS"
-                        className="block text-sm font-semibold text-gray-700"
-                      >
-                        Apply TDS
-                      </label>
-                    </div>
-
-                    {formData.applyTDS && (
-                      <div className="flex-1 max-w-xs">
-                        <input
-                          type="number"
-                          name="tdsPercent"
-                          value={formData.tdsPercent}
-                          onChange={handleChange}
-                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                            errors.tdsPercent
-                              ? "border-red-400 focus:ring-red-300 bg-red-50"
-                              : "border-gray-300 focus:ring-blue-400"
-                          }`}
-                          placeholder="TDS Percentage"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                        />
-                        {errors.tdsPercent && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.tdsPercent}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 🔥 Show GST only for SURCHARGE */}
-              {formData.mode === "SURCHARGE" && (
-                <div className="w-full mt-6">
-                  <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="applyGST"
-                        name="applyGST"
-                        checked={formData.applyGST}
-                        onChange={handleChange}
-                        className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label
-                        htmlFor="applyGST"
-                        className="block text-sm font-semibold text-gray-700"
-                      >
-                        Apply GST
-                      </label>
-                    </div>
-
-                    {formData.applyGST && (
-                      <div className="flex-1 max-w-xs">
-                        <input
-                          type="number"
-                          name="gstPercent"
-                          value={formData.gstPercent}
-                          onChange={handleChange}
-                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
-                            errors.gstPercent
-                              ? "border-red-400 focus:ring-red-300 bg-red-50"
-                              : "border-gray-300 focus:ring-blue-400"
-                          }`}
-                          placeholder="GST Percentage"
-                          step="0.01"
-                          min="0"
-                        />
-                        {errors.gstPercent && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.gstPercent}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="supportsSlab"
-                  name="supportsSlab"
-                  checked={formData.supportsSlab}
-                  onChange={handleChange}
-                  className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label
-                  htmlFor="supportsSlab"
-                  className="block text-sm font-semibold text-gray-700"
-                >
-                  support Slab
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Tax *
                 </label>
+                {/* TDS Settings */}
+                {formData.mode === "COMMISSION" && (
+                  <div className="w-full">
+                    <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
+                      <div className="flex items-center space-x-3 ">
+                        <input
+                          type="checkbox"
+                          id="applyTDS"
+                          name="applyTDS"
+                          checked={formData.applyTDS}
+                          onChange={handleChange}
+                          className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <label
+                          htmlFor="applyTDS"
+                          className="block text-sm font-semibold text-gray-700"
+                        >
+                          Apply TDS
+                        </label>
+                      </div>
+
+                      {formData.applyTDS && (
+                        <div className="flex-1 max-w-xs">
+                          <input
+                            type="number"
+                            name="tdsPercent"
+                            value={formData.tdsPercent}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
+                              errors.tdsPercent
+                                ? "border-red-400 focus:ring-red-300 bg-red-50"
+                                : "border-gray-300 focus:ring-blue-400"
+                            }`}
+                            placeholder="TDS Percentage"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                          />
+                          {errors.tdsPercent && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.tdsPercent}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 🔥 Show GST only for SURCHARGE */}
+                {formData.mode === "SURCHARGE" && (
+                  <div className="w-full">
+                    <div className="flex items-center space-x-6 p-4 border border-gray-200 rounded-xl">
+                      <div className="flex items-center space-x-3">
+                        <label
+                          htmlFor="applyGST"
+                          className="block text-sm font-semibold text-gray-700"
+                        >
+                          Apply GST
+                        </label>
+                        <input
+                          type="checkbox"
+                          id="applyGST"
+                          name="applyGST"
+                          checked={formData.applyGST}
+                          onChange={handleChange}
+                          className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {formData.applyGST && (
+                        <div className="flex-1 max-w-xs">
+                          <input
+                            type="number"
+                            name="gstPercent"
+                            value={formData.gstPercent}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-3 border rounded-xl focus:outline-none ${
+                              errors.gstPercent
+                                ? "border-red-400 focus:ring-red-300 bg-red-50"
+                                : "border-gray-300 focus:ring-blue-400"
+                            }`}
+                            placeholder="GST Percentage"
+                            step="0.01"
+                            min="0"
+                          />
+                          {errors.gstPercent && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.gstPercent}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             {/* Submit Button */}
