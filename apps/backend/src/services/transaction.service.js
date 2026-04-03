@@ -169,6 +169,7 @@ export default class TransactionService {
       processedAt: true,
       completedAt: true,
       providerReference: true,
+      pricing: true,
 
       user: {
         select: {
@@ -207,7 +208,6 @@ export default class TransactionService {
     /* EXTRA FIELDS ONLY FOR ADMIN / EMPLOYEE */
     if (isAdminOrEmployee) {
       selectFields.idempotencyKey = true;
-      selectFields.pricing = true;
       selectFields.apiEntityId = true;
     }
 

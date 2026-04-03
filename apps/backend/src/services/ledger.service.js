@@ -21,15 +21,11 @@ export default class LedgerService {
     const normalizedRole = String(role || "").toLowerCase();
 
     // 🎯 ROLE BASED FILTER
-    let userFilter = {};
-
-    if (!["admin", "employee"].includes(normalizedRole)) {
-      userFilter = {
-        wallet: {
-          userId: userId,
-        },
-      };
-    }
+    let userFilter = {
+      wallet: {
+        userId: userId,
+      },
+    };
 
     // ✅ TYPE NORMALIZE
     const normalizedType = String(type || "").toUpperCase();
@@ -107,8 +103,85 @@ export default class LedgerService {
       Prisma.ledgerEntry.count({ where }),
     ]);
 
+    if (["admin", "employee"].includes(normalizedRole)) {
+      return {
+        data: Helper.serializeBigInt(entries),
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
+        },
+      };
+    }
+
+    const processedEntries = [];
+    const map = new Map();
+
+    for (const entry of entries) {
+      const txnId = entry.transaction?.txnId || entry.id;
+
+      if (!map.has(txnId)) {
+        map.set(txnId, {
+          base: entry,
+          surchargeTotal: 0,
+          gstTotal: 0,
+        });
+      }
+
+      const item = map.get(txnId);
+
+      // 🔥 SURCHARGE + PROVIDER_COST
+      if (
+        entry.referenceType === "SURCHARGE" ||
+        entry.referenceType === "PROVIDER_COST"
+      ) {
+        item.surchargeTotal += Number(entry.amount);
+      }
+
+      // 🔥 GST combine
+      else if (
+        entry.referenceType === "SURCHARGE_GST" ||
+        entry.referenceType === "PROVIDER_GST"
+      ) {
+        item.gstTotal += Number(entry.amount);
+      }
+
+      // 🔥 Other entries (FUND, PAYOUT etc.)
+      else {
+        processedEntries.push(entry);
+      }
+    }
+
+    for (const [txnId, item] of map.entries()) {
+      const base = item.base;
+
+      // 👉 SURCHARGE
+      if (item.surchargeTotal !== 0) {
+        processedEntries.push({
+          ...base,
+          id: `${txnId}_SURCHARGE`,
+          referenceType: "SURCHARGE",
+          amount: item.surchargeTotal,
+        });
+      }
+
+      // 👉 GST
+      if (item.gstTotal !== 0) {
+        processedEntries.push({
+          ...base,
+          id: `${txnId}_GST`,
+          referenceType: "GST",
+          amount: item.gstTotal,
+        });
+      }
+    }
+    processedEntries.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
     return {
-      data: Helper.serializeBigInt(entries),
+      data: Helper.serializeBigInt(processedEntries),
       pagination: {
         total,
         page: pageNumber,
