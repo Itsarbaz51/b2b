@@ -456,7 +456,7 @@ export class MappingService {
 
         supportsSlab: supportsSlab ?? mapping.supportsSlab,
 
-        // 🔥 GST / TDS FIX
+        //  GST / TDS FIX
         applyTDS: applyTDS ?? mapping.applyTDS,
         tdsPercent:
           applyTDS === true
@@ -525,6 +525,7 @@ export class MappingService {
           service: true,
           provider: true,
           providerSlabs: true,
+          paymentMethodCharges: true,
         },
 
         orderBy: {
@@ -615,6 +616,133 @@ export class ProviderSlabService {
         maxAmount: max,
         providerCost: providerCost ? BigInt(providerCost) : 0,
         sellingPrice: sellingPrice ? BigInt(sellingPrice) : 0,
+      },
+    });
+  }
+}
+export class PaymentMethodChargeService {
+  static async upsert(payload) {
+    const {
+      id,
+      _delete,
+      serviceProviderMappingId,
+      paymentMethod,
+      network,
+      type,
+      value,
+    } = payload;
+
+    // ================= DELETE =================
+    if (_delete && id) {
+      return Prisma.paymentMethodChargeProvider.delete({
+        where: { id },
+      });
+    }
+
+    // ================= BASIC VALIDATION =================
+    if (!serviceProviderMappingId) {
+      throw ApiError.badRequest("Mapping ID required");
+    }
+
+    if (!paymentMethod) {
+      throw ApiError.badRequest("Payment method required");
+    }
+
+    if (!type) {
+      throw ApiError.badRequest("Type required");
+    }
+
+    if (value === undefined || value === null) {
+      throw ApiError.badRequest("Value required");
+    }
+
+    const parsedValue = BigInt(value);
+
+    if (parsedValue < 0n) {
+      throw ApiError.badRequest("Value must be >= 0");
+    }
+
+    // ================= FETCH MAPPING =================
+    const mapping = await Prisma.serviceProviderMapping.findUnique({
+      where: { id: serviceProviderMappingId },
+      select: {
+        id: true,
+        mode: true,
+        isActive: true,
+        supportsSlab: true,
+      },
+    });
+
+    if (!mapping) {
+      throw ApiError.notFound("Service mapping not found");
+    }
+
+    // ================= BUSINESS RULES =================
+
+    //  Only SURCHARGE allowed
+    if (mapping.mode !== "SURCHARGE") {
+      throw ApiError.badRequest(
+        "Payment method charges only allowed in SURCHARGE mode"
+      );
+    }
+
+    //  Mapping active hona chahiye
+    if (!mapping.isActive) {
+      throw ApiError.badRequest("Mapping is inactive");
+    }
+
+    //  Slab + payment charge conflict
+    if (mapping.supportsSlab) {
+      throw ApiError.badRequest(
+        "Payment method charges not allowed with slab pricing"
+      );
+    }
+
+    if (!type) {
+      throw ApiError.badRequest("Invalid pricing type");
+    }
+
+    // ================= CARD VALIDATION =================
+    if (paymentMethod === "CARD") {
+      if (!network) {
+        throw ApiError.badRequest("Network required for CARD");
+      }
+    }
+
+    // ================= UPDATE =================
+    if (id) {
+      return Prisma.paymentMethodChargeProvider.update({
+        where: { id },
+        data: {
+          paymentMethod,
+          network: paymentMethod === "CARD" ? network : null,
+          type: type.toUpperCase(),
+          value: parsedValue,
+        },
+      });
+    }
+
+    // ================= DUPLICATE CHECK =================
+    const exists = await Prisma.paymentMethodChargeProvider.findFirst({
+      where: {
+        serviceProviderMappingId,
+        paymentMethod,
+        network: paymentMethod === "CARD" ? network : null,
+      },
+    });
+
+    if (exists) {
+      throw ApiError.conflict("Charge already exists for this payment method");
+    }
+
+    // ================= CREATE =================
+    return Prisma.paymentMethodChargeProvider.create({
+      data: {
+        serviceProviderMappingId,
+        paymentMethod,
+        network: paymentMethod === "CARD" ? network : null,
+        type: type.toUpperCase(),
+        value: parsedValue,
       },
     });
   }

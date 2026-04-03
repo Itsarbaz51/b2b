@@ -99,6 +99,7 @@ model User {
   hierarchyPath                 String               @map("hierarchy_path") @db.Text
   status                        UserStatus           @default(ACTIVE)
   isKycVerified                 Boolean              @default(false) @map("is_kyc_verified")
+  emailSent                     Boolean              @default(false) @map("email_sent")
   roleId                        String               @map("role_id")
   refreshToken                  String?              @map("refresh_token") @db.Text
   passwordResetToken            String?              @map("password_reset_token")
@@ -367,6 +368,9 @@ model CommissionSetting {
   targetUser   User?   @relation(fields: [targetUserId], references: [id])
   supportsSlab Boolean @default(false) @map("support_slab")
 
+  paymentMethod String?
+  network       String?
+
   serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
   commissionSlabs        CommissionSlab[]
 
@@ -487,14 +491,15 @@ model ServiceProviderMapping {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  service            Service             @relation(fields: [serviceId], references: [id])
-  provider           Provider            @relation(fields: [providerId], references: [id])
-  transactions       Transaction[]
-  apiEntities        ApiEntity[]
-  ledgerEntries      LedgerEntry[]
-  commissionSettings CommissionSetting[]
-  commissionEarnings CommissionEarning[]
-  providerSlabs      ProviderSlab[]
+  service              Service                       @relation(fields: [serviceId], references: [id])
+  provider             Provider                      @relation(fields: [providerId], references: [id])
+  transactions         Transaction[]
+  apiEntities          ApiEntity[]
+  ledgerEntries        LedgerEntry[]
+  commissionSettings   CommissionSetting[]
+  commissionEarnings   CommissionEarning[]
+  providerSlabs        ProviderSlab[]
+  paymentMethodCharges PaymentMethodChargeProvider[]
 
   @@unique([serviceId, providerId])
   @@map("service_provider_mappings")
@@ -516,6 +521,24 @@ model ProviderSlab {
 
   @@index([serviceProviderMappingId, minAmount, maxAmount])
   @@map("provider_slabs")
+}
+
+model PaymentMethodChargeProvider {
+  id String @id @default(uuid())
+
+  serviceProviderMappingId String @map("service_provider_mapping_id")
+
+  paymentMethod String  @map("payment_method") // card / upi  
+  network       String? // visa / rupay
+
+  type    PricingValueType
+  value   BigInt
+  mapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([serviceProviderMappingId, paymentMethod, network])
+  @@map("payment_method_charge_provider")
 }
 
 model UserPermission {

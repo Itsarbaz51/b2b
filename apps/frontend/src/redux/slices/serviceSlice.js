@@ -222,3 +222,32 @@ export const createProviderSlab = (payload) => async (dispatch) => {
     throw error;
   }
 };
+
+// Create / Update / Delete Provider Slab
+export const createPaymentMethodCharge = (payload) => async (dispatch) => {
+  try {
+    dispatch(serviceRequest());
+
+    const { data } = await axios.post(
+      `/services/payment-method-charge`,
+      payload,
+    );
+
+    dispatch(serviceSuccess(data));
+
+    if (data.message) {
+      toast.success(data.message);
+    }
+
+    return data;
+  } catch (error) {
+    console.log(error.message);
+
+    const errMsg = ZodErrorCatch(error);
+
+    dispatch(serviceFail(errMsg));
+    toast.error(errMsg);
+
+    throw error;
+  }
+};

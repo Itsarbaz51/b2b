@@ -10,6 +10,7 @@ import EmptyState from "../ui/EmptyState";
 import AddMappingForm from "../forms/AddMappingForm";
 import { paisaToRupee } from "../../utils/lib";
 import ActionMenu from "../ui/ActionMenu";
+import AddPaymentMethodChargeForm from "../forms/AddPaymentMethodChargeForm";
 
 export default function MappingTable() {
   const dispatch = useDispatch();
@@ -24,6 +25,10 @@ export default function MappingTable() {
   const [providerList, setProviderList] = useState([]);
   const [showSlabModal, setShowSlabModal] = useState(false);
   const [selectedMapping, setSelectedMapping] = useState(null);
+
+  const [showPaymentChargeModal, setShowPaymentChargeModal] = useState(false);
+  const [selectedChargeMapping, setSelectedChargeMapping] = useState(null);
+  const [editChargeData, setEditChargeData] = useState(null);
 
   const data = mappings || [];
 
@@ -146,6 +151,7 @@ export default function MappingTable() {
 
                       <td className="px-6 py-4">{item.commissionStartLevel}</td>
                       <td className="px-6 py-5">
+                        {/* ================= SLAB ================= */}
                         {item.supportsSlab && item.providerSlabs?.length > 0 ? (
                           <div className="space-y-1 text-xs">
                             {item.providerSlabs.map((slab) => (
@@ -179,7 +185,48 @@ export default function MappingTable() {
                               </div>
                             ))}
                           </div>
+                        ) : item.paymentMethodCharges?.length > 0 ? (
+                          /* ================= PAYMENT CHARGES ================= */
+                          <div className="space-y-1 text-xs">
+                            {item.paymentMethodCharges.map((charge) => (
+                              <div
+                                key={charge.id}
+                                className="bg-purple-50 px-2 py-1 rounded flex justify-between items-center"
+                              >
+                                <span>
+                                  {charge.paymentMethod}
+                                  {charge.network ? ` (${charge.network})` : ""}
+                                </span>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-purple-600">
+                                    {charge.type === "FLAT"
+                                      ? `₹${paisaToRupee(charge.value)}`
+                                      : `${Number(charge.value) / 100}%`}
+                                  </span>
+
+                                  <button
+                                    onClick={() => {
+                                      setSelectedChargeMapping(item);
+                                      setEditChargeData(charge);
+                                      setShowPaymentChargeModal(true);
+                                    }}
+                                    className="text-blue-500 hover:text-blue-700"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="text-sm font-semibold text-red-500">
+                              defult :
+                              {item.pricingValueType === "FLAT"
+                                ? `₹${paisaToRupee(item.providerCost)}`
+                                : `%${paisaToRupee(item.providerCost)}`}
+                            </div>
+                          </div>
                         ) : (
+                          /* ================= DEFAULT ================= */
                           <div className="text-sm font-semibold text-red-500">
                             {item.pricingValueType === "FLAT"
                               ? `₹${paisaToRupee(item.providerCost)}`
@@ -187,6 +234,7 @@ export default function MappingTable() {
                           </div>
                         )}
                       </td>
+
                       <td className="px-6 py-4">
                         <div className="space-y-1">
                           {item.mode === "COMMISSION" && item.applyTDS && (
@@ -242,6 +290,21 @@ export default function MappingTable() {
                                   },
                                 ]
                               : []),
+
+                            ...(item.mode === "SURCHARGE" &&
+                            item?.provider?.code === "RAZORPAY"
+                              ? [
+                                  {
+                                    icon: Plus,
+                                    label: "Add Payment Charge",
+                                    onClick: () => {
+                                      setSelectedChargeMapping(item);
+                                      setEditChargeData(null);
+                                      setShowPaymentChargeModal(true);
+                                    },
+                                  },
+                                ]
+                              : []),
                           ]}
                         />
                       </td>
@@ -277,6 +340,22 @@ export default function MappingTable() {
               onClose={() => {
                 setShowSlabModal(false);
                 setEditData(null);
+              }}
+              onSuccess={loadMappings}
+            />
+          </div>
+        </div>
+      )}
+
+      {showPaymentChargeModal && selectedChargeMapping && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-[450px]">
+            <AddPaymentMethodChargeForm
+              mappingId={selectedChargeMapping.id}
+              editData={editChargeData}
+              onClose={() => {
+                setShowPaymentChargeModal(false);
+                setEditChargeData(null);
               }}
               onSuccess={loadMappings}
             />

@@ -48,5 +48,11 @@ serviceRoutes.post(
   AuthMiddleware.authorize(["ADMIN", "employee"]),
   ServiceProviderController.slab
 );
+serviceRoutes.post(
+  "/payment-method-charge",
+  AuthMiddleware.isAuthenticated,
+  AuthMiddleware.authorize(["ADMIN", "employee"]),
+  ServiceProviderController.paymentMethodCharge
+);
 
 export default serviceRoutes;

@@ -1,5 +1,6 @@
 import {
   MappingService,
+  PaymentMethodChargeService,
   ProviderService,
   ProviderSlabService,
   ServiceService,
@@ -167,6 +168,22 @@ class ServiceProviderController {
 
     if (payload._delete) message = "Slab deleted successfully";
     else if (payload.id) message = "Slab updated successfully";
+
+    return res.json(
+      ApiResponse.success(Helper.serializeBigInt(result), message)
+    );
+  });
+
+  // paymentMethodCharge
+  static paymentMethodCharge = asyncHandler(async (req, res) => {
+    const payload = req.body;
+
+    const result = await PaymentMethodChargeService.upsert(payload);
+
+    let message = "Charge created successfully";
+
+    if (payload._delete) message = "Charge deleted successfully";
+    else if (payload.id) message = "Charge updated successfully";
 
     return res.json(
       ApiResponse.success(Helper.serializeBigInt(result), message)
