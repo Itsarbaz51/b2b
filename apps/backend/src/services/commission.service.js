@@ -142,6 +142,10 @@ export class CommissionSettingService {
         where: { id: serviceProviderMappingId },
       });
       if (!service) throw ApiError.notFound("Service not found");
+
+      if (supportsSlab !== service.supportsSlab) {
+        throw ApiError.conflict("Please enable to provider slab");
+      }
     }
 
     if (roleId) {
