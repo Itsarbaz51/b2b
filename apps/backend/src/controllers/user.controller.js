@@ -117,7 +117,13 @@ class UserController {
       throw ApiError.badRequest("userId required");
     }
 
-    const user = await UserServices.getUserById(userId, currentUser, req, res);
+    const userData = await UserServices.getUserById(
+      userId,
+      currentUser,
+      req,
+      res
+    );
+    const user = Helper.serializeBigInt(userData);
 
     return res
       .status(200)
