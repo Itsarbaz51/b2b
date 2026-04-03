@@ -64,15 +64,6 @@ export default class DashboardService {
       ...(status !== "ALL" ? { status } : {}),
     };
 
-    //  LEDGER FILTER (IMPORTANT)
-    const ledgerUserFilter = isAdmin
-      ? {}
-      : {
-          wallet: {
-            userId,
-          },
-        };
-
     const groupType = dateFilter
       ? this.getGroupType(dateFilter.startDate, dateFilter.endDate)
       : "month";
@@ -116,7 +107,7 @@ export default class DashboardService {
     const gstAgg = await Prisma.ledgerEntry.aggregate({
       _sum: { amount: true },
       where: {
-        referenceType: "USER_GST",
+        referenceType: "SURCHARGE_GST",
         ...(isAdmin
           ? {
               entryType: "CREDIT", // admin earning
@@ -138,7 +129,7 @@ export default class DashboardService {
     const tdsAgg = await Prisma.ledgerEntry.aggregate({
       _sum: { amount: true },
       where: {
-        referenceType: "TDS",
+        referenceType: "COMMISSION_TDS",
         ...(isAdmin
           ? {
               entryType: "CREDIT",
@@ -192,12 +183,6 @@ export default class DashboardService {
         amount: true,
         initiatedAt: true,
       },
-    });
-
-    let totalRevenue = 0;
-
-    txns.forEach((txn) => {
-      totalRevenue += Number(txn.amount || 0);
     });
 
     //  SERVICE TOTAL
@@ -269,8 +254,6 @@ export default class DashboardService {
 
         totalPrimaryBalance,
         totalCommissionBalance,
-
-        totalRevenue,
 
         success,
         failed,

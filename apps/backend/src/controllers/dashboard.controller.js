@@ -5,7 +5,12 @@ import Helper from "../utils/helper.js";
 export default class DashboardController {
   static async getDashboard(req, res) {
     const userId = req.user.id;
-    const role = req.user.role == "ADMIN" ? "ADMIN" : req.user.roleType;
+    const role =
+      req.user.role == "ADMIN"
+        ? "ADMIN"
+        : req.user.roleType == "employee"
+          ? "employee"
+          : null;
     const { type, from, to, status } = req.query;
 
     const data = await DashboardService.getDashboard({
