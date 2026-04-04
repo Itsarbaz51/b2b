@@ -57,6 +57,21 @@ class RazorpayFundRequestPlugin extends FundRequestInterface {
       raw: payment,
     };
   }
+
+  async checkStatus({ paymentId }) {
+    if (!paymentId) {
+      throw ApiError.badRequest("paymentId is required");
+    }
+
+    const payment = await this.client.payments.fetch(paymentId);
+
+    return {
+      status: payment.status, // captured / authorized / failed
+      paymentId,
+      orderId: payment.order_id,
+      raw: payment,
+    };
+  }
 }
 
 export default RazorpayFundRequestPlugin;

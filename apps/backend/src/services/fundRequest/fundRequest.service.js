@@ -96,4 +96,29 @@ export default class FundRequestService {
         throw ApiError.badRequest("Unsupported provider");
     }
   }
+
+  static async checkStatus(payload, actor, isCron = false) {
+    const { serviceProviderMappingId } = payload;
+
+    if (!isCron) {
+      await this.checkPermission(actor.id, serviceProviderMappingId);
+    }
+
+    const { service, providerData, serviceProviderMapping } =
+      await this.resolveProvider(serviceProviderMappingId);
+
+    switch (providerData.code) {
+      case "RAZORPAY":
+        return RazorpayFundRequestService.checkStatus(
+          serviceProviderMapping,
+          providerData,
+          service,
+          payload,
+          actor
+        );
+
+      default:
+        throw ApiError.badRequest("Unsupported payout provider");
+    }
+  }
 }

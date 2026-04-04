@@ -87,4 +87,9 @@ const FundRequestValidationSchemas = z
     }
   });
 
-export { CreateFundRequest, FundRequestValidationSchemas };
+const CheckFundStatus = z.object({
+  txnId: z.string().min(5, "Invalid txnId"),
+  serviceProviderMappingId: z.string().uuid(),
+});
+
+export { CreateFundRequest, FundRequestValidationSchemas, CheckFundStatus };

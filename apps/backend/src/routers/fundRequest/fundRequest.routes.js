@@ -26,4 +26,12 @@ fundRequestRoutes.patch(
   FundRequestController.verify
 );
 
+fundRequestRoutes.post(
+  "/status",
+  AuthMiddleware.isAuthenticated,
+  AuthMiddleware.authorizeRoleTypes(["employee", "business"]),
+  validateRequest({ body: FundRequestValidationSchemas.CheckFundStatus }),
+  FundRequestController.checkStatus
+);
+
 export default fundRequestRoutes;

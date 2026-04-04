@@ -47,6 +47,22 @@ class FundRequestController {
       )
     );
   });
+
+  static checkStatus = asyncHandler(async (req, res) => {
+    const payload = {
+      txnId: req.body.txnId,
+      serviceProviderMappingId: req.body.serviceProviderMappingId,
+    };
+
+    const result = await FundRequestService.checkStatus(payload, req.user);
+
+    return res.json(
+      ApiResponse.success(
+        Helper.serializeBigInt(result),
+        "Status fetched successfully"
+      )
+    );
+  });
 }
 
 export default FundRequestController;

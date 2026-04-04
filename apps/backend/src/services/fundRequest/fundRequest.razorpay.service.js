@@ -258,4 +258,66 @@ export default class RazorpayFundRequestService {
       throw ApiError.badRequest("Unhandled payment status");
     });
   }
+
+  static async checkStatus(
+    serviceProviderMapping,
+    provider,
+    service,
+    payload,
+    actor
+  ) {
+    const plugin = getFundRequestPlugin(provider.code, parsedConfig);
+
+    const { txnId } = payload;
+
+    return Prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.findFirst({
+        where: { txnId },
+      });
+
+      if (!transaction) {
+        throw ApiError.notFound("Transaction not found");
+      }
+
+      if (["SUCCESS", "FAILED"].includes(transaction.status)) {
+        return {
+          status: transaction.status,
+          message: "Already processed",
+        };
+      }
+
+      // IMPORTANT: paymentId DB se nikalo
+      const paymentId = transaction.providerRefId;
+      // (ya jo bhi field tum use kar rahe ho)
+
+      if (!paymentId) {
+        throw ApiError.badRequest("PaymentId missing in transaction");
+      }
+
+      const response = await plugin.checkStatus({ paymentId });
+
+      let finalStatus = "PENDING";
+
+      if (response.status === "captured") {
+        finalStatus = "SUCCESS";
+      } else if (response.status === "failed") {
+        finalStatus = "FAILED";
+      }
+
+      // update transaction
+      await tx.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: finalStatus,
+          providerResponse: response,
+        },
+      });
+
+      return {
+        transactionId: transaction.id,
+        status: finalStatus,
+        providerResponse: response,
+      };
+    });
+  }
 }
