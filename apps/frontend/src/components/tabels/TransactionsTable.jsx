@@ -162,7 +162,7 @@ const TransactionsTable = ({
                 "Txn Amount",
                 "GST",
                 "Surcharge",
-                "Total Debit",
+                "Total Amount",
                 "Status",
                 "Init Date",
                 "Completed Date",
@@ -220,7 +220,7 @@ const TransactionsTable = ({
                       ₹{paisaToRupee(txn.pricing?.surcharge)}
                     </td>
                     <td className="px-6 py-4 font-semibold">
-                      ₹{paisaToRupee(txn.pricing?.totalDebit)}
+                      ₹{paisaToRupee(txn.pricing?.totalDebit || txn.pricing?.netCredit)}
                     </td>
 
                     <td className="px-6 py-4">

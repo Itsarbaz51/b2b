@@ -2,9 +2,9 @@ import Prisma from "../../db/db.js";
 import { getFundRequestPlugin } from "../../plugin_registry/fundRequest/pluginRegistry.js";
 import WalletEngine from "../../engines/wallet.engine.js";
 import TransactionService from "../transaction.service.js";
-import SurchargeEngine from "../../engines/surcharge.engine.js";
+import FundRequestDistributionEngine from "../../engines/fundRequestDistribution.engine.js";
 import LedgerEngine from "../../engines/ledger.engine.js";
-import PricingEngine from "../../engines/pricing.engine.js";
+import FundRequestPricingEngine from "../../engines/fundRequestPricing.engine.js";
 import { ApiError } from "../../utils/ApiError.js";
 import Helper from "../../utils/helper.js";
 import { CryptoService } from "../../utils/cryptoService.js";
@@ -29,13 +29,8 @@ export default class RazorpayFundRequestService {
     const amount = BigInt(payload.amount);
 
     return Prisma.$transaction(async (tx) => {
-      const pricing = await PricingEngine.calculateSurcharge(tx, {
-        userId: actor.id,
-        serviceProviderMappingId: serviceProviderMapping.id,
-        amount,
-      });
+      const finalAmount = amount;
 
-      const finalAmount = pricing.totalDebit;
       const receiptId = Helper.generateTxnId("RAZ");
       const wallet = await WalletEngine.getWallet({
         tx,
@@ -50,7 +45,6 @@ export default class RazorpayFundRequestService {
         walletId: wallet.id,
         serviceProviderMappingId: serviceProviderMapping.id,
         amount,
-        pricing,
         idempotencyKey: payload.idempotencyKey,
         requestPayload: payload,
       });
@@ -174,14 +168,8 @@ export default class RazorpayFundRequestService {
         walletType: "PRIMARY",
       });
 
-      const pricing = await PricingEngine.calculateSurcharge(tx, {
-        userId: transaction.userId,
-        serviceProviderMappingId: transaction.serviceProviderMappingId,
-        amount: actualAmount,
-      });
-
-      if (pricing.totalDebit !== totalAmount) {
-        throw ApiError.badRequest("Amount mismatch");
+      if (actualAmount !== totalAmount) {
+        throw ApiError.badRequest("Payment amount mismatch");
       }
 
       if (paymentStatus === "failed") {
@@ -209,9 +197,27 @@ export default class RazorpayFundRequestService {
         };
       }
 
-      //  SUCCESS
+      // SUCCESS
       if (paymentStatus === "captured") {
-        await WalletEngine.credit(tx, wallet, actualAmount);
+        const method = verifyResponse.raw.method;
+        const cardNetwork = verifyResponse.raw.card?.network || null;
+
+        const pricing = await FundRequestPricingEngine.calculate(tx, {
+          userId: transaction.userId,
+          serviceProviderMappingId: transaction.serviceProviderMappingId,
+          amount: actualAmount,
+          paymentMethod: method.toUpperCase(),
+          cardNetwork: cardNetwork.toUpperCase(),
+        });
+
+        const wallet = await WalletEngine.getWallet({
+          tx,
+          userId: transaction.userId,
+          walletType: "PRIMARY",
+        });
+
+        // CREDIT NET AMOUNT ONLY
+        await WalletEngine.credit(tx, wallet, pricing.netCredit);
 
         await LedgerEngine.create(tx, {
           walletId: wallet.id,
@@ -219,22 +225,24 @@ export default class RazorpayFundRequestService {
           entryType: "CREDIT",
           referenceType: "FUND_REQUEST",
           serviceProviderMappingId: transaction.serviceProviderMappingId,
-          amount: actualAmount,
-          narration: "Fund added via Razorpay",
+          amount: pricing.netCredit,
+          narration: "Full fund request amount",
           createdBy: actor.id,
         });
 
-        await SurchargeEngine.distribute(tx, {
+        // ✅ DISTRIBUTION (NO USER DEBIT)
+        await FundRequestDistributionEngine.distribute(tx, {
           transactionId: transaction.id,
           userId: transaction.userId,
           serviceProviderMappingId: transaction.serviceProviderMappingId,
-          createdBy: actor.id,
           pricing,
+          createdBy: actor.id,
         });
 
         await TransactionService.update(tx, {
           transactionId: transaction.id,
           status: "SUCCESS",
+          pricing,
           providerReference: verifyResponse.paymentId,
           providerResponse: verifyResponse,
         });
@@ -243,7 +251,7 @@ export default class RazorpayFundRequestService {
           status: "SUCCESS",
           transactionId: transaction.id,
           paymentId: verifyResponse.paymentId,
-          amount: actualAmount,
+          amount: pricing.netCredit,
         };
       }
 
