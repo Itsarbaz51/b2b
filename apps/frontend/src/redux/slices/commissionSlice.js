@@ -227,4 +227,30 @@ export const createCommissionSlab = (payload) => async (dispatch) => {
     throw error;
   }
 };
+// Create or Update Commission
+export const createCommissionPaymentMethod = (payload) => async (dispatch) => {
+  try {
+    dispatch(commissionRequest());
+
+    const { data } = await axios.post(
+      `/commissions/commission-payment-method/upsert`,
+      payload,
+    );
+
+    dispatch(commissionSuccess(data));
+
+    if (data.message) {
+      toast.success(data.message);
+    }
+
+    return data;
+  } catch (error) {
+    const errMsg = ZodErrorCatch(error);
+
+    dispatch(commissionFail(errMsg));
+    toast.error(errMsg);
+
+    throw error;
+  }
+};
 export default commissionSlice.reducer;

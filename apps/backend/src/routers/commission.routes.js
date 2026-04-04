@@ -4,6 +4,7 @@ import CommissionValidationSchemas from "../validations/commissionValidation.sch
 import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   CommissionEarningController,
+  CommissionPaymentMethodController,
   CommissionSettingController,
   CommissionSlabController,
 } from "../controllers/commission.controller.js";
@@ -58,6 +59,13 @@ commissionRoutes.post(
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorize(["employee", "ADMIN"]),
   CommissionSlabController.upsert
+);
+
+commissionRoutes.post(
+  "/commission-payment-method/upsert",
+  AuthMiddleware.isAuthenticated,
+  AuthMiddleware.authorize(["employee", "ADMIN"]),
+  CommissionPaymentMethodController.upsert
 );
 
 export default commissionRoutes;

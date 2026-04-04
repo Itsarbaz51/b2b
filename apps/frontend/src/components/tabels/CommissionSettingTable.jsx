@@ -14,6 +14,8 @@ const CommissionSettingTable = ({
   onEditCommission,
   onMenuToggle,
   openMenuId,
+  onAddPaymentMethod,
+  onEditPaymentMethod,
 }) => {
   const getScopeColor = (scope) => {
     switch (scope) {
@@ -54,6 +56,14 @@ const CommissionSettingTable = ({
         label: "Add Slab",
         onClick: (commission) => onAddSlab?.(commission),
         color: "text-green-600",
+      });
+    }
+    if (commission.serviceProviderMapping?.provider?.code === "RAZORPAY") {
+      actions.push({
+        icon: Plus,
+        label: "Add Payment Method",
+        onClick: (commission) => onAddPaymentMethod?.(commission),
+        color: "text-purple-600",
       });
     }
 
@@ -195,6 +205,7 @@ const CommissionSettingTable = ({
                 </td>
 
                 <td className="px-6 py-5">
+                  {/* 🔥 SLAB FIRST */}
                   {commission.supportsSlab &&
                   commission.commissionSlabs?.length > 0 ? (
                     <div className="space-y-1 text-xs">
@@ -226,11 +237,48 @@ const CommissionSettingTable = ({
                       ))}
                     </div>
                   ) : (
-                    <div className="text-sm font-semibold">
-                      {commission.type === "PERCENTAGE"
-                        ? `${paisaToRupee(commission.value)}%`
-                        : `₹${paisaToRupee(commission.value)}`}
-                    </div>
+                    <>
+                      {/* 🔥 NORMAL VALUE */}
+                      <div className="text-sm font-semibold mb-1">
+                        {commission.type === "PERCENTAGE"
+                          ? `${paisaToRupee(commission.value)}%`
+                          : `₹${paisaToRupee(commission.value)}`}
+                      </div>
+
+                      {/* 🔥 PAYMENT METHODS */}
+                      {commission.commissionPaymentMethods?.length > 0 && (
+                        <div className="space-y-1 text-xs">
+                          {commission.commissionPaymentMethods.map((pm) => (
+                            <div
+                              key={pm.id}
+                              className="bg-purple-50 px-2 py-1 rounded flex justify-between items-center"
+                            >
+                              <span>
+                                {pm.paymentMethod}
+                                {pm.network ? ` (${pm.network})` : ""}
+                              </span>
+
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-purple-600">
+                                  {pm.type === "FLAT"
+                                    ? `₹${paisaToRupee(pm.value)}`
+                                    : `${paisaToRupee(pm.value)}%`}
+                                </span>
+
+                                <button
+                                  onClick={() =>
+                                    onEditPaymentMethod?.(commission, pm)
+                                  }
+                                  className="text-purple-500 hover:text-purple-700"
+                                >
+                                  <Edit size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </td>
                 <td className="px-6 py-5 text-sm text-gray-600">

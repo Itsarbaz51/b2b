@@ -368,11 +368,9 @@ model CommissionSetting {
   targetUser   User?   @relation(fields: [targetUserId], references: [id])
   supportsSlab Boolean @default(false) @map("support_slab")
 
-  paymentMethod String?
-  network       String?
-
-  serviceProviderMapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
-  commissionSlabs        CommissionSlab[]
+  serviceProviderMapping   ServiceProviderMapping    @relation(fields: [serviceProviderMappingId], references: [id])
+  commissionSlabs          CommissionSlab[]
+  commissionPaymentMethods CommissionPaymentMethod[]
 
   @@unique([serviceProviderMappingId, roleId])
   @@unique([serviceProviderMappingId, targetUserId])
@@ -393,6 +391,26 @@ model CommissionSlab {
   @@unique([commissionSettingId, minAmount, maxAmount])
   @@index([minAmount, maxAmount])
   @@map("commission_slabs")
+}
+
+model CommissionPaymentMethod {
+  id String @id @default(uuid())
+
+  commissionSettingId String @map("commission_setting_id")
+
+  paymentMethod String  @map("payment_method")
+  network       String? // optional
+
+  type  CommissionType
+  value BigInt
+
+  createdAt DateTime @default(now()) @map("created_at")
+ 
+  commissionSetting CommissionSetting @relation(fields: [commissionSettingId], references: [id])
+
+  @@unique([commissionSettingId, paymentMethod, network])
+  @@index([paymentMethod, network])
+  @@map("commission_payment_methods")
 }
 
 model CommissionEarning {

@@ -1,13 +1,14 @@
 import asyncHandler from "../utils/AsyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import CommissionEarningService, {
+  CommissionPaymentMethodService,
   CommissionSettingService,
   CommissionSlabService,
 } from "../services/commission.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import Helper from "../utils/helper.js";
 
-export class CommissionSettingController {
+class CommissionSettingController {
   static createOrUpdate = asyncHandler(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) throw ApiError.unauthorized("Unauthorized");
@@ -66,7 +67,7 @@ export class CommissionSettingController {
   });
 }
 
-export class CommissionEarningController {
+class CommissionEarningController {
   static getEarnings = asyncHandler(async (req, res) => {
     const filters = { ...req.query };
 
@@ -99,7 +100,7 @@ export class CommissionEarningController {
   });
 }
 
-export class CommissionSlabController {
+class CommissionSlabController {
   static upsert = asyncHandler(async (req, res) => {
     const slab = await CommissionSlabService.upsert(req.body);
 
@@ -114,3 +115,26 @@ export class CommissionSlabController {
       );
   });
 }
+
+class CommissionPaymentMethodController {
+  static upsert = asyncHandler(async (req, res) => {
+    const result = await CommissionPaymentMethodService.upsert(req.body);
+
+    return res
+      .status(200)
+      .json(
+        ApiResponse.success(
+          Helper.serializeBigInt(result),
+          "Commission payment method operation successful",
+          200
+        )
+      );
+  });
+}
+
+export {
+  CommissionSettingController,
+  CommissionEarningController,
+  CommissionSlabController,
+  CommissionPaymentMethodController,
+};

@@ -343,6 +343,14 @@ export class CommissionSettingService {
                 isActive: true,
               },
             },
+            provider: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                isActive: true,
+              },
+            },
           },
         },
         role: {
@@ -358,6 +366,7 @@ export class CommissionSettingService {
           },
         },
         commissionSlabs: true,
+        commissionPaymentMethods: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -702,6 +711,103 @@ export class CommissionSlabService {
         commissionSettingId,
         minAmount: min,
         maxAmount: max,
+        value: BigInt(value),
+      },
+    });
+  }
+}
+
+export class CommissionPaymentMethodService {
+  static async upsert(payload) {
+    const {
+      id,
+      commissionSettingId,
+      paymentMethod,
+      network,
+      type,
+      value,
+      _delete,
+    } = payload;
+
+    // ---------------- DELETE ----------------
+    if (_delete === true) {
+      if (!id)
+        throw ApiError.badRequest("Payment method id required for delete");
+
+      const record = await Prisma.commissionPaymentMethod.findUnique({
+        where: { id },
+      });
+
+      if (!record) throw ApiError.notFound("Payment method not found");
+
+      return Prisma.commissionPaymentMethod.delete({
+        where: { id },
+      });
+    }
+
+    // ---------------- VALIDATION ----------------
+    if (!commissionSettingId)
+      throw ApiError.badRequest("commissionSettingId required");
+
+    if (!paymentMethod) throw ApiError.badRequest("paymentMethod required");
+
+    if (!type) throw ApiError.badRequest("type required");
+
+    if (value === undefined || value === null)
+      throw ApiError.badRequest("value required");
+
+    if (BigInt(value) < 0n) throw ApiError.badRequest("value must be >= 0");
+
+    // CARD → network required
+    if (paymentMethod === "CARD" && !network) {
+      throw ApiError.badRequest("Network required for CARD");
+    }
+
+    // ---------------- DUPLICATE CHECK ----------------
+    const existing = await Prisma.commissionPaymentMethod.findFirst({
+      where: {
+        commissionSettingId,
+        paymentMethod,
+        network: network || null,
+        NOT: id ? { id } : undefined,
+      },
+    });
+
+    if (existing) {
+      // agar update nahi hai to conflict
+      if (!id) {
+        throw ApiError.conflict(
+          "Payment method already exists for this configuration"
+        );
+      }
+    }
+
+    // ---------------- UPDATE ----------------
+    if (id) {
+      const record = await Prisma.commissionPaymentMethod.findUnique({
+        where: { id },
+      });
+
+      if (!record) throw ApiError.notFound("Payment method not found");
+
+      return Prisma.commissionPaymentMethod.update({
+        where: { id },
+        data: {
+          paymentMethod,
+          network: network || null,
+          type,
+          value: BigInt(value),
+        },
+      });
+    }
+
+    // ---------------- CREATE ----------------
+    return Prisma.commissionPaymentMethod.create({
+      data: {
+        commissionSettingId,
+        paymentMethod,
+        network: network || null,
+        type,
         value: BigInt(value),
       },
     });

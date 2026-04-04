@@ -17,6 +17,7 @@ import {
 import CommissionSettingTable from "../components/tabels/CommissionSettingTable";
 import AddCommissionSlabForm from "../components/forms/AddCommissionSlabForm";
 import RefreshToast from "../components/ui/RefreshToast";
+import AddCommissionPaymentMethod from "../components/forms/AddCommissionPaymentMethod";
 
 const CommissionSetting = () => {
   const [search, setSearch] = useState("");
@@ -26,6 +27,10 @@ const CommissionSetting = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showSlabForm, setShowSlabForm] = useState(false);
   const [selectedCommissionForSlab, setSelectedCommissionForSlab] =
+    useState(null);
+
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [selectedCommissionForPayment, setSelectedCommissionForPayment] =
     useState(null);
   const dispatch = useDispatch();
   const searchTimeoutRef = useRef(null);
@@ -185,6 +190,24 @@ const CommissionSetting = () => {
     setOpenMenuId(menuId);
   };
 
+  const handleAddPaymentMethod = (commission) => {
+    setSelectedCommissionForPayment({
+      commission,
+      payment: null,
+    });
+    setShowPaymentForm(true);
+    setOpenMenuId(null);
+  };
+
+  const handleEditPaymentMethod = (commission, payment) => {
+    setSelectedCommissionForPayment({
+      commission,
+      payment,
+    });
+    setShowPaymentForm(true);
+    setOpenMenuId(null);
+  };
+
   const filteredCommissions = Array.isArray(commissionSettings)
     ? commissionSettings.filter(
         (commission) =>
@@ -255,6 +278,8 @@ const CommissionSetting = () => {
         commissions={filteredCommissions}
         onAddSlab={handleAddSlab}
         onEditSlab={handleEditSlab}
+        onAddPaymentMethod={handleAddPaymentMethod} // ✅ ADD
+        onEditPaymentMethod={handleEditPaymentMethod}
         isLoading={isLoading}
         search={search}
         currentPage={currentPage}
@@ -298,6 +323,26 @@ const CommissionSetting = () => {
             onSuccess={() => {
               setShowSlabForm(false);
               setSelectedCommissionForSlab(null);
+              handleManualRefresh();
+            }}
+          />
+        </div>
+      )}
+      {showPaymentForm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <AddCommissionPaymentMethod
+            commissionSettingId={
+              selectedCommissionForPayment?.commission?.id ||
+              selectedCommissionForPayment?.id
+            }
+            editData={selectedCommissionForPayment?.payment}
+            onClose={() => {
+              setShowPaymentForm(false);
+              setSelectedCommissionForPayment(null);
+            }}
+            onSuccess={() => {
+              setShowPaymentForm(false);
+              setSelectedCommissionForPayment(null);
               handleManualRefresh();
             }}
           />
