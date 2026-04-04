@@ -241,8 +241,6 @@ export const createPaymentMethodCharge = (payload) => async (dispatch) => {
 
     return data;
   } catch (error) {
-    console.log(error.message);
-
     const errMsg = ZodErrorCatch(error);
 
     dispatch(serviceFail(errMsg));

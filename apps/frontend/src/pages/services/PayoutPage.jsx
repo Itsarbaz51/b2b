@@ -128,7 +128,6 @@ const PayoutPage = () => {
           idempotencyKey,
         }),
       );
-      console.log(result);
 
       if (result?.success) {
         resetForm();
