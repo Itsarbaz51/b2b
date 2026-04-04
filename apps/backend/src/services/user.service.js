@@ -1,4 +1,5 @@
 import Prisma from "../db/db.js";
+import { emailQueue } from "../queues/email.queue.js";
 import { ApiError } from "../utils/ApiError.js";
 import { CryptoService } from "../utils/cryptoService.js";
 import Helper from "../utils/helper.js";
@@ -219,13 +220,29 @@ class UserServices {
         ],
       });
       // Send business-specific credentials email
-      await sendCredentialsEmail(
-        user,
-        generatedPassword,
-        generatedTransactionPin,
-        "created",
-        "Your business account has been successfully created. Here are your login credentials:",
-        "business"
+      await emailQueue.add(
+        "sendCredentials",
+        {
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            username: user.username,
+          },
+          password: generatedPassword,
+          transactionPin: generatedTransactionPin,
+          actionType: "created",
+          customMessage:
+            "Your business account has been successfully created. Here are your login credentials:",
+          userType: "business",
+        },
+        {
+          attempts: 5,
+          backoff: {
+            type: "exponential",
+            delay: 5000,
+          },
+        }
       );
 
       const accessToken = Helper.generateAccessToken({
@@ -1760,14 +1777,15 @@ class UserServices {
         },
       });
 
-      await sendCredentialsEmail(
+      await emailQueue.add("sendCredentials", {
         user,
-        newPassword,
-        newTransactionPin,
-        "reset",
-        "Your business account credentials have been reset. Here are your new login credentials:",
-        "business"
-      );
+        password: newPassword,
+        transactionPin: newTransactionPin,
+        actionType: "reset",
+        customMessage:
+          "Your business account credentials have been reset. Here are your new login credentials:",
+        userType: "business",
+      });
 
       await AuditLogService.createAuditLog({
         userId: currentUserId || userId,
