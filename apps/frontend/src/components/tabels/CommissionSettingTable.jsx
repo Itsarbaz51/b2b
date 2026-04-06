@@ -58,7 +58,9 @@ const CommissionSettingTable = ({
         color: "text-green-600",
       });
     }
-    if (commission.serviceProviderMapping?.provider?.code === "RAZORPAY") {
+    console.log(commission);
+
+    if (commission?.supportPaymentMethod) {
       actions.push({
         icon: Plus,
         label: "Add Payment Method",
@@ -236,49 +238,44 @@ const CommissionSettingTable = ({
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <>
-                      {/* 🔥 NORMAL VALUE */}
-                      <div className="text-sm font-semibold mb-1">
-                        {commission.type === "PERCENTAGE"
-                          ? `${paisaToRupee(commission.value)}%`
-                          : `₹${paisaToRupee(commission.value)}`}
-                      </div>
+                  ) : commission.commissionPaymentMethods &&
+                    commission.commissionPaymentMethods?.length > 0 ? (
+                    <div className="space-y-1 text-xs">
+                      {commission.commissionPaymentMethods.map((pm) => (
+                        <div
+                          key={pm.id}
+                          className="bg-purple-50 px-2 py-1 rounded flex justify-between items-center"
+                        >
+                          <span>
+                            {pm.paymentMethod}
+                            {pm.network ? ` (${pm.network})` : ""}
+                          </span>
 
-                      {/* 🔥 PAYMENT METHODS */}
-                      {commission.commissionPaymentMethods?.length > 0 && (
-                        <div className="space-y-1 text-xs">
-                          {commission.commissionPaymentMethods.map((pm) => (
-                            <div
-                              key={pm.id}
-                              className="bg-purple-50 px-2 py-1 rounded flex justify-between items-center"
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-purple-600">
+                              {pm.type === "FLAT"
+                                ? `₹${paisaToRupee(pm.value)}`
+                                : `${paisaToRupee(pm.value)}%`}
+                            </span>
+
+                            <button
+                              onClick={() =>
+                                onEditPaymentMethod?.(commission, pm)
+                              }
+                              className="text-purple-500 hover:text-purple-700"
                             >
-                              <span>
-                                {pm.paymentMethod}
-                                {pm.network ? ` (${pm.network})` : ""}
-                              </span>
-
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-purple-600">
-                                  {pm.type === "FLAT"
-                                    ? `₹${paisaToRupee(pm.value)}`
-                                    : `${paisaToRupee(pm.value)}%`}
-                                </span>
-
-                                <button
-                                  onClick={() =>
-                                    onEditPaymentMethod?.(commission, pm)
-                                  }
-                                  className="text-purple-500 hover:text-purple-700"
-                                >
-                                  <Edit size={14} />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                              <Edit size={14} />
+                            </button>
+                          </div>
                         </div>
-                      )}
-                    </>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm font-semibold mb-1">
+                      {commission.type === "PERCENTAGE"
+                        ? `${paisaToRupee(commission.value)}%`
+                        : `₹${paisaToRupee(commission.value)}`}
+                    </div>
                   )}
                 </td>
                 <td className="px-6 py-5 text-sm text-gray-600">

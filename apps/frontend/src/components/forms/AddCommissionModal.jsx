@@ -41,6 +41,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
     applyGST: false,
     gstPercent: "",
     supportsSlab: false,
+    supportPaymentMethod: false,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -68,6 +69,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         applyGST: editData.applyGST || false,
         gstPercent: editData.gstPercent ?? "",
         supportsSlab: editData.supportsSlab ?? false,
+        supportPaymentMethod: editData.supportPaymentMethod ?? false,
       });
 
       // USER scope prefill search input
@@ -120,6 +122,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
           ...prev,
           serviceProviderMappingId: updatedValue,
           supportsSlab: false,
+          supportPaymentMethod: false,
           value: "",
         };
       }
@@ -128,6 +131,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         ...prev,
         [name]: updatedValue,
         ...(name === "supportsSlab" && checked ? { value: "" } : {}),
+        ...(name === "supportPaymentMethod" && checked ? { value: "" } : {}),
       };
     });
 
@@ -224,11 +228,11 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         newErrors.gstPercent = "GST percentage must be between 0 and 100";
       }
     }
-    // Value (only when slab is disabled)
-    if (!formData.supportsSlab) {
+    // ✅ Value validation (only when BOTH disabled)
+    if (!formData.supportsSlab && !formData.supportPaymentMethod) {
       if (formData.value === "" || formData.value === null) {
         newErrors.value = "Value is required";
-      } else if (isNaN(formData.value) || parseFloat(formData.value) < 0) {
+      } else if (isNaN(formData.value) || parseFloat(formData.value) <= 0) {
         newErrors.value = "Value must be a valid positive number";
       }
     }
@@ -268,6 +272,7 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
         applyGST: formData.applyGST,
         gstPercent: formData.applyGST ? formData.gstPercent : undefined,
         supportsSlab: formData.supportsSlab,
+        supportPaymentMethod: formData.supportPaymentMethod,
       };
 
       // Add scope-specific field
@@ -572,7 +577,6 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
                 )}
               </div>
 
-              {/*  Type */}
               {/* Type */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -591,28 +595,48 @@ const AddCommissionModal = ({ onClose, onSuccess, editData }) => {
 
               {/* 🔥 Slab (right side of Type) */}
               {formData.serviceProviderMappingId && (
-                <div className="flex items-center justify-start md:pt-8">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="supportsSlab"
-                      name="supportsSlab"
-                      checked={formData.supportsSlab}
-                      onChange={handleChange}
-                      className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label
-                      htmlFor="supportsSlab"
-                      className="text-sm font-semibold text-gray-700"
-                    >
-                      Enable Slab
-                    </label>
+                <>
+                  <div className="flex items-center justify-start md:pt-8">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="supportsSlab"
+                        name="supportsSlab"
+                        checked={formData.supportsSlab}
+                        onChange={handleChange}
+                        className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="supportsSlab"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Enable Slab
+                      </label>
+                    </div>
                   </div>
-                </div>
+                  <div className="flex items-center justify-start md:pt-8">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="supportPaymentMethod"
+                        name="supportPaymentMethod"
+                        checked={formData.supportPaymentMethod}
+                        onChange={handleChange}
+                        className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="supportPaymentMethod"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Enable Payment Method
+                      </label>
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* 🔥 Value full width */}
-              {!formData.supportsSlab && (
+              {!formData.supportsSlab && !formData.supportPaymentMethod && (
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Value *

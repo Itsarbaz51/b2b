@@ -364,9 +364,10 @@ model CommissionSetting {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("update_at")
 
-  role         Role?   @relation(fields: [roleId], references: [id])
-  targetUser   User?   @relation(fields: [targetUserId], references: [id])
-  supportsSlab Boolean @default(false) @map("support_slab")
+  role                 Role?   @relation(fields: [roleId], references: [id])
+  targetUser           User?   @relation(fields: [targetUserId], references: [id])
+  supportsSlab         Boolean @default(false) @map("support_slab")
+  supportPaymentMethod Boolean @default(false) @map("support_payment_method")
 
   serviceProviderMapping   ServiceProviderMapping    @relation(fields: [serviceProviderMappingId], references: [id])
   commissionSlabs          CommissionSlab[]
@@ -405,7 +406,7 @@ model CommissionPaymentMethod {
   value BigInt
 
   createdAt DateTime @default(now()) @map("created_at")
- 
+
   commissionSetting CommissionSetting @relation(fields: [commissionSettingId], references: [id])
 
   @@unique([commissionSettingId, paymentMethod, network])
@@ -502,9 +503,10 @@ model ServiceProviderMapping {
 
   config Json?
 
-  priority     Int     @default(1)
-  isActive     Boolean @default(true) @map("is_active")
-  supportsSlab Boolean @default(false) @map("support_slab")
+  priority             Int     @default(1)
+  isActive             Boolean @default(true) @map("is_active")
+  supportsSlab         Boolean @default(false) @map("support_slab")
+  supportPaymentMethod Boolean @default(false) @map("support_payment_method")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")

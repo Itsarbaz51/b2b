@@ -276,6 +276,7 @@ export class MappingService {
       providerCost,
       commissionStartLevel,
       supportsSlab,
+      supportPaymentMethod,
       config,
       priority,
       isActive,
@@ -288,28 +289,39 @@ export class MappingService {
     if (!serviceId || !providerId) {
       throw ApiError.badRequest("serviceId and providerId are required");
     }
-    if (supportsSlab && (providerCost || sellingPrice))
+
+    //  SLAB + PAYMENT METHOD RULE
+    if (
+      (supportsSlab || supportPaymentMethod) &&
+      (providerCost || sellingPrice)
+    ) {
       throw ApiError.badRequest(
-        "Remove providerCost and sellingPrice when slabs enabled"
+        "Remove providerCost and sellingPrice when slab/payment method enabled"
       );
+    }
 
-    if (mode === "SURCHARGE" && sellingPrice)
+    if (mode === "SURCHARGE" && sellingPrice) {
       throw ApiError.badRequest("Selling price not allowed in surcharge mode");
+    }
 
-    if (mode === "COMMISSION" && !sellingPrice)
+    if (
+      mode === "COMMISSION" &&
+      !supportsSlab &&
+      !supportPaymentMethod &&
+      !sellingPrice
+    ) {
       throw ApiError.badRequest("Selling price required in commission mode");
+    }
 
     // GST
     if (applyGST && (!gstPercent || gstPercent <= 0)) {
       throw ApiError.badRequest("GST percent required");
     }
 
-    // TDS
     if (applyTDS && (!tdsPercent || tdsPercent <= 0)) {
       throw ApiError.badRequest("TDS percent required");
     }
 
-    // Mode rule
     if (mode === "SURCHARGE" && applyTDS) {
       throw ApiError.badRequest("TDS not allowed in surcharge mode");
     }
@@ -333,6 +345,12 @@ export class MappingService {
       encryptedConfig = CryptoService.encrypt(JSON.stringify(config));
     }
 
+    const finalSellingPrice =
+      supportsSlab || supportPaymentMethod ? 0 : (sellingPrice ?? 0);
+
+    const finalProviderCost =
+      supportsSlab || supportPaymentMethod ? 0 : (providerCost ?? 0);
+
     return Prisma.serviceProviderMapping.create({
       data: {
         serviceId,
@@ -341,13 +359,13 @@ export class MappingService {
         mode: mode,
         pricingValueType: pricingValueType,
 
-        sellingPrice: sellingPrice !== undefined ? BigInt(sellingPrice) : 0,
-
-        providerCost: providerCost !== undefined ? BigInt(providerCost) : 0,
+        sellingPrice: BigInt(finalSellingPrice),
+        providerCost: BigInt(finalProviderCost),
 
         commissionStartLevel: commissionStartLevel,
 
         supportsSlab: supportsSlab ?? false,
+        supportPaymentMethod: supportPaymentMethod ?? false,
         applyTDS: applyTDS ?? false,
         tdsPercent: applyTDS ? BigInt(tdsPercent) : null,
 
@@ -381,6 +399,7 @@ export class MappingService {
       providerCost,
       commissionStartLevel,
       supportsSlab,
+      supportPaymentMethod,
       config,
       priority,
       isActive,
@@ -394,17 +413,24 @@ export class MappingService {
     // VALIDATIONS
     // =========================
 
-    if (supportsSlab && (providerCost || sellingPrice)) {
+    if (
+      (supportsSlab || supportPaymentMethod) &&
+      (providerCost || sellingPrice)
+    ) {
       throw ApiError.badRequest(
-        "Remove providerCost and sellingPrice when slabs enabled"
+        "Remove providerCost and sellingPrice when slab/payment method enabled"
       );
     }
-
     if (mode === "SURCHARGE" && sellingPrice) {
       throw ApiError.badRequest("Selling price not allowed in surcharge mode");
     }
 
-    if (mode === "COMMISSION" && !sellingPrice) {
+    if (
+      mode === "COMMISSION" &&
+      !supportsSlab &&
+      !supportPaymentMethod &&
+      !sellingPrice
+    ) {
       throw ApiError.badRequest("Selling price required in commission mode");
     }
 
@@ -438,6 +464,14 @@ export class MappingService {
         : null; // allow clearing config
     }
 
+    const isDynamicPricing = supportsSlab || supportPaymentMethod;
+    const finalSellingPrice = isDynamicPricing
+      ? 0
+      : (sellingPrice ?? mapping.sellingPrice);
+    const finalProviderCost = isDynamicPricing
+      ? 0
+      : (providerCost ?? mapping.providerCost);
+
     return Prisma.serviceProviderMapping.update({
       where: { id },
 
@@ -445,16 +479,15 @@ export class MappingService {
         mode: mode ?? mapping.mode,
         pricingValueType: pricingValueType ?? mapping.pricingValueType,
 
-        sellingPrice:
-          sellingPrice !== undefined ? BigInt(sellingPrice) : undefined,
+        sellingPrice: BigInt(finalSellingPrice),
+        providerCost: BigInt(finalProviderCost),
 
-        providerCost:
-          providerCost !== undefined ? BigInt(providerCost) : undefined,
+        supportsSlab: supportsSlab ?? mapping.supportsSlab,
+        supportPaymentMethod:
+          supportPaymentMethod ?? mapping.supportPaymentMethod,
 
         commissionStartLevel:
           commissionStartLevel ?? mapping.commissionStartLevel,
-
-        supportsSlab: supportsSlab ?? mapping.supportsSlab,
 
         //  GST / TDS FIX
         applyTDS: applyTDS ?? mapping.applyTDS,
@@ -620,6 +653,7 @@ export class ProviderSlabService {
     });
   }
 }
+
 export class PaymentMethodChargeService {
   static async upsert(payload) {
     const {

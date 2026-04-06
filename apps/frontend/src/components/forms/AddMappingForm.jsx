@@ -25,6 +25,7 @@ export default function AddMappingForm({
     pricingValueType: "",
     commissionStartLevel: "NONE",
     supportsSlab: false,
+    supportPaymentMethod: false,
     providerId: "",
     sellingPrice: 0,
     providerCost: 0,
@@ -47,6 +48,7 @@ export default function AddMappingForm({
         pricingValueType: editData.pricingValueType,
         commissionStartLevel: editData.commissionStartLevel,
         supportsSlab: editData.supportsSlab || false,
+        supportPaymentMethod: editData.supportPaymentMethod || false,
         sellingPrice: paisaToRupee(editData.sellingPrice),
         providerCost: paisaToRupee(editData.providerCost),
         isActive: editData.isActive ?? true,
@@ -85,6 +87,8 @@ export default function AddMappingForm({
       return;
     }
 
+    const isDynamicPricing = form.supportsSlab || form.supportPaymentMethod;
+
     const payload = {
       type: "mapping",
       serviceId: form.serviceId,
@@ -92,11 +96,21 @@ export default function AddMappingForm({
       mode: form.mode,
       pricingValueType: form.pricingValueType,
       commissionStartLevel: form.commissionStartLevel,
+
       supportsSlab: form.supportsSlab,
-      sellingPrice: rupeesToPaise(Number(form.sellingPrice || 0)),
-      providerCost: rupeesToPaise(Number(form.providerCost || 0)),
+      supportPaymentMethod: form.supportPaymentMethod,
+
+      sellingPrice: isDynamicPricing
+        ? 0
+        : rupeesToPaise(Number(form.sellingPrice || 0)),
+
+      providerCost: isDynamicPricing
+        ? 0
+        : rupeesToPaise(Number(form.providerCost || 0)),
+
       isActive: form.isActive,
       config: parsedConfig,
+
       applyTDS: form.applyTDS,
       tdsPercent: form.applyTDS ? form.tdsPercent : undefined,
 
@@ -217,29 +231,33 @@ export default function AddMappingForm({
                 }))}
               />
 
-              {form.mode === "COMMISSION" && (
-                <InputField
-                  label={"Selling Price (₹)"}
-                  type="number"
-                  value={form.sellingPrice}
-                  onChange={(e) =>
-                    setForm({ ...form, sellingPrice: e.target.value })
-                  }
-                  min={0}
-                />
-              )}
+              {form.mode === "COMMISSION" &&
+                !form.supportsSlab &&
+                !form.supportPaymentMethod && (
+                  <InputField
+                    label={"Selling Price (₹)"}
+                    type="number"
+                    value={form.sellingPrice}
+                    onChange={(e) =>
+                      setForm({ ...form, sellingPrice: e.target.value })
+                    }
+                    min={0}
+                  />
+                )}
               <div>
-                <InputField
-                  label={"Provider Cost (₹)"}
-                  type="number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl"
-                  value={form.providerCost}
-                  onChange={(e) =>
-                    setForm({ ...form, providerCost: e.target.value })
-                  }
-                  min={0}
-                  step="0.01"
-                />
+                {!form.supportsSlab && !form.supportPaymentMethod && (
+                  <InputField
+                    label={"Provider Cost (₹)"}
+                    type="number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                    value={form.providerCost}
+                    onChange={(e) =>
+                      setForm({ ...form, providerCost: e.target.value })
+                    }
+                    min={0}
+                    step="0.01"
+                  />
+                )}
 
                 <p className="text-xs text-gray-500 mt-1">
                   Stored: {(Number(providerCost) * 100).toFixed(0)} paisa
@@ -315,7 +333,12 @@ export default function AddMappingForm({
                   type="checkbox"
                   checked={form.supportsSlab}
                   onChange={(e) =>
-                    setForm({ ...form, supportsSlab: e.target.checked })
+                    setForm({
+                      ...form,
+                      supportsSlab: e.target.checked,
+                      sellingPrice: 0,
+                      providerCost: 0,
+                    })
                   }
                 />
 
@@ -323,21 +346,40 @@ export default function AddMappingForm({
                   Supports Slab
                 </span>
               </div>
+              <div className="flex items-center mt-2">
+                <input
+                  type="checkbox"
+                  checked={form.supportPaymentMethod}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      supportPaymentMethod: e.target.checked,
+                      sellingPrice: 0,
+                      providerCost: 0,
+                    })
+                  }
+                />
+                <span className="ml-2 text-sm font-semibold">
+                  Supports Payment Method
+                </span>
+              </div>
             </div>
 
             {/* Margin */}
-            {form.mode === "COMMISSION" && (
-              <div className="text-sm font-semibold">
-                Margin:
-                <span
-                  className={`ml-2 ${
-                    margin >= 0 ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  ₹{margin}
-                </span>
-              </div>
-            )}
+            {form.mode === "COMMISSION" &&
+              !form.supportsSlab &&
+              !form.supportPaymentMethod && (
+                <div className="text-sm font-semibold">
+                  Margin:
+                  <span
+                    className={`ml-2 ${
+                      margin >= 0 ? "text-green-600" : "text-red-500"
+                    }`}
+                  >
+                    ₹{margin}
+                  </span>
+                </div>
+              )}
 
             {/* CONFIG */}
             <div

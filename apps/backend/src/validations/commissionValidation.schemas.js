@@ -20,16 +20,18 @@ class CommissionValidationSchemas {
         applyGST: z.boolean().optional(),
         gstPercent: z.coerce.bigint().min(0).max(100).optional(),
         supportsSlab: z.boolean().optional(),
+        supportPaymentMethod: z.boolean().optional(),
       })
       .refine(
         (data) => {
-          if (!data.supportsSlab) {
+          if (!data.supportsSlab && !data.supportPaymentMethod) {
             return data.value && data.value > 0n;
           }
           return true;
         },
         {
-          message: "Value must be greater than 0 when slab is disabled",
+          message:
+            "Value must be greater than 0 when slab/payment method disabled",
           path: ["value"],
         }
       );

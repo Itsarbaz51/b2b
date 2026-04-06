@@ -17,6 +17,7 @@ export class CommissionSettingService {
       applyGST,
       gstPercent,
       supportsSlab,
+      supportPaymentMethod,
     } = data;
 
     // ---------------- VALIDATIONS ----------------
@@ -24,14 +25,17 @@ export class CommissionSettingService {
       throw ApiError.badRequest("mode, type are required");
     }
 
-    if (!supportsSlab) {
+    if (!supportsSlab && !supportPaymentMethod) {
       if (value === undefined || value === null) {
-        throw ApiError.badRequest("value is required when slab is disabled");
+        throw ApiError.badRequest("value is required");
       }
 
       if (BigInt(value) <= 0n) {
         throw ApiError.badRequest("value must be greater than 0");
       }
+    } else {
+      // slab ya payment method → value force 0
+      data.value = 0;
     }
 
     if (mode === "COMMISSION" && applyTDS && !tdsPercent) {
@@ -116,7 +120,9 @@ export class CommissionSettingService {
           // FINAL VALIDATION
           if (parentSetting) {
             const parentValue = BigInt(parentSetting.value);
-            const currentValue = BigInt(value);
+            const currentValue = BigInt(
+              supportsSlab || supportPaymentMethod ? 0 : value
+            );
 
             // SURCHARGE RULE
             if (mode === "SURCHARGE" && currentValue < parentValue) {
@@ -202,6 +208,7 @@ export class CommissionSettingService {
       gstPercent: gstPercent ? BigInt(gstPercent) : null,
 
       supportsSlab: supportsSlab || false,
+      supportPaymentMethod: supportPaymentMethod || false,
       createdBy,
       isActive: true,
     };
@@ -237,6 +244,7 @@ export class CommissionSettingService {
       gstPercent: gstPercent ? BigInt(gstPercent) : null,
 
       supportsSlab: supportsSlab || false,
+      supportPaymentMethod: supportPaymentMethod || false,
       isActive: true,
     };
 

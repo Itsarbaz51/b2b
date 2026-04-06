@@ -116,6 +116,7 @@ export default function MappingTable() {
               {/* <th className="px-6 py-3 text-left">Selling Price</th> */}
               {/* <th className="px-6 py-3 text-left">Margin</th> */}
               <th className="px-6 py-3 text-left">Slab</th>
+              <th className="px-6 py-3 text-left">Payment Method</th>
               <th className="px-6 py-3 text-left">Status</th>
               <th className="px-6 py-3 text-center">Actions</th>
             </tr>
@@ -218,12 +219,6 @@ export default function MappingTable() {
                                 </div>
                               </div>
                             ))}
-                            <div className="text-sm font-semibold text-red-500">
-                              defult :
-                              {item.pricingValueType === "FLAT"
-                                ? `₹${paisaToRupee(item.providerCost)}`
-                                : `%${paisaToRupee(item.providerCost)}`}
-                            </div>
                           </div>
                         ) : (
                           /* ================= DEFAULT ================= */
@@ -258,7 +253,27 @@ export default function MappingTable() {
                       <td className="px-6 py-4">₹{margin.toFixed(2)}</td> */}
 
                       <td className="px-6 py-4">
-                        {item.supportsSlab ? "Yes" : "No"}
+                        <span
+                          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                            item.supportsSlab
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {item.supportsSlab ? "Yes" : "No"}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                            item.supportPaymentMethod
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {item.supportPaymentMethod ? "Yes" : "No"}
+                        </span>
                       </td>
 
                       <td className="px-6 py-4">
@@ -291,8 +306,7 @@ export default function MappingTable() {
                                 ]
                               : []),
 
-                            ...(item.mode === "SURCHARGE" &&
-                            item?.provider?.code === "RAZORPAY"
+                            ...(item.supportPaymentMethod
                               ? [
                                   {
                                     icon: Plus,
