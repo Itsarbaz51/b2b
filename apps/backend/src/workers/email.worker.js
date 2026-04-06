@@ -1,6 +1,9 @@
-import "dotenv/config"; // ✅ ADD THIS
+import "dotenv/config";
 import { Worker } from "bullmq";
-import { sendCredentialsEmail } from "../utils/sendCredentialsEmail.js";
+import {
+  sendCredentialsEmail,
+  sendPasswordResetEmail,
+} from "../utils/sendCredentialsEmail.js";
 import { URL } from "url";
 import Prisma from "../db/db.js";
 
@@ -11,28 +14,36 @@ const worker = new Worker(
   async (job) => {
     console.log("📩 Job received:", job.name);
 
-    const {
-      user,
-      password,
-      transactionPin,
-      actionType,
-      customMessage,
-      userType,
-    } = job.data;
+    if (job.name === "sendCredentials") {
+      const {
+        user,
+        password,
+        transactionPin,
+        actionType,
+        customMessage,
+        userType,
+        additionalData,
+      } = job.data;
 
-    await sendCredentialsEmail(
-      user,
-      password,
-      transactionPin,
-      actionType,
-      customMessage,
-      userType
-    );
+      if (!user?.email) throw new Error("User email missing");
 
-    // await Prisma.user.update({
-    //   where: { id: user.id },
-    //   data: { emailSent: true },
-    // });
+      await sendCredentialsEmail(
+        user,
+        password,
+        transactionPin,
+        actionType,
+        customMessage,
+        userType,
+        additionalData
+      );
+    }
+
+    if (job.name === "sendPasswordReset") {
+      const { user, resetUrl, userType, customMessage } = job.data;
+
+      if (!user?.email) throw new Error("User email missing");
+      await sendPasswordResetEmail(user, resetUrl, userType, customMessage);
+    }
 
     console.log("✅ Email sent to:", user.email);
   },

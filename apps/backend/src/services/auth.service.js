@@ -4,13 +4,10 @@ import { ApiError } from "../utils/ApiError.js";
 import Helper from "../utils/helper.js";
 import { CryptoService } from "../utils/cryptoService.js";
 import EmployeeServices from "./employee.service.js";
-import {
-  sendCredentialsEmail,
-  sendPasswordResetEmail,
-} from "../utils/sendCredentialsEmail.js";
 import AuditLogService from "./auditLog.service.js";
 import LoginLogService from "./loginLog.service.js";
 import { UserPermissionService } from "./permission.service.js";
+import { emailQueue } from "../queues/email.queue.js";
 
 class AuthServices {
   static async login(payload, req, res) {
@@ -591,12 +588,21 @@ class AuthServices {
 
     // Send type-specific password reset email
     const userType = user.role.type === "employee" ? "employee" : "business";
-
-    await sendPasswordResetEmail(
-      user,
-      resetUrl,
-      userType,
-      `We received a request to reset your ${userType} account password. Click the link below to create a new secure password.`
+    await emailQueue.add(
+      "sendPasswordReset",
+      {
+        user,
+        resetUrl,
+        userType,
+        customMessage: `We received a request to reset your ${userType} account password. Click the link below to create a new secure password.`,
+      },
+      {
+        attempts: 5,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      }
     );
 
     await AuditLogService.createAuditLog({
@@ -698,26 +704,48 @@ class AuthServices {
         const permissions = await EmployeeServices.getEmployeePermissions(
           user.id
         );
-        await sendCredentialsEmail(
-          user,
-          generatedPassword,
-          null,
-          "reset",
-          `Your employee account password has been reset successfully. Here are your new login credentials.`,
-          "employee",
+        await emailQueue.add(
+          "sendCredentials",
           {
-            role: user.role.name,
-            permissions: permissions,
+            user,
+            password: generatedPassword,
+            transactionPin: null,
+            actionType: "reset",
+            customMessage:
+              "Your employee account password has been reset successfully. Here are your new login credentials.",
+            userType: "employee",
+            additionalData: {
+              role: user.role.name,
+              permissions,
+            },
+          },
+          {
+            attempts: 5,
+            backoff: {
+              type: "exponential",
+              delay: 5000,
+            },
           }
         );
       } else {
-        await sendCredentialsEmail(
-          user,
-          generatedPassword,
-          generatedTransactionPin,
-          "reset",
-          `Your business account password has been reset successfully. Here are your new login credentials.`,
-          "business"
+        await emailQueue.add(
+          "sendCredentials",
+          {
+            user,
+            password: generatedPassword,
+            transactionPin: generatedTransactionPin,
+            actionType: "reset",
+            customMessage:
+              "Your business account password has been reset successfully. Here are your new login credentials.",
+            userType: "business",
+          },
+          {
+            attempts: 5,
+            backoff: {
+              type: "exponential",
+              delay: 5000,
+            },
+          }
         );
       }
 

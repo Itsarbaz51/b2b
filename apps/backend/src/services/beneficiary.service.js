@@ -73,8 +73,6 @@ export default class BeneficiaryService {
 
   // Get or throw (auto mode payout)
   static async getOrThrow({ userId, payload }) {
-    console.log(payload);
-
     const beneficiary = await Prisma.beneficiary.findFirst({
       where: {
         userId,

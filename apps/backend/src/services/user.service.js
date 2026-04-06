@@ -1777,15 +1777,30 @@ class UserServices {
         },
       });
 
-      await emailQueue.add("sendCredentials", {
-        user,
-        password: newPassword,
-        transactionPin: newTransactionPin,
-        actionType: "reset",
-        customMessage:
-          "Your business account credentials have been reset. Here are your new login credentials:",
-        userType: "business",
-      });
+      await emailQueue.add(
+        "sendCredentials",
+        {
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            username: user.username,
+          },
+          password: newPassword,
+          transactionPin: newTransactionPin,
+          actionType: "reset",
+          customMessage:
+            "Your business account credentials have been reset. Here are your new login credentials:",
+          userType: "business",
+        },
+        {
+          attempts: 5,
+          backoff: {
+            type: "exponential",
+            delay: 5000,
+          },
+        }
+      );
 
       await AuditLogService.createAuditLog({
         userId: currentUserId || userId,
