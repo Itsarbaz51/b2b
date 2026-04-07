@@ -9,6 +9,11 @@ import Prisma from "../db/db.js";
 
 const redisUrl = new URL(process.env.REDIS_URL);
 console.log("🚀 Worker started...");
+console.log("SMTP CONFIG:", {
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  user: process.env.SMTP_USER,
+});
 const worker = new Worker(
   "emailQueue",
   async (job) => {
