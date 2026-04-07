@@ -9,11 +9,7 @@ import Prisma from "../db/db.js";
 
 const redisUrl = new URL(process.env.REDIS_URL);
 console.log("🚀 Worker started...");
-console.log("SMTP CONFIG:", {
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  user: process.env.SMTP_USER,
-});
+
 const worker = new Worker(
   "emailQueue",
   async (job) => {
@@ -41,16 +37,26 @@ const worker = new Worker(
         userType,
         additionalData
       );
+
+      await Prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailSent: true,
+        },
+      });
+
+      console.log("✅ Email sent & updated:", user.email);
     }
 
     if (job.name === "sendPasswordReset") {
       const { user, resetUrl, userType, customMessage } = job.data;
 
       if (!user?.email) throw new Error("User email missing");
-      await sendPasswordResetEmail(user, resetUrl, userType, customMessage);
-    }
 
-    console.log("✅ Email sent to:", user.email);
+      await sendPasswordResetEmail(user, resetUrl, userType, customMessage);
+
+      console.log("✅ Reset email sent:", user.email);
+    }
   },
   {
     connection: {

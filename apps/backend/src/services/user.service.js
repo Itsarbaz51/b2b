@@ -4,7 +4,6 @@ import { ApiError } from "../utils/ApiError.js";
 import { CryptoService } from "../utils/cryptoService.js";
 import Helper from "../utils/helper.js";
 import S3Service from "../utils/S3Service.js";
-import { sendCredentialsEmail } from "../utils/sendCredentialsEmail.js";
 import AuditLogService from "./auditLog.service.js";
 
 class UserServices {
