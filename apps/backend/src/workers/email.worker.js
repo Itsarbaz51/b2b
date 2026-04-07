@@ -8,7 +8,7 @@ import { URL } from "url";
 import Prisma from "../db/db.js";
 
 const redisUrl = new URL(process.env.REDIS_URL);
-
+console.log("🚀 Worker started...");
 const worker = new Worker(
   "emailQueue",
   async (job) => {
