@@ -331,6 +331,7 @@ export default function AddMappingForm({
               <div className="flex items-center mt-6">
                 <input
                   type="checkbox"
+                  id="supportsSlab"
                   checked={form.supportsSlab}
                   onChange={(e) =>
                     setForm({
@@ -342,13 +343,17 @@ export default function AddMappingForm({
                   }
                 />
 
-                <span className="ml-2 text-sm font-semibold">
+                <label
+                  htmlFor="supportsSlab"
+                  className="ml-2 text-sm font-semibold"
+                >
                   Supports Slab
-                </span>
+                </label>
               </div>
               <div className="flex items-center mt-2">
                 <input
                   type="checkbox"
+                  id="supportPaymentMethod"
                   checked={form.supportPaymentMethod}
                   onChange={(e) =>
                     setForm({
@@ -359,9 +364,9 @@ export default function AddMappingForm({
                     })
                   }
                 />
-                <span className="ml-2 text-sm font-semibold">
+                <label htmlFor="supportPaymentMethod" className="ml-2 text-sm font-semibold">
                   Supports Payment Method
-                </span>
+                </label>
               </div>
             </div>
 

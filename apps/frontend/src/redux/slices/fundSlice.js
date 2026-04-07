@@ -147,4 +147,26 @@ export const verifyFundRequest = (payload) => async (dispatch) => {
   }
 };
 
+export const checkStatus = (payload) => async (dispatch) => {
+  console.log(payload);
+
+  try {
+    dispatch(fundRequest());
+
+    const { data } = await axios.post(`/fund-req/status`, payload);
+
+    dispatch(fundSuccess(data));
+    dispatch(verifyAuth());
+
+    return data;
+  } catch (error) {
+    const errMsg = ZodErrorCatch(error);
+
+    dispatch(fundFail(errMsg));
+    toast.error(errMsg);
+
+    throw error;
+  }
+};
+
 export default fundSlice.reducer;

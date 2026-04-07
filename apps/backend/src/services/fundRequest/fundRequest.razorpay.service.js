@@ -266,6 +266,17 @@ export default class RazorpayFundRequestService {
     payload,
     actor
   ) {
+    let parsedConfig = {};
+
+    try {
+      parsedConfig =
+        typeof serviceProviderMapping.config === "string"
+          ? JSON.parse(CryptoService.decrypt(serviceProviderMapping.config))
+          : serviceProviderMapping.config;
+    } catch (err) {
+      throw ApiError.internal("Invalid provider config", err?.message);
+    }
+
     const plugin = getFundRequestPlugin(provider.code, parsedConfig);
 
     const { txnId } = payload;
@@ -287,7 +298,7 @@ export default class RazorpayFundRequestService {
       }
 
       // IMPORTANT: paymentId DB se nikalo
-      const paymentId = transaction.providerRefId;
+      const paymentId = transaction.providerReference;
       // (ya jo bhi field tum use kar rahe ho)
 
       if (!paymentId) {
@@ -310,6 +321,10 @@ export default class RazorpayFundRequestService {
         data: {
           status: finalStatus,
           providerResponse: response,
+          completedAt:
+            finalStatus === "SUCCESS" || finalStatus === "FAILED"
+              ? new Date()
+              : null,
         },
       });
 

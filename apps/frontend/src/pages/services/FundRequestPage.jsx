@@ -5,6 +5,7 @@ import AddBankTransferFundForm from "../../components/forms/services/AddBankTran
 import FundRequestTable from "../../components/tabels/services/FundRequestTable";
 
 import {
+  checkStatus,
   createFundRequest,
   verifyFundRequest,
 } from "../../redux/slices/fundSlice";
@@ -126,14 +127,19 @@ const FundRequestPage = () => {
         request,
         serviceProviderMappingId: bankProvider.serviceProviderMappingId,
       });
-    }
-
-    if (type === "reject") {
+    } else if (type === "reject") {
       setConfirmAction({
         action: "REJECT",
         request,
         serviceProviderMappingId: bankProvider.serviceProviderMappingId,
       });
+    } else if (type === "check_status") {
+      dispatch(
+        checkStatus({
+          txnId: request.txnId,
+          serviceProviderMappingId: razorpayProvider.serviceProviderMappingId,
+        }),
+      );
     }
   };
 

@@ -116,22 +116,44 @@ const FundRequestTable = ({ requests = [], isAdmin, handleAction }) => {
                     </span>
                   </td>
 
-                  {isAdmin && !isRazorpay && (
+                  {((isRazorpay && !isAdmin) || (!isRazorpay && isAdmin)) && (
                     <td className="px-6 py-4 relative">
                       <ActionMenu
-                        items={[
-                          {
-                            icon: CheckCircle,
-                            label: "Approve",
-                            onClick: () => handleAction("approve", request),
-                          },
-                          {
-                            icon: XCircle,
-                            label: "Reject",
-                            onClick: () => handleAction("reject", request),
-                            danger: true,
-                          },
-                        ]}
+                        items={
+                          isRazorpay
+                            ? [
+                                {
+                                  icon: Eye,
+                                  label:
+                                    request.status === "PENDING"
+                                      ? "Check Status"
+                                      : request.status === "SUCCESS"
+                                        ? "Completed"
+                                        : "Failed",
+                                  disabled: request.status !== "PENDING",
+                                  onClick: () => {
+                                    if (request.status === "PENDING") {
+                                      handleAction("check_status", request);
+                                    }
+                                  },
+                                },
+                              ]
+                            : [
+                                {
+                                  icon: CheckCircle,
+                                  label: "Approve",
+                                  onClick: () =>
+                                    handleAction("approve", request),
+                                },
+                                {
+                                  icon: XCircle,
+                                  label: "Reject",
+                                  onClick: () =>
+                                    handleAction("reject", request),
+                                  danger: true,
+                                },
+                              ]
+                        }
                       />
                     </td>
                   )}
