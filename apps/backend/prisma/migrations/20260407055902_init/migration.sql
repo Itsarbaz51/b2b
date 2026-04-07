@@ -82,6 +82,7 @@ CREATE TABLE `users` (
     `hierarchy_path` TEXT NOT NULL,
     `status` ENUM('ACTIVE', 'IN_ACTIVE', 'DELETE') NOT NULL DEFAULT 'ACTIVE',
     `is_kyc_verified` BOOLEAN NOT NULL DEFAULT false,
+    `email_sent` BOOLEAN NOT NULL DEFAULT false,
     `role_id` VARCHAR(191) NOT NULL,
     `refresh_token` TEXT NULL,
     `password_reset_token` VARCHAR(191) NULL,
@@ -303,6 +304,7 @@ CREATE TABLE `commission_settings` (
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `update_at` DATETIME(3) NOT NULL,
     `support_slab` BOOLEAN NOT NULL DEFAULT false,
+    `support_payment_method` BOOLEAN NOT NULL DEFAULT false,
 
     UNIQUE INDEX `commission_settings_serviceProviderMappingId_role_id_key`(`serviceProviderMappingId`, `role_id`),
     UNIQUE INDEX `commission_settings_serviceProviderMappingId_target_user_id_key`(`serviceProviderMappingId`, `target_user_id`),
@@ -320,6 +322,21 @@ CREATE TABLE `commission_slabs` (
 
     INDEX `commission_slabs_min_amount_max_amount_idx`(`min_amount`, `max_amount`),
     UNIQUE INDEX `commission_slabs_commission_setting_id_min_amount_max_amount_key`(`commission_setting_id`, `min_amount`, `max_amount`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `commission_payment_methods` (
+    `id` VARCHAR(191) NOT NULL,
+    `commission_setting_id` VARCHAR(191) NOT NULL,
+    `payment_method` VARCHAR(191) NOT NULL,
+    `network` VARCHAR(191) NULL,
+    `type` ENUM('FLAT', 'PERCENTAGE') NOT NULL,
+    `value` BIGINT NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `commission_payment_methods_payment_method_network_idx`(`payment_method`, `network`),
+    UNIQUE INDEX `commission_payment_methods_commission_setting_id_payment_met_key`(`commission_setting_id`, `payment_method`, `network`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -389,6 +406,7 @@ CREATE TABLE `service_provider_mappings` (
     `priority` INTEGER NOT NULL DEFAULT 1,
     `is_active` BOOLEAN NOT NULL DEFAULT true,
     `support_slab` BOOLEAN NOT NULL DEFAULT false,
+    `support_payment_method` BOOLEAN NOT NULL DEFAULT false,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -407,6 +425,20 @@ CREATE TABLE `provider_slabs` (
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     INDEX `provider_slabs_service_provider_mapping_id_min_amount_max_am_idx`(`service_provider_mapping_id`, `min_amount`, `max_amount`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `payment_method_charge_provider` (
+    `id` VARCHAR(191) NOT NULL,
+    `service_provider_mapping_id` VARCHAR(191) NOT NULL,
+    `payment_method` VARCHAR(191) NOT NULL,
+    `network` VARCHAR(191) NULL,
+    `type` ENUM('FLAT', 'PERCENTAGE') NOT NULL,
+    `value` BIGINT NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `payment_method_charge_provider_service_provider_mapping_id_p_idx`(`service_provider_mapping_id`, `payment_method`, `network`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -618,6 +650,9 @@ ALTER TABLE `commission_settings` ADD CONSTRAINT `commission_settings_servicePro
 ALTER TABLE `commission_slabs` ADD CONSTRAINT `commission_slabs_commission_setting_id_fkey` FOREIGN KEY (`commission_setting_id`) REFERENCES `commission_settings`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `commission_payment_methods` ADD CONSTRAINT `commission_payment_methods_commission_setting_id_fkey` FOREIGN KEY (`commission_setting_id`) REFERENCES `commission_settings`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `commission_earnings` ADD CONSTRAINT `commission_earnings_service_provider_mapping_id_fkey` FOREIGN KEY (`service_provider_mapping_id`) REFERENCES `service_provider_mappings`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -640,6 +675,9 @@ ALTER TABLE `service_provider_mappings` ADD CONSTRAINT `service_provider_mapping
 
 -- AddForeignKey
 ALTER TABLE `provider_slabs` ADD CONSTRAINT `provider_slabs_service_provider_mapping_id_fkey` FOREIGN KEY (`service_provider_mapping_id`) REFERENCES `service_provider_mappings`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `payment_method_charge_provider` ADD CONSTRAINT `payment_method_charge_provider_service_provider_mapping_id_fkey` FOREIGN KEY (`service_provider_mapping_id`) REFERENCES `service_provider_mappings`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `user_permissions` ADD CONSTRAINT `user_permissions_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
