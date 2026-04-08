@@ -148,7 +148,11 @@ export default function MappingTable() {
 
                       <td className="px-6 py-4">{item.mode}</td>
 
-                      <td className="px-6 py-4">{item.pricingValueType}</td>
+                      <td className="px-6 py-4">
+                        {item.paymentMethodCharges?.length > 0
+                          ? item.paymentMethodCharges[0]?.type
+                          : item.pricingValueType}
+                      </td>
 
                       <td className="px-6 py-4">{item.commissionStartLevel}</td>
                       <td className="px-6 py-5">
