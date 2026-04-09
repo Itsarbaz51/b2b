@@ -332,6 +332,7 @@ class AuthServices {
         profileImage: user.profileImage,
         status: user.status,
         isKycVerified: user.isKycVerified,
+        deactivationReason: user.deactivationReason,
         kycId: latestKycId,
         role: {
           id: user.role.id,
