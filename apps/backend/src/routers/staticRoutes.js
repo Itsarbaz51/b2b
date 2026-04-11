@@ -22,6 +22,7 @@ import dashboardRoutes from "./dashboard.routes.js";
 import ledgerRoutes from "./ledger.routes.js";
 import reportRoutes from "./report.routes.js";
 import beneficiaryRoutes from "./beneficiary.routes.js";
+import bbpsRoutes from "./bbps/bbps.routes.js";
 
 export function StaticRoutes(app) {
   app.use("/api/v1/addresses", addressRoutes);
@@ -48,4 +49,5 @@ export function StaticRoutes(app) {
   app.use("/api/v1/ledger", ledgerRoutes);
   app.use("/api/v1/report", reportRoutes);
   app.use("/api/v1/beneficiary", beneficiaryRoutes);
+  app.use("/api/v1/bbps", bbpsRoutes);
 }
