@@ -91,6 +91,7 @@ const PayoutTable = ({ requests = [], handleAction }) => {
                   </td>
 
                   {/* Details */}
+                  {console.log(payload)}
                   <td className="px-6 py-4 text-sm text-gray-800 space-y-1">
                     <div>
                       <span className="font-medium">Name:</span>{" "}
@@ -100,12 +101,21 @@ const PayoutTable = ({ requests = [], handleAction }) => {
                       <span className="font-medium">Mobile:</span>{" "}
                       {payload.number || "-"}
                     </div>
-                    <div className="font-mono text-xs text-gray-600">
-                      A/C: {payload.accountNo || "-"}
-                    </div>
-                    <div className="font-mono text-xs text-gray-600">
-                      IFSC: {payload.ifscCode || "-"}
-                    </div>
+                    {payload.transferMode === "UPI" ||
+                    payload.transferMode === "upi" ? (
+                      <>
+                        <div className="font-mono text-xs text-gray-600">
+                          A/C: {payload.accountNo || "-"}
+                        </div>
+                        <div className="font-mono text-xs text-gray-600">
+                          IFSC: {payload.ifscCode || "-"}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="font-mono text-xs text-gray-600">
+                        upi: {payload.vpa || "-"}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500">
                       Mode: {payload.transferMode || "-"}
                     </div>
