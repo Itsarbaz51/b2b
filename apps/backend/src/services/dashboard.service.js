@@ -1,7 +1,16 @@
 import Prisma from "../db/db.js";
 
+const formatDate = (date) => {
+  const d = new Date(date);
+
+  return d
+    .toISOString() // 2026-04-11T14:23:45.000Z
+    .replace("T", " ") // 2026-04-11 14:23:45.000Z
+    .slice(0, 19); // 2026-04-11 14:23:45
+};
+
 export default class DashboardService {
-  //  DATE FILTER
+  // DATE FILTER
   static getDateFilter({ type, from, to }) {
     let startDate;
     let endDate = new Date();
@@ -30,7 +39,7 @@ export default class DashboardService {
     return { startDate, endDate };
   }
 
-  //  GROUP TYPE
+  // GROUP TYPE
   static getGroupType(startDate, endDate) {
     const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
 
@@ -42,17 +51,15 @@ export default class DashboardService {
   static async getDashboard({
     userId,
     role,
-    type = "all",
+    type = "today",
     from,
     to,
     status = "ALL",
   }) {
     const isAdmin = role;
 
-    //  DATE FILTER
     const dateFilter = this.getDateFilter({ type, from, to });
 
-    //  TRANSACTION FILTER
     const baseFilter = {
       ...(dateFilter && {
         initiatedAt: {
@@ -64,11 +71,7 @@ export default class DashboardService {
       ...(status !== "ALL" ? { status } : {}),
     };
 
-    const groupType = dateFilter
-      ? this.getGroupType(dateFilter.startDate, dateFilter.endDate)
-      : "month";
-
-    //  TRANSACTION COUNTS
+    // COUNTS
     const [success, failed, pending] = await Promise.all([
       Prisma.transaction.count({
         where: { ...baseFilter, status: "SUCCESS" },
@@ -81,85 +84,68 @@ export default class DashboardService {
       }),
     ]);
 
-    //  PROFIT (LEDGER BASED ONLY)
+    // ROLE WISE USERS
+    const roles = await Prisma.role.findMany();
+
+    // roleId → name map (fast lookup)
+    const roleIdToName = {};
+    roles.forEach((r) => {
+      roleIdToName[r.id] = r.name;
+    });
+
+    // OWN USERS (sab ke liye same - admin bhi)
+    const ownUsers = await Prisma.user.findMany({
+      where: {
+        parentId: userId,
+      },
+      select: { id: true, roleId: true },
+    });
+
+    // ROLE COUNT (ONLY OWN USERS )
+    const roleCounts = {
+      stateHead: 0,
+      masterDistributor: 0,
+      distributor: 0,
+      retailer: 0,
+    };
+
+    ownUsers.forEach((u) => {
+      const roleName = roleIdToName[u.roleId];
+
+      if (roleName === "STATE HEAD") roleCounts.stateHead++;
+      if (roleName === "MASTER DISTRIBUTOR") roleCounts.masterDistributor++;
+      if (roleName === "DISTRIBUTOR") roleCounts.distributor++;
+      if (roleName === "RETAILER") roleCounts.retailer++;
+    });
+
+    // TOTAL USERS (only admin)
+    const totalUsers = isAdmin ? await Prisma.user.count() : null;
+
+    // PROFIT
     const earningAgg = await Prisma.ledgerEntry.aggregate({
       _sum: { amount: true },
       where: {
         entryType: "CREDIT",
-        referenceType: {
-          in: ["SURCHARGE", "COMMISSION"],
-        },
-
-        wallet: {
-          userId,
-        },
-
-        ...(dateFilter && {
-          createdAt: {
-            gte: dateFilter.startDate,
-            lte: dateFilter.endDate,
-          },
-        }),
+        referenceType: { in: ["SURCHARGE", "COMMISSION"] },
+        wallet: { userId },
       },
     });
 
-    //  GST
+    // GST
     const gstAgg = await Prisma.ledgerEntry.aggregate({
       _sum: { amount: true },
-      where: {
-        referenceType: "SURCHARGE_GST",
-        ...(isAdmin
-          ? {
-              entryType: "CREDIT", // admin earning
-            }
-          : {
-              entryType: "DEBIT", // user paid
-              wallet: { userId },
-            }),
-        ...(dateFilter && {
-          createdAt: {
-            gte: dateFilter.startDate,
-            lte: dateFilter.endDate,
-          },
-        }),
-      },
+      where: { referenceType: "SURCHARGE_GST" },
     });
 
-    //  TDS
+    // TDS
     const tdsAgg = await Prisma.ledgerEntry.aggregate({
       _sum: { amount: true },
-      where: {
-        referenceType: "COMMISSION_TDS",
-        ...(isAdmin
-          ? {
-              entryType: "CREDIT",
-            }
-          : {
-              entryType: "DEBIT",
-              wallet: { userId },
-            }),
-        ...(dateFilter && {
-          createdAt: {
-            gte: dateFilter.startDate,
-            lte: dateFilter.endDate,
-          },
-        }),
-      },
+      where: { referenceType: "COMMISSION_TDS" },
     });
 
-    //  WALLET BALANCES
+    // WALLETS
     const wallets = await Prisma.wallet.findMany({
-      where: isAdmin
-        ? {
-            user: {
-              role: {
-                name: {
-                  notIn: ["ADMIN"],
-                },
-              },
-            },
-          }
-        : { userId },
+      where: isAdmin ? {} : { userId },
     });
 
     const sum = (arr) =>
@@ -173,7 +159,7 @@ export default class DashboardService {
       wallets.filter((w) => w.walletType === "COMMISSION")
     );
 
-    //  TRANSACTIONS (for revenue + chart)
+    // TRANSACTIONS WITH SERVICE
     const txns = await Prisma.transaction.findMany({
       where: {
         ...baseFilter,
@@ -182,84 +168,90 @@ export default class DashboardService {
       select: {
         amount: true,
         initiatedAt: true,
+        serviceProviderMappingId: true,
       },
     });
 
-    //  SERVICE TOTAL
-    const grouped = await Prisma.transaction.groupBy({
-      by: ["serviceProviderMappingId"],
-      where: {
-        ...baseFilter,
-        status: "SUCCESS",
-        serviceProviderMappingId: {
-          not: null,
-        },
-      },
-      _sum: { amount: true },
-    });
+    // SERVICE MAPPINGS
+    const mappingIds = [
+      ...new Set(txns.map((t) => t.serviceProviderMappingId).filter(Boolean)),
+    ];
 
-    // Ensure that serviceProviderMappingIds is an array and has valid values
-    const serviceProviderMappingIds = grouped
-      .map((g) => g.serviceProviderMappingId)
-      .filter((id) => id !== null && id !== undefined); // Filter out null or undefined
-
-    if (serviceProviderMappingIds.length === 0) {
-      return []; // No service mappings found, return empty array
-    }
-
-    // Fetch mappings using the corrected `in` filter
     const mappings = await Prisma.serviceProviderMapping.findMany({
-      where: {
-        id: { in: serviceProviderMappingIds }, // Correct `in` usage with a valid array
-      },
+      where: { id: { in: mappingIds } },
       include: { service: true, provider: true },
     });
 
-    const services = grouped.map((g) => {
-      const map = mappings.find((m) => m.id === g.serviceProviderMappingId);
-      return {
-        name: map?.service?.name || "Unknown",
-        code: map?.service?.code || "UNKNOWN",
-        provider: map?.provider?.code || "UNKNOWN", // provider code
-        total: Number(g._sum.amount || 0), // total sum of amount
-      };
+    // SERVICES SUMMARY
+    const serviceMap = {};
+
+    txns.forEach((txn) => {
+      const map = mappings.find((m) => m.id === txn.serviceProviderMappingId);
+
+      const key = map?.service?.code || "UNKNOWN";
+
+      if (!serviceMap[key]) {
+        serviceMap[key] = {
+          name: map?.service?.name || "Unknown",
+          provider: map?.provider?.code || "UNKNOWN",
+          total: 0,
+        };
+      }
+
+      serviceMap[key].total += Number(txn.amount);
     });
 
-    //  CHART
+    const services = Object.values(serviceMap);
+
+    // CHART
     const chartMap = {};
 
     txns.forEach((txn) => {
       const d = txn.initiatedAt;
 
-      let label =
-        groupType === "hour"
-          ? `${d.getHours()}:00`
-          : groupType === "day"
-            ? d.toISOString().slice(0, 10)
-            : d.toISOString().slice(0, 7);
+      const label = formatDate(d);
 
-      if (!chartMap[label]) chartMap[label] = { label, total: 0 };
+      const map = mappings.find((m) => m.id === txn.serviceProviderMappingId);
+
+      const serviceKey = map?.service?.code || "UNKNOWN";
+
+      if (!chartMap[label]) {
+        chartMap[label] = { label, total: 0 };
+      }
 
       chartMap[label].total += Number(txn.amount);
+
+      if (!chartMap[label][serviceKey]) {
+        chartMap[label][serviceKey] = 0;
+      }
+
+      chartMap[label][serviceKey] += Number(txn.amount);
+
+      if (!chartMap[label].SUCCESS) chartMap[label].SUCCESS = 0;
+      if (!chartMap[label].FAILED) chartMap[label].FAILED = 0;
+      if (!chartMap[label].PENDING) chartMap[label].PENDING = 0;
+
+      // based on txn.status
+      chartMap[label][txn.status] = (chartMap[label][txn.status] || 0) + 1;
     });
 
-    const chart = Object.values(chartMap);
+    const chart = Object.values(chartMap).sort(
+      (a, b) => new Date(a.label) - new Date(b.label)
+    );
 
-    //  FINAL RESPONSE
     return {
       summary: {
         totalProfit: earningAgg._sum.amount || 0,
         totalGST: gstAgg._sum.amount || 0,
         totalTDS: tdsAgg._sum.amount || 0,
-
         totalPrimaryBalance,
         totalCommissionBalance,
-
         success,
         failed,
         pending,
+        roleCounts,
+        totalUsers,
       },
-
       services,
       chart,
     };

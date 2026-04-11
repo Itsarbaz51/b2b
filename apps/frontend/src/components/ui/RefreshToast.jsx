@@ -2,7 +2,7 @@ import { RefreshCw } from "lucide-react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const RefreshToast = ({ isLoading, onClick }) => {
+const RefreshToast = ({ isLoading, onClick, label = "Refresh" }) => {
   const handleRefresh = async () => {
     const id = toast.loading("Refreshing data...", {
       style: {
@@ -54,7 +54,7 @@ const RefreshToast = ({ isLoading, onClick }) => {
       }}
     >
       <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-      {isLoading ? "Refreshing..." : "Refresh"}
+      {isLoading ? "Refreshing..." : label}
     </button>
   );
 };
