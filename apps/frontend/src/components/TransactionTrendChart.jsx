@@ -25,7 +25,7 @@ const TransactionTrendChart = () => {
           <CartesianGrid strokeDasharray="3 3" />
 
           <XAxis dataKey="label" />
-          <YAxis />
+          <YAxis tickFormatter={formatCurrency} />
 
           <Tooltip formatter={(val) => formatCurrency(val)} />
 

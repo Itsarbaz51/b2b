@@ -24,6 +24,23 @@ import { getDashboard } from "../redux/slices/dashboardSlice";
 import RefreshToast from "../components/ui/RefreshToast";
 import ServiceDonutChart from "../components/ServiceDonutChart";
 import TransactionTrendChart from "../components/TransactionTrendChart";
+const roleHierarchy = {
+  ADMIN: ["STATE HEAD", "MASTER DISTRIBUTOR", "DISTRIBUTOR", "RETAILER"],
+  "STATE HEAD": ["MASTER DISTRIBUTOR", "DISTRIBUTOR", "RETAILER"],
+  "MASTER DISTRIBUTOR": ["DISTRIBUTOR", "RETAILER"],
+  DISTRIBUTOR: ["RETAILER"],
+  RETAILER: [],
+};
+const roleCardMap = {
+  ADMIN: { key: "admin", label: "Admin" },
+  "STATE HEAD": { key: "stateHead", label: "State Head" },
+  "MASTER DISTRIBUTOR": {
+    key: "masterDistributor",
+    label: "Master Distributor",
+  },
+  DISTRIBUTOR: { key: "distributor", label: "Distributor" },
+  RETAILER: { key: "retailer", label: "Retailer" },
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -79,6 +96,30 @@ const Dashboard = () => {
     setRefreshing(false);
   };
 
+  const allowedRoles = roleHierarchy[userRole] || [];
+
+  const userCards = [
+    ...(userRole === "ADMIN"
+      ? [
+          {
+            title: "Total Users",
+            value: summary.totalUsers || 0,
+            icon: User,
+          },
+        ]
+      : []),
+
+    ...allowedRoles.map((roleName) => {
+      const config = roleCardMap[roleName];
+
+      return {
+        title: config.label,
+        value: summary.roleCounts?.[config.key] || 0,
+        icon: User,
+      };
+    }),
+  ];
+
   //  CARD GROUPS
   const statCardGroups = [
     {
@@ -103,33 +144,7 @@ const Dashboard = () => {
     },
     {
       title: "Users Manager",
-      cards: [
-        {
-          title: "Total users",
-          value: summary.totalUsers || 0,
-          icon: User,
-        },
-        {
-          title: "State Head",
-          value: summary.roleCounts?.stateHead || 0,
-          icon: User,
-        },
-        {
-          title: "Master Distributor",
-          value: summary.roleCounts?.masterDistributor || 0,
-          icon: User,
-        },
-        {
-          title: "Distributor",
-          value: summary.roleCounts?.distributor || 0,
-          icon: User,
-        },
-        {
-          title: "Retailer",
-          value: summary.roleCounts?.retailer || 0,
-          icon: User,
-        },
-      ],
+      cards: userCards,
     },
     {
       title: "Transactions",

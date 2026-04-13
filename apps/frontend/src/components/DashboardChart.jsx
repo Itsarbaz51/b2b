@@ -27,7 +27,7 @@ const DashboardChart = () => {
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="label" tickFormatter={(val) => val.slice(5)} />
+          <XAxis dataKey="label" />
           <YAxis tickFormatter={formatCurrency} />
           <Tooltip formatter={(val) => formatCurrency(val)} />
           <Legend />
