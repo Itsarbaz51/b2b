@@ -1,22 +1,19 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Wallet,
-  ArrowUpCircle,
   TrendingUp,
   BarChart3,
-  Activity,
   Clock,
   CheckCircle,
   XCircle,
-  RefreshCw,
   Percent,
-  Shield,
   Zap,
   Users,
   Settings,
   FileText,
   ChevronRight,
+  User,
 } from "lucide-react";
 
 import StateCard from "../components/ui/StateCard";
@@ -25,13 +22,15 @@ import { useDispatch, useSelector } from "react-redux";
 import { paisaToRupee } from "../utils/lib";
 import { getDashboard } from "../redux/slices/dashboardSlice";
 import RefreshToast from "../components/ui/RefreshToast";
+import ServiceDonutChart from "../components/ServiceDonutChart";
+import TransactionTrendChart from "../components/TransactionTrendChart";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [status, setStatus] = useState("ALL");
-  const [filterType, setFilterType] = useState("all");
+  const [filterType, setFilterType] = useState("today");
   const [customDate, setCustomDate] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -46,12 +45,14 @@ const Dashboard = () => {
 
   //  SINGLE SOURCE FETCH
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     if (filterType === "custom" && customDate) {
       dispatch(getDashboard({ from: customDate, to: customDate, status }));
     } else {
       dispatch(getDashboard({ type: filterType, status }));
     }
-  }, [filterType, customDate, status]);
+  }, [filterType, customDate, status, isAuthenticated]);
 
   //  HANDLERS
   const handleFilter = (type) => {
@@ -78,9 +79,6 @@ const Dashboard = () => {
     setRefreshing(false);
   };
 
-  const totalTransactions =
-    (summary.success || 0) + (summary.failed || 0) + (summary.pending || 0);
-
   //  CARD GROUPS
   const statCardGroups = [
     {
@@ -100,6 +98,36 @@ const Dashboard = () => {
           title: "Total Profit",
           value: paisaToRupee(summary.totalProfit || 0),
           icon: TrendingUp,
+        },
+      ],
+    },
+    {
+      title: "Users Manager",
+      cards: [
+        {
+          title: "Total users",
+          value: summary.totalUsers || 0,
+          icon: User,
+        },
+        {
+          title: "State Head",
+          value: summary.roleCounts?.stateHead || 0,
+          icon: User,
+        },
+        {
+          title: "Master Distributor",
+          value: summary.roleCounts?.masterDistributor || 0,
+          icon: User,
+        },
+        {
+          title: "Distributor",
+          value: summary.roleCounts?.distributor || 0,
+          icon: User,
+        },
+        {
+          title: "Retailer",
+          value: summary.roleCounts?.retailer || 0,
+          icon: User,
         },
       ],
     },
@@ -198,8 +226,17 @@ const Dashboard = () => {
       ))}
 
       {/* CHART */}
-      <DashboardChart />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <DashboardChart />
+        </div>
 
+        <ServiceDonutChart />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <TransactionTrendChart />
+      </div>
       {/* ADMIN ACTIONS */}
       {userRole === "ADMIN" && (
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 transition-all duration-300 hover:shadow-2xl">
