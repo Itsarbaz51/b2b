@@ -38,10 +38,12 @@ import PANVerificationModal from "./services/PANVerificationModal";
 import { SERVICES } from "../../utils/constants";
 import { usePermissions } from "../../hooks/usePermission";
 import HeaderSection from "../ui/HeaderSection";
+import { useNavigate } from "react-router-dom";
 
 // ---------- Main Form ----------
 export default function AddUserProfileKYC() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const addressState = useSelector((state) => state.address);
   const { kycDetail, loading } = useSelector((state) => state.kyc);
   const [currentStep, setCurrentStep] = useState(1);
@@ -107,6 +109,7 @@ export default function AddUserProfileKYC() {
   // Logout handler
   const handleLogout = () => {
     dispatch(logoutUser());
+    navigate("/login");
   };
 
   useEffect(() => {
