@@ -394,25 +394,29 @@ export class CommissionSettingService {
 
     if (!user) throw ApiError.notFound("User not found");
 
-    let rule = await Prisma.commissionSetting.findFirst({
-      where: {
-        serviceProviderMappingId,
-        isActive: true,
-        targetUserId: userId,
-      },
-    });
+    let rule;
 
-    rule = await Prisma.commissionSetting.findFirst({
-      where: {
-        serviceProviderMappingId,
-        isActive: true,
-        roleId: user.roleId,
-      },
-    });
+    if (userId) {
+      rule = await Prisma.commissionSetting.findFirst({
+        where: {
+          serviceProviderMappingId,
+          isActive: true,
+          targetUserId: userId,
+        },
+      });
+    } else {
+      rule = await Prisma.commissionSetting.findFirst({
+        where: {
+          serviceProviderMappingId,
+          isActive: true,
+          roleId: user.roleId,
+        },
+      });
+    }
 
     if (!rule) {
       throw ApiError.badRequest(
-        "Pricing rule is not configured for this service. Please contact your administrator."
+        "Pricing rule/commission setting is not configured for this service. Please contact your administrator."
       );
     }
 
