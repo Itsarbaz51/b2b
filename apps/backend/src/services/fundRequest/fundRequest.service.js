@@ -118,7 +118,7 @@ export default class FundRequestService {
         );
 
       default:
-        throw ApiError.badRequest("Unsupported payout provider");
+        throw ApiError.badRequest("Unsupported fund request provider");
     }
   }
 }
