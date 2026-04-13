@@ -223,6 +223,16 @@ export default function AddUserProfileKYC() {
     );
   }, [cityList, formData.stateId, stateList]);
 
+  const stateOptions = stateList.map((s) => ({
+    id: s.id,
+    label: s.stateName,
+  }));
+
+  const cityOptions = filteredCities.map((c) => ({
+    id: c.id,
+    label: c.cityName,
+  }));
+
   useEffect(() => {
     if (kycDetail && kycDetail.status === "REJECT") {
       // Convert state and city names to IDs
@@ -965,7 +975,7 @@ export default function AddUserProfileKYC() {
                 icon={MapPin}
                 value={formData.stateId}
                 onChange={handleInputChange}
-                options={stateList}
+                options={stateOptions}
                 error={errors.stateId}
                 placeholder="Select state"
                 disabled={isApiKyc}
@@ -976,7 +986,7 @@ export default function AddUserProfileKYC() {
                 icon={MapPin}
                 value={formData.cityId}
                 onChange={handleInputChange}
-                options={filteredCities}
+                options={cityOptions}
                 error={errors.cityId}
                 placeholder={
                   formData.stateId ? "Select city" : "First select state"
