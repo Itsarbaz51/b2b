@@ -35,7 +35,12 @@ class BbpsController {
 
     const result = await BbpsService.fetchBill(payload, req.user);
 
-    return res.json(ApiResponse.success(result, "Bill fetched successfully"));
+    return res.json(
+      ApiResponse.success(
+        Helper.serializeBigInt(result),
+        "Bill fetched successfully"
+      )
+    );
   });
 
   static payBill = asyncHandler(async (req, res) => {

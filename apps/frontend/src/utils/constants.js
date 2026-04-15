@@ -5,6 +5,7 @@ export const PERMISSIONS = {
   COMMISSION_MANAGEMENT: "commission-management",
   TRANSACTIONS: "transactions",
   PAYOUT: "payout",
+  BBPS: "bbps",
   KYC_REQUEST: "kyc request",
   EMPLOYEE_MANAGEMENT: "employee management",
   LEDGER: "ledger",
@@ -33,6 +34,7 @@ export const SERVICES = {
   AADHAAR: "AADHAAR",
   PAYOUT: "PAYOUT",
   BANK_VERIFICATION: "BANK_VERIFICATION",
+  BBPS: "BBPS",
 };
 
 // Static Business Roles

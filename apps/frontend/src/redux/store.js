@@ -19,6 +19,7 @@ import ledgerReducer from "./slices/ledgerSlice.js";
 import reportReducer from "./slices/reportSlice.js";
 import bankVerificationReducer from "./slices/bankVerificationSlice.js";
 import beneficiaryReducer from "./slices/beneficiarySlice.js";
+import bbpsReducer from "./slices/bbpsSlice.js";
 
 const store = configureStore({
   reducer: {
@@ -42,6 +43,7 @@ const store = configureStore({
     report: reportReducer,
     bankVerification: bankVerificationReducer,
     beneficiary: beneficiaryReducer,
+    bbps: bbpsReducer,
   },
 });
 

@@ -13,6 +13,7 @@ import {
   BadgeIndianRupee,
   FileCode,
   FileChartColumnIncreasing,
+  WalletCards,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, verifyAuth } from "../redux/slices/authSlice";
@@ -36,6 +37,7 @@ const Sidebar = () => {
   // service permissions
   const fundRequestPermissions = usePermissions(SERVICES.FUND_REQUEST);
   const payoutPermissions = usePermissions(SERVICES.PAYOUT);
+  const bbpsPermissions = usePermissions(SERVICES.BBPS);
 
   const userData = currentUser || {};
   const role = userData.role?.name || userData.role || "USER";
@@ -112,6 +114,20 @@ const Sidebar = () => {
           path: "/payout",
           businessUserPermission: payoutPermissions.canView,
           employeePermission: PERMISSIONS.PAYOUT,
+          staticRoles: [
+            "STATE HEAD",
+            "MASTER DISTRIBUTOR",
+            "DISTRIBUTOR",
+            "RETAILER",
+          ],
+        },
+        {
+          id: "bbps",
+          label: "Bill Payments",
+          icon: WalletCards,
+          path: "/bbps",
+          businessUserPermission: bbpsPermissions.canView,
+          employeePermission: PERMISSIONS.BBPS,
           staticRoles: [
             "STATE HEAD",
             "MASTER DISTRIBUTOR",

@@ -6,7 +6,6 @@ const ListCategories = z.object({
 
 const SelectBiller = z.object({
   serviceProviderMappingId: z.string().uuid(),
-
   biller: z.string().min(2, "Biller is required").max(100, "Invalid biller"),
 });
 
@@ -14,11 +13,6 @@ const FetchBill = z.object({
   serviceProviderMappingId: z.string().uuid(),
 
   billerId: z.string().min(2, "BillerId is required"),
-
-  reference: z
-    .string()
-    .min(3, "Reference required")
-    .max(50, "Reference too long"),
 
   custParam: z
     .array(
@@ -32,15 +26,8 @@ const FetchBill = z.object({
 
 const PayBill = z.object({
   serviceProviderMappingId: z.string().uuid(),
-
   fetchId: z.string().min(3, "Invalid fetchId"),
-
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
-
-  reference: z
-    .string()
-    .min(3, "Reference required")
-    .max(50, "Reference too long"),
 });
 
 const CheckStatus = z.object({

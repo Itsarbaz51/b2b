@@ -79,7 +79,7 @@ export default class BbpsService {
 
     const Service = this.getService(providerData.code);
 
-    return Service.fetchBill(payload, serviceProviderMapping);
+    return Service.fetchBill(payload, serviceProviderMapping, actor);
   }
 
   // ---------------- PAY BILL ----------------

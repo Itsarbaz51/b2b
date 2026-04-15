@@ -261,6 +261,55 @@ model Beneficiary {
   @@map("beneficiarys")
 }
 
+model BbpsCategory {
+  id       String @id @default(uuid())
+  biller   String
+  category String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([biller])
+  @@map("bbps_categories")
+}
+
+model BbpsBiller {
+  id             String @id @default(uuid())
+  billerId       String @unique @map("biller_id")
+  billerName     String @map("biller_name")
+  category       String
+  customerParams Json   @map("customer_params")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("bbps_billers")
+}
+
+model BbpsFetchBill {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+
+  serviceProviderMappingId String @map("service_provider_mapping_id")
+
+  billerId  String @map("biller_id")
+  reference String
+  fetchId   String @unique @map("fetch_id")
+
+  amount BigInt
+  status String
+
+  customerName String?   @map("customer_name")
+  dueDate      DateTime? @map("due_date")
+
+  rawResponse Json? @map("raw_response")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("bbps_fetch_bill")
+}
+
 model State {
   id        String    @id @default(uuid())
   stateName String    @map("state_name")

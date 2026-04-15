@@ -6,6 +6,77 @@ import LedgerEngine from "../../engines/ledger.engine.js";
 import { ApiError } from "../../utils/ApiError.js";
 import Helper from "../../utils/helper.js";
 import { CryptoService } from "../../utils/cryptoService.js";
+import { isExpired } from "../../utils/time.js";
+
+// ---------------- IMAGE MAPPING ----------------
+const categoryImages = {
+  "Broadband Postpaid": "broadBand.png",
+  "Cable TV": "cableTV.png",
+  "Clubs and Associations": "clubAndAssociation.png",
+  "Credit Card": "Creditcard.png",
+  DTH: "dthSateliteIcon.png",
+  "Education Fees": "educationFees.png",
+  Electricity: "electricity.png",
+  Fastag: "fastTag.png",
+  Gas: "gasCylinder.png",
+  "Hospital and Pathology": "hospital.png",
+  "Housing Society": "houseSociety.png",
+  "Landline Postpaid": "landLine.png",
+  "Life Insurance": "lifeInsurance.png",
+  "Loan Repayment": "loanRepayment.png",
+  "Mobile Prepaid": "mobilePrepaid.png",
+  "Mobile Postpaid": "mobilePrepaid.png",
+  "Municipal Taxes": "municipalTax.png",
+  "Municipal Services": "municipalTax.png",
+  "LPG Gas": "pipedGas.png",
+  "Recurring Deposit": "recurringDeposit.png",
+  Water: "waterBill.png",
+};
+
+// ---------------- HELPER ----------------
+function generateRoute(name) {
+  return `/bbps/${name.toLowerCase().replace(/ /g, "-")}`;
+}
+
+function formatCategories(data) {
+  const categoryMap = {};
+
+  data.forEach((item) => {
+    let categoryName = item.category;
+
+    if (categoryName === "Utility Bill payments") {
+      categoryName = "Utility Bill Payments";
+    }
+
+    if (categoryName === "Other Service") {
+      categoryName = "Other Services";
+    }
+
+    if (!categoryMap[categoryName]) {
+      categoryMap[categoryName] = {
+        category: categoryName,
+        services: [],
+      };
+    }
+
+    categoryMap[categoryName].services.push({
+      name: item.biller,
+      route: generateRoute(item.biller),
+      image: `http://localhost:8000/uploads/categories/${
+        categoryImages[item.biller] || "default.jpg"
+      }`,
+    });
+  });
+
+  const sortedCategories = Object.values(categoryMap).sort((a, b) =>
+    a.category === "Recharge & Bill Payments" ? -1 : 1
+  );
+
+  return {
+    data: sortedCategories,
+    count: data.length,
+  };
+}
 
 export default class BulkpeBbpsService {
   // COMMON CONFIG
@@ -26,129 +97,106 @@ export default class BulkpeBbpsService {
 
   // ---------------- LIST CATEGORIES ----------------
   static async listCategories(serviceProviderMapping) {
-    // const plugin = this.getPlugin(serviceProviderMapping);
-    return {
-      status: true,
-      statusCode: 200,
-      data: [
-        {
-          biller: "Clubs and Associations",
-          category: "Other Services",
-        },
-        {
-          biller: "Life Insurance",
-          category: "Financial Services",
-        },
-        {
-          biller: "Water",
-          category: "Utility Bill payments",
-        },
-        {
-          biller: "Electricity",
-          category: "Utility Bill payments",
-        },
-        {
-          biller: "Municipal Services",
-          category: "Other Services",
-        },
-        {
-          biller: "Mobile Prepaid",
-          category: "Recharge & Bill Payments",
-        },
-        {
-          biller: "Housing Society",
-          category: "Other Services",
-        },
-        {
-          biller: "Municipal Taxes",
-          category: "Financial Services",
-        },
-        {
-          biller: "Broadband Postpaid",
-          category: "Recharge & Bill Payments",
-        },
-        {
-          biller: "Landline Postpaid",
-          category: "Recharge & Bill Payments",
-        },
-        {
-          biller: "Recurring Deposit",
-          category: "Financial Services",
-        },
-        {
-          biller: "Subscription",
-          category: "Other Service",
-        },
-        {
-          biller: "Gas",
-          category: "Utility Bill payments",
-        },
-        {
-          biller: "Cable TV",
-          category: "Recharge & Bill Payments",
-        },
-        {
-          biller: "Mobile Postpaid",
-          category: "Recharge & Bill Payments",
-        },
-        {
-          biller: "LPG Gas",
-          category: "Utility Bill payments",
-        },
-        {
-          biller: "Education Fees",
-          category: "Utility Bill payments",
-        },
-        {
-          biller: "Loan Repayment",
-          category: "Financial Services",
-        },
-        {
-          biller: "Fastag",
-          category: "Recharge & Bill Payments",
-        },
-        {
-          biller: "Credit Card",
-          category: "Financial Services",
-        },
-        {
-          biller: "DTH",
-          category: "Recharge & Bill Payments",
-        },
-        {
-          biller: "Hospital and Pathology",
-          category: "Other Services",
-        },
-      ],
-      message: "Data fetched!",
-      count: 22,
-    };
+    const cache = await Prisma.bbpsCategory.findMany();
+
+    if (cache.length && !isExpired(cache[0].updatedAt)) {
+      return formatCategories(cache);
+    }
+
+    const plugin = this.getPlugin(serviceProviderMapping);
+    const response = await plugin.listCategories();
+
+    await Prisma.bbpsCategory.deleteMany();
+
+    await Prisma.bbpsCategory.createMany({
+      data: response.map((item) => ({
+        biller: item.biller,
+        category: item.category,
+      })),
+    });
+
+    return formatCategories(response);
   }
 
   // ---------------- SELECT BILLER ----------------
   static async selectBiller(payload, serviceProviderMapping) {
+    const cache = await Prisma.bbpsBiller.findMany({
+      where: { category: payload.biller },
+    });
+
+    if (cache.length && !isExpired(cache[0].updatedAt)) {
+      return cache;
+    }
+
     const plugin = this.getPlugin(serviceProviderMapping);
-    return plugin.selectBiller({ biller: payload.biller });
+    const res = await plugin.selectBiller({ biller: payload.biller });
+
+    // 🔥 UPSERT
+    await Promise.all(
+      res.map((b) =>
+        Prisma.bbpsBiller.upsert({
+          where: { billerId: b.billerId },
+          update: {
+            billerName: b.billerName,
+            category: b.category,
+            customerParams: b.customerparams,
+          },
+          create: {
+            billerId: b.billerId,
+            billerName: b.billerName,
+            category: b.category,
+            customerParams: b.customerparams,
+          },
+        })
+      )
+    );
+
+    return res;
   }
 
-  // ---------------- FETCH BILL ----------------
-  static async fetchBill(payload, serviceProviderMapping) {
-    const plugin = this.getPlugin(serviceProviderMapping);
+  static async fetchBill(payload, serviceProviderMapping, actor) {
+    const reference = Helper.generateTxnId("BBPS");
 
-    const bill = await plugin.fetchBill(payload);
-
-    // OPTIONAL: DB save (audit purpose)
-    await Prisma.bbpsFetch.create({
-      data: {
-        userId: payload.userId || null,
+    const existing = await Prisma.bbpsFetchBill.findFirst({
+      where: {
+        userId: actor.id,
         billerId: payload.billerId,
-        amount: bill.amount,
-        fetchId: bill.fetchId,
-        raw: bill,
       },
     });
 
-    return bill;
+    if (existing) {
+      return existing.rawResponse?.data;
+    }
+
+    const plugin = this.getPlugin(serviceProviderMapping);
+
+    const bill = await plugin.fetchBill({
+      ...payload,
+      reference,
+    });
+
+    const created = await Prisma.bbpsFetchBill.create({
+      data: {
+        userId: actor.id,
+        serviceProviderMappingId: payload.serviceProviderMappingId,
+
+        billerId: payload.billerId,
+        reference,
+        fetchId: bill?.data.fetchId,
+
+        amount: BigInt(bill?.data.amount),
+        status: bill?.data.status,
+
+        customerName: bill?.data.billDetails?.customerName || null,
+        dueDate: bill?.data.billDetails?.dueDate
+          ? new Date(bill?.data.billDetails.dueDate)
+          : null,
+
+        rawResponse: bill,
+      },
+    });
+
+    return created?.rawResponse?.data;
   }
 
   // ---------------- PAY BILL ----------------

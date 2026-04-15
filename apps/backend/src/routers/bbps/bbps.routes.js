@@ -15,7 +15,7 @@ bbpsRoutes.post(
 );
 
 bbpsRoutes.post(
-  "/biller",
+  "/select-biller",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorizeRoleTypes(["business"]),
   validateRequest({ body: BbpsValidationSchemas.SelectBiller }),
@@ -23,7 +23,7 @@ bbpsRoutes.post(
 );
 
 bbpsRoutes.post(
-  "/fetch",
+  "/fetch-bill",
   AuthMiddleware.isAuthenticated,
   AuthMiddleware.authorizeRoleTypes(["business"]),
   validateRequest({ body: BbpsValidationSchemas.FetchBill }),

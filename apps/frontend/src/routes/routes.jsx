@@ -39,6 +39,7 @@ import FundAddPage from "../pages/services/FundAddPage.jsx";
 import PayoutPage from "../pages/services/PayoutPage.jsx";
 import Ledger from "../pages/Ledger.jsx";
 import ReportsPage from "../pages/ReportsPage.jsx";
+import BbpsPage from "../pages/services/BbpsPage.jsx";
 
 export const createRouter = () => {
   return createBrowserRouter(
@@ -73,6 +74,7 @@ export const createRouter = () => {
           <Route path="ledger" element={<Ledger />} />
           <Route path="fund-request" element={<FundRequestPage />} />
           <Route path="payout" element={<PayoutPage />} />
+          <Route path="bbps" element={<BbpsPage />} />
           <Route path="kyc-request" element={<RequestKYC />} />
           <Route path="users" element={<UsersTable />} />
           <Route path="settings" element={<Settings />} />

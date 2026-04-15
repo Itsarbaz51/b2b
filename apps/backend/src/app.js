@@ -6,6 +6,7 @@ import { StaticRoutes } from "./routers/staticRoutes.js";
 import { requestId } from "./middlewares/requestId.middleware.js";
 import { rateLimiterMiddleware } from "./middlewares/rateLimiter.middleware.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import path from "path";
 
 const app = express();
 
@@ -31,6 +32,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));

@@ -53,11 +53,13 @@ class BbpsPlugin extends BbpsInterface {
         reference,
       });
 
+      console.log(data);
+
       if (!data.status) {
         throw ApiError.badRequest(data.message);
       }
 
-      return data.data;
+      return data;
     } catch (err) {
       throw ApiError.internal("Fetch bill failed", err?.message);
     }

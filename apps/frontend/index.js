@@ -1,6 +1,8 @@
 export const protectedRoute = [
   "/dashboard",
   "/payout",
+  "/bbps",
+  "/bbps/:service",
   "/transactions",
   "/users",
   "/commission-management",
@@ -32,6 +34,7 @@ import {
   User,
   BadgeIndianRupee,
   Activity,
+  WalletCards,
 } from "lucide-react";
 
 export const navbarTitleConfig = {
@@ -49,6 +52,11 @@ export const navbarTitleConfig = {
     title: "Payout",
     tagLine: "Manage outgoing transactions",
     icon: ArrowDownCircle,
+  },
+  "/bbps": {
+    title: "Bill Payments",
+    tagLine: "Manage all your bill payments in one place",
+    icon: WalletCards,
   },
   "/transactions": {
     title: "Transactions",
@@ -110,4 +118,34 @@ export const navbarTitleConfig = {
     tagLine: "View and manage your audit logs",
     icon: Activity,
   },
+};
+
+export const getNavbarConfig = (pathname) => {
+  // 🔹 Exact match
+  if (navbarTitleConfig[pathname]) {
+    return navbarTitleConfig[pathname];
+  }
+
+  // 🔥 BBPS dynamic
+  if (pathname.startsWith("/bbps/")) {
+    const service = pathname.split("/")[2];
+
+    return {
+      ...navbarTitleConfig["/bbps"],
+      title: service
+        ? service.replace(/-/g, " ").toUpperCase()
+        : "Bill Payments",
+    };
+  }
+
+  // 🔹 Profile dynamic
+  if (pathname.startsWith("/profile")) {
+    return navbarTitleConfig["/profile/:id"];
+  }
+
+  return {
+    title: "Dashboard",
+    tagLine: "",
+    icon: null,
+  };
 };
