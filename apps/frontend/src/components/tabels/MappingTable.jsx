@@ -4,13 +4,15 @@ import { getAllServices } from "../../redux/slices/serviceSlice";
 import AddProviderSlabForm from "../forms/AddProviderSlabForm";
 import ProviderSlabTable from "../tabels/ProviderSlabTable";
 
-import { Search, RefreshCw, Plus, Edit } from "lucide-react";
+import { Search, RefreshCw, Plus, Edit, X } from "lucide-react";
 
 import EmptyState from "../ui/EmptyState";
 import AddMappingForm from "../forms/AddMappingForm";
 import { paisaToRupee } from "../../utils/lib";
 import ActionMenu from "../ui/ActionMenu";
 import AddPaymentMethodChargeForm from "../forms/AddPaymentMethodChargeForm";
+
+const MAX_VISIBLE = 2;
 
 export default function MappingTable() {
   const dispatch = useDispatch();
@@ -29,6 +31,11 @@ export default function MappingTable() {
   const [showPaymentChargeModal, setShowPaymentChargeModal] = useState(false);
   const [selectedChargeMapping, setSelectedChargeMapping] = useState(null);
   const [editChargeData, setEditChargeData] = useState(null);
+  const [viewModal, setViewModal] = useState({
+    open: false,
+    type: null, // "SLAB" | "PAYMENT"
+    mapping: null,
+  });
 
   const data = mappings || [];
 
@@ -159,70 +166,105 @@ export default function MappingTable() {
                         {/* ================= SLAB ================= */}
                         {item.supportsSlab && item.providerSlabs?.length > 0 ? (
                           <div className="space-y-1 text-xs">
-                            {item.providerSlabs.map((slab) => (
-                              <div
-                                key={slab.id}
-                                className="bg-gray-100 px-2 py-1 rounded flex justify-between items-center"
-                              >
-                                <span>
-                                  ₹{paisaToRupee(slab.minAmount)} - ₹
-                                  {paisaToRupee(slab.maxAmount)}
-                                </span>
-
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-blue-600">
-                                    {item.pricingValueType === "FLAT"
-                                      ? `₹${paisaToRupee(slab.providerCost)}`
-                                      : `%${paisaToRupee(slab.providerCost)}`}
+                            {item.providerSlabs
+                              .slice(0, MAX_VISIBLE)
+                              .map((slab) => (
+                                <div
+                                  key={slab.id}
+                                  className="bg-gray-100 px-2 py-1 rounded flex justify-between items-center"
+                                >
+                                  <span>
+                                    ₹{paisaToRupee(slab.minAmount)} - ₹
+                                    {paisaToRupee(slab.maxAmount)}
                                   </span>
 
-                                  <button
-                                    onClick={() => {
-                                      setSelectedMapping(item);
-                                      setEditData(slab);
-                                      setShowSlabModal(true);
-                                    }}
-                                    className="text-blue-500 hover:text-blue-700"
-                                  >
-                                    <Edit size={14} />
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-blue-600">
+                                      {item.pricingValueType === "FLAT"
+                                        ? `₹${paisaToRupee(slab.providerCost)}`
+                                        : `%${paisaToRupee(slab.providerCost)}`}
+                                    </span>
+
+                                    <button
+                                      onClick={() => {
+                                        setSelectedMapping(item);
+                                        setEditData(slab);
+                                        setShowSlabModal(true);
+                                      }}
+                                      className="text-blue-500 hover:text-blue-700"
+                                    >
+                                      <Edit size={14} />
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            {item.providerSlabs.length > MAX_VISIBLE && (
+                              <button
+                                onClick={() =>
+                                  setViewModal({
+                                    open: true,
+                                    type: "SLAB",
+                                    mapping: item,
+                                  })
+                                }
+                                className="text-blue-600 text-xs font-semibold hover:underline"
+                              >
+                                View All ({item.providerSlabs.length})
+                              </button>
+                            )}
                           </div>
                         ) : item.paymentMethodCharges?.length > 0 ? (
                           /* ================= PAYMENT CHARGES ================= */
                           <div className="space-y-1 text-xs">
-                            {item.paymentMethodCharges.map((charge) => (
-                              <div
-                                key={charge.id}
-                                className="bg-purple-50 px-2 py-1 rounded flex justify-between items-center"
-                              >
-                                <span>
-                                  {charge.paymentMethod}
-                                  {charge.network ? ` (${charge.network})` : ""}
-                                </span>
-
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-purple-600">
-                                    {charge.type === "FLAT"
-                                      ? `₹${paisaToRupee(charge.value)}`
-                                      : `${Number(charge.value) / 100}%`}
+                            {item.paymentMethodCharges
+                              .slice(0, MAX_VISIBLE)
+                              .map((charge) => (
+                                <div
+                                  key={charge.id}
+                                  className="bg-purple-50 px-2 py-1 rounded flex justify-between items-center"
+                                >
+                                  <span>
+                                    {item.service?.code === "BBPS"
+                                      ? charge.category || "All"
+                                      : `${charge.paymentMethod}${charge.network ? ` (${charge.network})` : ""}`}
                                   </span>
 
-                                  <button
-                                    onClick={() => {
-                                      setSelectedChargeMapping(item);
-                                      setEditChargeData(charge);
-                                      setShowPaymentChargeModal(true);
-                                    }}
-                                    className="text-blue-500 hover:text-blue-700"
-                                  >
-                                    <Edit size={14} />
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-purple-600">
+                                      {charge.type === "FLAT"
+                                        ? `₹${paisaToRupee(charge.value)}`
+                                        : `${Number(charge.value) / 100}%`}
+                                    </span>
+
+                                    <button
+                                      onClick={() => {
+                                        setSelectedChargeMapping(item);
+                                        setEditChargeData(charge);
+                                        setShowPaymentChargeModal(true);
+                                      }}
+                                      className="text-blue-500 hover:text-blue-700"
+                                    >
+                                      <Edit size={14} />
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                              {item.paymentMethodCharges.length >
+                                MAX_VISIBLE && (
+                                <button
+                                  onClick={() =>
+                                    setViewModal({
+                                      open: true,
+                                      type: "PAYMENT",
+                                      mapping: item,
+                                    })
+                                  }
+                                  className="text-purple-600 text-xs font-semibold hover:underline"
+                                >
+                                  View All (
+                                  {item.paymentMethodCharges.length})
+                                </button>
+                              )}
                           </div>
                         ) : (
                           /* ================= DEFAULT ================= */
@@ -369,6 +411,7 @@ export default function MappingTable() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-[450px]">
             <AddPaymentMethodChargeForm
+              selectedChargeMapping={selectedChargeMapping}
               mappingId={selectedChargeMapping.id}
               editData={editChargeData}
               onClose={() => {
@@ -377,6 +420,69 @@ export default function MappingTable() {
               }}
               onSuccess={loadMappings}
             />
+          </div>
+        </div>
+      )}
+      {viewModal.open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">
+                {viewModal.type === "SLAB"
+                  ? "All Slabs"
+                  : "All Payment Charges"}
+              </h2>
+
+              <button
+                onClick={() =>
+                  setViewModal({ open: false, type: null, mapping: null })
+                }
+              >
+                <X />
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {/* 🔵 SLABS */}
+              {viewModal.type === "SLAB"
+                ? viewModal.mapping.providerSlabs.map((slab) => (
+                    <div
+                      key={slab.id}
+                      className="bg-gray-100 p-2 rounded flex justify-between"
+                    >
+                      <span>
+                        ₹{paisaToRupee(slab.minAmount)} - ₹
+                        {paisaToRupee(slab.maxAmount)}
+                      </span>
+
+                      <span className="font-semibold">
+                        {viewModal.mapping.pricingValueType === "FLAT"
+                          ? `₹${paisaToRupee(slab.providerCost)}`
+                          : `${paisaToRupee(slab.providerCost)}%`}
+                      </span>
+                    </div>
+                  ))
+                : viewModal.mapping.paymentMethodCharges.map((charge) => (
+                    <div
+                      key={charge.id}
+                      className="bg-purple-50 p-2 rounded flex justify-between"
+                    >
+                      <span>
+                        {viewModal.mapping.service?.code === "BBPS"
+                          ? charge.category || "All"
+                          : `${charge.paymentMethod}${
+                              charge.network ? ` (${charge.network})` : ""
+                            }`}
+                      </span>
+
+                      <span className="font-semibold">
+                        {charge.type === "FLAT"
+                          ? `₹${paisaToRupee(charge.value)}`
+                          : `${paisaToRupee(charge.value)}%`}
+                      </span>
+                    </div>
+                  ))}
+            </div>
           </div>
         </div>
       )}

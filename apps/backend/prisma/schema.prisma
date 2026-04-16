@@ -448,8 +448,10 @@ model CommissionPaymentMethod {
 
   commissionSettingId String @map("commission_setting_id")
 
-  paymentMethod String  @map("payment_method")
+  paymentMethod String? @map("payment_method")
   network       String? // optional
+
+  category String? // DTH, MOBILE, ELECTRICITY
 
   type  CommissionType
   value BigInt
@@ -597,8 +599,10 @@ model PaymentMethodChargeProvider {
 
   serviceProviderMappingId String @map("service_provider_mapping_id")
 
-  paymentMethod String  @map("payment_method") // card / upi  
+  paymentMethod String? @map("payment_method") // card / upi  
   network       String? // visa / rupay
+
+  category String?  // DTH, MOBILE, ELECTRICITY
 
   type    PricingValueType
   value   BigInt

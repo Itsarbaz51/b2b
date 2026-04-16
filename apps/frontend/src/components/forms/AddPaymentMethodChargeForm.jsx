@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+
 import HeaderSection from "../ui/HeaderSection";
 import InputField from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
-import { DropdownField } from "../ui/DropdownField";
+
 import { paisaToRupee, rupeesToPaise } from "../../utils/lib";
 import { createPaymentMethodCharge } from "../../redux/slices/serviceSlice";
+
+import { usePermissions } from "../../hooks/usePermission";
+import { getBbpsCategories } from "../../redux/slices/bbpsSlice";
+import { SERVICES } from "../../utils/constants";
 
 const paymentMethods = [
   { label: "UPI", value: "UPI" },
@@ -25,6 +30,7 @@ const types = [
 ];
 
 export default function AddPaymentMethodChargeForm({
+  selectedChargeMapping,
   mappingId,
   editData,
   onClose,
@@ -32,34 +38,66 @@ export default function AddPaymentMethodChargeForm({
 }) {
   const dispatch = useDispatch();
 
+  //  SERVICE DETECTION
+  const serviceCode = selectedChargeMapping?.service?.code;
+
+  const isFund = serviceCode === "FUND_REQUEST";
+  const isBbps = serviceCode === "BBPS";
+
+  //  BBPS CATEGORY FETCH
+  const { canProcess, defaultProvider } = usePermissions(SERVICES.BBPS);
+  const serviceProviderMappingId = defaultProvider?.serviceProviderMappingId;
+
+  const { categories } = useSelector((s) => s.bbps);
+
+  useEffect(() => {
+    if (isBbps && canProcess && serviceProviderMappingId) {
+      dispatch(getBbpsCategories({ serviceProviderMappingId }));
+    }
+  }, [isBbps, canProcess, serviceProviderMappingId]);
+
   const [form, setForm] = useState({
     paymentMethod: "",
     network: "",
+    category: "",
     type: "FLAT",
     value: "",
   });
 
   const [error, setError] = useState("");
 
+  //  PREFILL
   useEffect(() => {
     if (editData) {
       setForm({
-        paymentMethod: editData.paymentMethod,
+        paymentMethod: editData.paymentMethod || "",
         network: editData.network || "",
+        category: editData.category || "",
         type: editData.type,
-        value: paisaToRupee(editData.value), 
+        value: paisaToRupee(editData.value),
       });
     }
   }, [editData]);
 
+  //  SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     if (!mappingId) return setError("Mapping required");
 
-    if (!form.paymentMethod) {
+    // BBPS validation
+    if (isBbps && !form.category) {
+      return setError("Service required for BBPS");
+    }
+
+    // FUND validation
+    if (isFund && !form.paymentMethod) {
       return setError("Payment method required");
+    }
+
+    if (form.paymentMethod === "CARD" && !form.network) {
+      return setError("Network required for CARD");
     }
 
     if (form.type === "PERCENTAGE" && Number(form.value) > 100) {
@@ -68,8 +106,9 @@ export default function AddPaymentMethodChargeForm({
 
     const payload = {
       serviceProviderMappingId: mappingId,
-      paymentMethod: form.paymentMethod,
+      paymentMethod: isFund ? form.paymentMethod : null,
       network: form.paymentMethod === "CARD" ? form.network : null,
+      category: isBbps ? form.category : null,
       type: form.type,
       value: rupeesToPaise(Number(form.value)),
     };
@@ -78,7 +117,6 @@ export default function AddPaymentMethodChargeForm({
 
     try {
       await dispatch(createPaymentMethodCharge(payload));
-
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -98,7 +136,6 @@ export default function AddPaymentMethodChargeForm({
           _delete: true,
         }),
       );
-
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -120,31 +157,79 @@ export default function AddPaymentMethodChargeForm({
               <div className="bg-red-100 text-red-600 p-2 rounded">{error}</div>
             )}
 
-            <DropdownField
-              label="Payment Method"
-              value={form.paymentMethod}
-              onChange={(e) =>
-                setForm({ ...form, paymentMethod: e.target.value })
-              }
-              options={paymentMethods}
-            />
+            {/*  FUND REQUEST */}
+            {isFund && (
+              <>
+                <select
+                  value={form.paymentMethod}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      paymentMethod: e.target.value,
+                      network: "",
+                    })
+                  }
+                  className="w-full border p-2 rounded"
+                >
+                  <option value="">Select Payment Method</option>
+                  {paymentMethods.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
 
-            {form.paymentMethod === "CARD" && (
-              <DropdownField
-                label="Card Network"
-                value={form.network}
-                onChange={(e) => setForm({ ...form, network: e.target.value })}
-                options={networks}
-              />
+                {form.paymentMethod === "CARD" && (
+                  <select
+                    value={form.network}
+                    onChange={(e) =>
+                      setForm({ ...form, network: e.target.value })
+                    }
+                    className="w-full border p-2 rounded"
+                  >
+                    <option value="">Select Network</option>
+                    {networks.map((n) => (
+                      <option key={n.value} value={n.value}>
+                        {n.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </>
             )}
 
-            <DropdownField
-              label="Type"
+            {/*  BBPS */}
+            {isBbps && (
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className="w-full border p-2 rounded"
+              >
+                <option value="">Select Service</option>
+                {categories?.data?.flatMap((c) =>
+                  c.services.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.name}
+                    </option>
+                  )),
+                )}
+              </select>
+            )}
+
+            {/* TYPE */}
+            <select
               value={form.type}
               onChange={(e) => setForm({ ...form, type: e.target.value })}
-              options={types}
-            />
+              className="w-full border p-2 rounded"
+            >
+              {types.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
 
+            {/* VALUE */}
             <InputField
               label={
                 form.type === "PERCENTAGE" ? "Percentage (%)" : "Amount (₹)"

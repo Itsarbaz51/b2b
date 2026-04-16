@@ -661,6 +661,7 @@ export class PaymentMethodChargeService {
       _delete,
       serviceProviderMappingId,
       paymentMethod,
+      category,
       network,
       type,
       value,
@@ -673,13 +674,9 @@ export class PaymentMethodChargeService {
       });
     }
 
-    // ================= BASIC VALIDATION =================
+    // ================= VALIDATION =================
     if (!serviceProviderMappingId) {
       throw ApiError.badRequest("Mapping ID required");
-    }
-
-    if (!paymentMethod) {
-      throw ApiError.badRequest("Payment method required");
     }
 
     if (!type) {
@@ -704,6 +701,9 @@ export class PaymentMethodChargeService {
         mode: true,
         isActive: true,
         supportsSlab: true,
+        service: {
+          select: { code: true },
+        },
       },
     });
 
@@ -711,36 +711,50 @@ export class PaymentMethodChargeService {
       throw ApiError.notFound("Service mapping not found");
     }
 
+    const serviceCode = mapping.service?.code;
+    const isBbps = serviceCode === "BBPS";
+    const isFund = serviceCode === "FUND_REQUEST";
+
     // ================= BUSINESS RULES =================
 
-    //  Only SURCHARGE allowed
-    if (mapping.mode !== "SURCHARGE") {
-      throw ApiError.badRequest(
-        "Payment method charges only allowed in SURCHARGE mode"
-      );
-    }
-
-    //  Mapping active hona chahiye
     if (!mapping.isActive) {
       throw ApiError.badRequest("Mapping is inactive");
     }
 
-    //  Slab + payment charge conflict
     if (mapping.supportsSlab) {
       throw ApiError.badRequest(
         "Payment method charges not allowed with slab pricing"
       );
     }
 
-    if (!type) {
-      throw ApiError.badRequest("Invalid pricing type");
+    // ================= BBPS VALIDATION =================
+    if (isBbps && !category) {
+      throw ApiError.badRequest("Category required for BBPS");
     }
 
-    // ================= CARD VALIDATION =================
-    if (paymentMethod === "CARD") {
-      if (!network) {
-        throw ApiError.badRequest("Network required for CARD");
-      }
+    // ================= FUND VALIDATION =================
+    if (isFund && !paymentMethod) {
+      throw ApiError.badRequest("Payment method required");
+    }
+
+    // ================= CARD =================
+    if (paymentMethod === "CARD" && !network) {
+      throw ApiError.badRequest("Network required for CARD");
+    }
+
+    // ================= DUPLICATE CHECK =================
+    const exists = await Prisma.paymentMethodChargeProvider.findFirst({
+      where: {
+        serviceProviderMappingId,
+        paymentMethod: isFund ? paymentMethod : null,
+        network: paymentMethod === "CARD" ? network : null,
+        category: isBbps ? category : null,
+        NOT: id ? { id } : undefined,
+      },
+    });
+
+    if (exists) {
+      throw ApiError.conflict("Charge already exists for this configuration");
     }
 
     // ================= UPDATE =================
@@ -748,33 +762,22 @@ export class PaymentMethodChargeService {
       return Prisma.paymentMethodChargeProvider.update({
         where: { id },
         data: {
-          paymentMethod,
+          paymentMethod: isFund ? paymentMethod : null,
           network: paymentMethod === "CARD" ? network : null,
+          category: isBbps ? category : null,
           type: type.toUpperCase(),
           value: parsedValue,
         },
       });
     }
 
-    // ================= DUPLICATE CHECK =================
-    const exists = await Prisma.paymentMethodChargeProvider.findFirst({
-      where: {
-        serviceProviderMappingId,
-        paymentMethod,
-        network: paymentMethod === "CARD" ? network : null,
-      },
-    });
-
-    if (exists) {
-      throw ApiError.conflict("Charge already exists for this payment method");
-    }
-
     // ================= CREATE =================
     return Prisma.paymentMethodChargeProvider.create({
       data: {
         serviceProviderMappingId,
-        paymentMethod,
+        paymentMethod: isFund ? paymentMethod : null,
         network: paymentMethod === "CARD" ? network : null,
+        category: isBbps ? category : null,
         type: type.toUpperCase(),
         value: parsedValue,
       },
