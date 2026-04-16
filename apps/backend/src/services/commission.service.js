@@ -736,10 +736,13 @@ export class CommissionPaymentMethodService {
       commissionSettingId,
       paymentMethod,
       network,
+      category,
       type,
       value,
       _delete,
     } = payload;
+    console.log(category);
+    
 
     // ---------------- DELETE ----------------
     if (_delete === true) {
@@ -761,8 +764,6 @@ export class CommissionPaymentMethodService {
     if (!commissionSettingId)
       throw ApiError.badRequest("commissionSettingId required");
 
-    if (!paymentMethod) throw ApiError.badRequest("paymentMethod required");
-
     if (!type) throw ApiError.badRequest("type required");
 
     if (value === undefined || value === null)
@@ -781,6 +782,7 @@ export class CommissionPaymentMethodService {
         commissionSettingId,
         paymentMethod,
         network: network || null,
+        category: category || null,
         NOT: id ? { id } : undefined,
       },
     });
@@ -807,6 +809,7 @@ export class CommissionPaymentMethodService {
         data: {
           paymentMethod,
           network: network || null,
+          category: category || null,
           type,
           value: BigInt(value),
         },
@@ -819,6 +822,7 @@ export class CommissionPaymentMethodService {
         commissionSettingId,
         paymentMethod,
         network: network || null,
+        category: category || null,
         type,
         value: BigInt(value),
       },
