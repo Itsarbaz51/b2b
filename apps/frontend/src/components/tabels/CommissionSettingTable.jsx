@@ -2,7 +2,8 @@ import { Edit, X, MoreVertical, Plus } from "lucide-react";
 import EmptyState from "../ui/EmptyState";
 import { useSelector } from "react-redux";
 import { paisaToRupee } from "../../utils/lib";
-
+import { useState } from "react";
+const MAX_VISIBLE = 2;
 const CommissionSettingTable = ({
   commissions = [],
   onAddSlab,
@@ -17,6 +18,11 @@ const CommissionSettingTable = ({
   onAddPaymentMethod,
   onEditPaymentMethod,
 }) => {
+  const [viewModal, setViewModal] = useState({
+    open: false,
+    type: null,
+    commission: null,
+  });
   const getScopeColor = (scope) => {
     switch (scope) {
       case "ROLE":
@@ -58,7 +64,6 @@ const CommissionSettingTable = ({
         color: "text-green-600",
       });
     }
-    console.log(commission);
 
     if (commission?.supportPaymentMethod) {
       actions.push({
@@ -211,64 +216,82 @@ const CommissionSettingTable = ({
                   {commission.supportsSlab &&
                   commission.commissionSlabs?.length > 0 ? (
                     <div className="space-y-1 text-xs">
-                      {commission.commissionSlabs.map((slab) => (
-                        <div
-                          key={slab.id}
-                          className="bg-gray-100 px-2 py-1 rounded flex justify-between items-center"
-                        >
-                          <span>
-                            ₹{paisaToRupee(slab.minAmount)} - ₹
-                            {paisaToRupee(slab.maxAmount)}
-                          </span>
+                      {commission.commissionSlabs
+                        .slice(0, MAX_VISIBLE)
+                        .map((slab) => (
+                          <div
+                            key={slab.id}
+                            className="bg-gray-100 px-2 py-1 rounded flex justify-between items-center"
+                          >
+                            <span>
+                              ₹{paisaToRupee(slab.minAmount)} - ₹
+                              {paisaToRupee(slab.maxAmount)}
+                            </span>
 
-                          <div className="flex items-center gap-2">
                             <span className="font-semibold text-blue-600">
                               {commission.type === "FLAT"
                                 ? `₹${paisaToRupee(slab.value)}`
-                                : `%${paisaToRupee(slab.value)}`}
+                                : `${paisaToRupee(slab.value)}%`}
                             </span>
-
-                            <button
-                              onClick={() => onEditSlab?.(commission, slab)}
-                              className="text-blue-500 hover:text-blue-700"
-                            >
-                              <Edit size={14} />
-                            </button>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+
+                      {commission.commissionSlabs.length > MAX_VISIBLE && (
+                        <button
+                          onClick={() =>
+                            setViewModal({
+                              open: true,
+                              type: "SLAB",
+                              commission,
+                            })
+                          }
+                          className="text-blue-600 text-xs font-semibold hover:underline"
+                        >
+                          View All ({commission.commissionSlabs.length})
+                        </button>
+                      )}
                     </div>
                   ) : commission.commissionPaymentMethods &&
                     commission.commissionPaymentMethods?.length > 0 ? (
                     <div className="space-y-1 text-xs">
-                      {commission.commissionPaymentMethods.map((pm) => (
-                        <div
-                          key={pm.id}
-                          className="bg-purple-50 px-2 py-1 rounded flex justify-between items-center"
-                        >
-                          <span>
-                            {pm.paymentMethod}
-                            {pm.network ? ` (${pm.network})` : ""}
-                          </span>
+                      {commission.commissionPaymentMethods
+                        .slice(0, MAX_VISIBLE)
+                        .map((pm) => (
+                          <div
+                            key={pm.id}
+                            className="bg-purple-50 px-2 py-1 rounded flex justify-between items-center"
+                          >
+                            <span>
+                              {commission.serviceProviderMapping?.service
+                                ?.code === "BBPS"
+                                ? pm.category || "All"
+                                : `${pm.paymentMethod}${pm.network ? ` (${pm.network})` : ""}`}
+                            </span>
 
-                          <div className="flex items-center gap-2">
                             <span className="font-semibold text-purple-600">
                               {pm.type === "FLAT"
                                 ? `₹${paisaToRupee(pm.value)}`
                                 : `${paisaToRupee(pm.value)}%`}
                             </span>
-
-                            <button
-                              onClick={() =>
-                                onEditPaymentMethod?.(commission, pm)
-                              }
-                              className="text-purple-500 hover:text-purple-700"
-                            >
-                              <Edit size={14} />
-                            </button>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+
+                      {commission.commissionPaymentMethods.length >
+                        MAX_VISIBLE && (
+                        <button
+                          onClick={() =>
+                            setViewModal({
+                              open: true,
+                              type: "PAYMENT",
+                              commission,
+                            })
+                          }
+                          className="text-purple-600 text-xs font-semibold hover:underline"
+                        >
+                          View All ({commission.commissionPaymentMethods.length}
+                          )
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="text-sm font-semibold mb-1">
@@ -342,6 +365,69 @@ const CommissionSettingTable = ({
           )}
         </tbody>
       </table>
+      {viewModal.open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">
+                {viewModal.type === "SLAB"
+                  ? "All Slabs"
+                  : "All Payment Methods"}
+              </h2>
+
+              <button
+                onClick={() =>
+                  setViewModal({ open: false, type: null, commission: null })
+                }
+              >
+                <X />
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {viewModal.type === "SLAB"
+                ? viewModal.commission.commissionSlabs.map((slab) => (
+                    <div
+                      key={slab.id}
+                      className="bg-gray-100 p-2 rounded flex justify-between"
+                    >
+                      <span>
+                        ₹{paisaToRupee(slab.minAmount)} - ₹
+                        {paisaToRupee(slab.maxAmount)}
+                      </span>
+
+                      <span className="font-semibold">
+                        {viewModal.commission.type === "FLAT"
+                          ? `₹${paisaToRupee(slab.value)}`
+                          : `${paisaToRupee(slab.value)}%`}
+                      </span>
+                    </div>
+                  ))
+                : viewModal.commission.commissionPaymentMethods.map((pm) => (
+                    <div
+                      key={pm.id}
+                      className="bg-purple-50 p-2 rounded flex justify-between"
+                    >
+                      <span>
+                        {viewModal.commission.serviceProviderMapping?.service
+                          ?.code === "BBPS"
+                          ? pm.category || "All"
+                          : `${pm.paymentMethod}${
+                              pm.network ? ` (${pm.network})` : ""
+                            }`}
+                      </span>
+
+                      <span className="font-semibold">
+                        {pm.type === "FLAT"
+                          ? `₹${paisaToRupee(pm.value)}`
+                          : `${paisaToRupee(pm.value)}%`}
+                      </span>
+                    </div>
+                  ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

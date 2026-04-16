@@ -8,6 +8,7 @@ import SettlementEngine from "../../engines/settlement.engine.js";
 import Helper from "../../utils/helper.js";
 import WalletEngine from "../../engines/wallet.engine.js";
 import { CryptoService } from "../../utils/cryptoService.js";
+import { getAadhaarPlugin } from "../../plugin_registry/aadhaar/pluginRegistry.js";
 
 export default class AadhaarService {
   // STEP 1 — SEND OTP

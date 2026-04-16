@@ -278,7 +278,7 @@ const CommissionSetting = () => {
         commissions={filteredCommissions}
         onAddSlab={handleAddSlab}
         onEditSlab={handleEditSlab}
-        onAddPaymentMethod={handleAddPaymentMethod} // ✅ ADD
+        onAddPaymentMethod={handleAddPaymentMethod}
         onEditPaymentMethod={handleEditPaymentMethod}
         isLoading={isLoading}
         search={search}
@@ -331,6 +331,9 @@ const CommissionSetting = () => {
       {showPaymentForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <AddCommissionPaymentMethod
+            selectedCommissionForPayment={
+              selectedCommissionForPayment?.commission
+            }
             commissionSettingId={
               selectedCommissionForPayment?.commission?.id ||
               selectedCommissionForPayment?.id

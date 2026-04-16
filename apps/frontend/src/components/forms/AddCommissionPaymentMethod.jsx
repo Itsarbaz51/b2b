@@ -1,4 +1,4 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useState, useEffect } from "react";
 import { rupeesToPaise } from "../../utils/lib";
 
@@ -7,6 +7,9 @@ import InputField from "../ui/InputField";
 import ButtonField from "../ui/ButtonField";
 
 import { createCommissionPaymentMethod } from "../../redux/slices/commissionSlice";
+import { usePermissions } from "../../hooks/usePermission";
+import { getBbpsCategories } from "../../redux/slices/bbpsSlice";
+import { SERVICES } from "../../utils/constants";
 
 const paymentMethods = [
   { label: "UPI", value: "UPI" },
@@ -21,16 +24,39 @@ const networks = [
 ];
 
 export default function AddCommissionPaymentMethod({
+  selectedCommissionForPayment,
   commissionSettingId,
   editData,
   onClose,
   onSuccess,
 }) {
+  const serviceCode =
+    selectedCommissionForPayment?.serviceProviderMapping?.service?.code;
+
+  const isFund = serviceCode === "FUND_REQUEST";
+  const isBbps = serviceCode === "BBPS";
+
+  const { canProcess, defaultProvider } = usePermissions(SERVICES.BBPS);
+  const serviceProviderMappingId = defaultProvider?.serviceProviderMappingId;
+
+  const { categories, isLoading } = useSelector((s) => s.bbps);
+
+  const fetchRequests = () => {
+    if (!serviceProviderMappingId || !canProcess) return;
+
+    dispatch(getBbpsCategories({ serviceProviderMappingId }));
+  };
+
+  useEffect(() => {
+    if (canProcess) fetchRequests();
+  }, [serviceProviderMappingId, canProcess]);
+
   const dispatch = useDispatch();
 
   const [form, setForm] = useState({
     paymentMethod: "",
     network: "",
+    category: "",
     type: "FLAT",
     value: "",
   });
@@ -42,6 +68,7 @@ export default function AddCommissionPaymentMethod({
     if (editData) {
       setForm({
         paymentMethod: editData.paymentMethod || "",
+        category: editData.category || "",
         network: editData.network || "",
         type: editData.type || "FLAT",
         value: Number(editData.value) / 100,
@@ -65,20 +92,22 @@ export default function AddCommissionPaymentMethod({
       return;
     }
 
-    if (!form.paymentMethod) {
-      setError("Payment method required");
-      return;
+    if (isBbps && !form.category) {
+      return setError("Service required for BBPS");
+    }
+
+    if (isFund && !form.paymentMethod) {
+      return setError("Payment method required");
     }
 
     if (form.paymentMethod === "CARD" && !form.network) {
-      setError("Network required for CARD");
-      return;
+      return setError("Network required for CARD");
     }
-
     const payload = {
       commissionSettingId,
       paymentMethod: form.paymentMethod,
       network: form.paymentMethod === "CARD" ? form.network : undefined,
+      category: isBbps ? form.category : null,
       type: form.type,
       value: rupeesToPaise(Number(form.value)),
     };
@@ -135,30 +164,56 @@ export default function AddCommissionPaymentMethod({
 
             <div className="grid md:grid-cols-2 gap-4">
               {/* Payment Method */}
-              <div>
-                <label className="text-sm font-semibold">Payment Method</label>
-                <select
-                  value={form.paymentMethod}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      paymentMethod: e.target.value,
-                      network: "",
-                    })
-                  }
-                  className="w-full mt-1 px-3 py-2 border rounded-lg"
-                >
-                  <option value="">Select</option>
-                  {paymentMethods.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {isFund && (
+                <div>
+                  <label className="text-sm font-semibold">
+                    Payment Method
+                  </label>
+                  <select
+                    value={form.paymentMethod}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        paymentMethod: e.target.value,
+                        network: "",
+                      })
+                    }
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="">Select</option>
+                    {paymentMethods.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {isBbps && (
+                <div>
+                  <label className="text-sm font-semibold">Service</label>
+                  <select
+                    value={form.category}
+                    onChange={(e) =>
+                      setForm({ ...form, category: e.target.value })
+                    }
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="">Select Service</option>
+                    {categories?.data?.flatMap((c) =>
+                      c.services.map((s) => (
+                        <option key={s.code} value={s.code}>
+                          {s.name}
+                        </option>
+                      )),
+                    )}
+                  </select>
+                </div>
+              )}
 
               {/* Network (CARD only) */}
-              {form.paymentMethod === "CARD" && (
+              {isFund && form.paymentMethod === "CARD" && (
                 <div>
                   <label className="text-sm font-semibold">Network</label>
                   <select
@@ -166,7 +221,7 @@ export default function AddCommissionPaymentMethod({
                     onChange={(e) =>
                       setForm({ ...form, network: e.target.value })
                     }
-                    className="w-full mt-1 px-3 py-2 border rounded-lg"
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
                   >
                     <option value="">Select Network</option>
                     {networks.map((n) => (
@@ -184,7 +239,7 @@ export default function AddCommissionPaymentMethod({
                 <select
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border rounded-lg"
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
                 >
                   <option value="FLAT">Flat</option>
                   <option value="PERCENTAGE">Percentage</option>
