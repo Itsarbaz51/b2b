@@ -157,10 +157,17 @@ export default class BulkpeBbpsService {
   static async fetchBill(payload, serviceProviderMapping, actor) {
     const reference = Helper.generateTxnId("BBPS");
 
+    const sortedParams = [...payload.custParam].sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+
+    const customerParamsKey = JSON.stringify(sortedParams);
+
     const existing = await Prisma.bbpsFetchBill.findFirst({
       where: {
         userId: actor.id,
         billerId: payload.billerId,
+        customerParamsKey: customerParamsKey,
       },
     });
 
@@ -179,6 +186,9 @@ export default class BulkpeBbpsService {
       data: {
         userId: actor.id,
         serviceProviderMappingId: payload.serviceProviderMappingId,
+
+        customerParams: payload.custParam,
+        customerParamsKey: customerParamsKey,
 
         billerId: payload.billerId,
         reference,

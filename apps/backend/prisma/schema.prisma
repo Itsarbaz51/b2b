@@ -293,9 +293,11 @@ model BbpsFetchBill {
 
   serviceProviderMappingId String @map("service_provider_mapping_id")
 
-  billerId  String @map("biller_id")
-  reference String
-  fetchId   String @unique @map("fetch_id")
+  billerId          String  @map("biller_id")
+  reference         String
+  fetchId           String  @unique @map("fetch_id")
+  customerParams    Json?   @map("customer_params")
+  customerParamsKey String? @map("customer_params_key")
 
   amount BigInt
   status String
@@ -307,6 +309,7 @@ model BbpsFetchBill {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([userId, billerId, customerParamsKey])
   @@map("bbps_fetch_bill")
 }
 
@@ -602,7 +605,7 @@ model PaymentMethodChargeProvider {
   paymentMethod String? @map("payment_method") // card / upi  
   network       String? // visa / rupay
 
-  category String?  // DTH, MOBILE, ELECTRICITY
+  category String? // DTH, MOBILE, ELECTRICITY
 
   type    PricingValueType
   value   BigInt

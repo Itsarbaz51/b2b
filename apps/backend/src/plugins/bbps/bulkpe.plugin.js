@@ -46,23 +46,17 @@ class BbpsPlugin extends BbpsInterface {
   }
 
   async fetchBill({ billerId, custParam, reference }) {
-    try {
-      const { data } = await this.client.post("/FetchBillSingle", {
-        billerId,
-        custParam,
-        reference,
-      });
+    const { data } = await this.client.post("/FetchBillSingle", {
+      billerId,
+      custParam,
+      reference,
+    });
 
-      console.log(data);
-
-      if (!data.status) {
-        throw ApiError.badRequest(data.message);
-      }
-
-      return data;
-    } catch (err) {
-      throw ApiError.internal("Fetch bill failed", err?.message);
+    if (!data.status) {
+      throw ApiError.badRequest(data.message);
     }
+
+    return data;
   }
 
   async payBill({ fetchId, amount, reference }) {
