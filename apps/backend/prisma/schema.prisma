@@ -396,48 +396,38 @@ model CommissionSetting {
   id    String          @id @default(uuid())
   scope CommissionScope @default(ROLE)
 
-  roleId       String? @map("role_id")
-  targetUserId String? @map("target_user_id")
+  roleId                   String? @map("role_id")
+  targetUserId             String? @map("target_user_id")
+  serviceProviderMappingId String
 
-  // ❌ REMOVE HARD DEPENDENCY
-  serviceProviderMappingId String? // make optional
-
-  // ✅ NEW CONTEXT FIELDS
-  serviceType   String? // BBPS, RECHARGE, PAYMENT
-  category      String? // ELECTRICITY, DTH
-  operator      String? // JVVNL, AIRTEL
-  paymentMethod String? // UPI, CARD
-  network       String? // VISA, RUPAY
-
-  mode  PricingMode
-  type  CommissionType
+  mode  PricingMode    @default(NONE)
+  type  CommissionType @default(NONE)
   value BigInt
 
-  applyTDS   Boolean @default(false)
-  tdsPercent BigInt?
+  applyTDS   Boolean @default(false) @map("apply_tds")
+  tdsPercent BigInt? @map("tds_percent")
 
-  applyGST   Boolean @default(false)
-  gstPercent BigInt?
+  applyGST   Boolean @default(false) @map("apply_gst")
+  gstPercent BigInt? @map("gst_percent")
 
-  createdBy String
-  isActive  Boolean @default(true)
+  createdBy String  @map("created_by")
+  isActive  Boolean @default(true) @map("is_active")
 
-  supportsSlab         Boolean @default(false)
-  supportPaymentMethod Boolean @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("update_at")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role                 Role?   @relation(fields: [roleId], references: [id])
+  targetUser           User?   @relation(fields: [targetUserId], references: [id])
+  supportsSlab         Boolean @default(false) @map("support_slab")
+  supportPaymentMethod Boolean @default(false) @map("support_payment_method")
 
-  role       Role? @relation(fields: [roleId], references: [id])
-  targetUser User? @relation(fields: [targetUserId], references: [id])
+  serviceProviderMapping   ServiceProviderMapping    @relation(fields: [serviceProviderMappingId], references: [id])
+  commissionSlabs          CommissionSlab[]
+  commissionPaymentMethods CommissionPaymentMethod[]
 
-  commissionSlabs CommissionSlab[]
-
-  // ❌ REMOVE OLD UNIQUE
-  serviceProviderMapping ServiceProviderMapping? @relation(fields: [serviceProviderMappingId], references: [id])
-
-  @@index([serviceType, category, operator])
-  @@index([paymentMethod, network])
+  @@unique([serviceProviderMappingId, roleId])
+  @@unique([serviceProviderMappingId, targetUserId])
+  @@map("commission_settings")
 }
 
 model CommissionSlab {
@@ -454,6 +444,28 @@ model CommissionSlab {
   @@unique([commissionSettingId, minAmount, maxAmount])
   @@index([minAmount, maxAmount])
   @@map("commission_slabs")
+}
+
+model CommissionPaymentMethod {
+  id String @id @default(uuid())
+
+  commissionSettingId String         @map("commission_setting_id")
+  mode                PricingMode    @default(NONE)
+  type                CommissionType @default(NONE)
+  value               BigInt
+
+  paymentMethod String? @map("payment_method")
+  network       String? // optional visa, rupay
+  category      String? // DTH, MOBILE, ELECTRICIT
+  serviceType   String? // BBPS / PAYMENT / PAYOUT / KYC
+  operator      String? // JVVNL / AIRTEL
+
+  createdAt         DateTime          @default(now()) @map("created_at")
+  commissionSetting CommissionSetting @relation(fields: [commissionSettingId], references: [id])
+
+  @@unique([commissionSettingId, paymentMethod, network])
+  @@index([paymentMethod, network])
+  @@map("commission_payment_methods")
 }
 
 model CommissionEarning {
@@ -529,9 +541,9 @@ model ServiceProviderMapping {
   serviceId  String @map("service_id")
   providerId String @map("provider_id")
 
-  mode             PricingMode      @default(COMMISSION)
   // COMMISSION | SURCHARGE
-  pricingValueType PricingValueType @default(FLAT) @map("pricing_value_type")
+  mode             PricingMode      @default(NONE)
+  pricingValueType PricingValueType @default(NONE) @map("pricing_value_type")
 
   providerCost         BigInt?              @map("provider_cost")
   sellingPrice         BigInt?              @map("selling_price")
@@ -588,24 +600,25 @@ model ProviderSlab {
 model PaymentMethodChargeProvider {
   id String @id @default(uuid())
 
-  serviceProviderMappingId String
+  serviceProviderMappingId String @map("service_provider_mapping_id")
 
-  // ✅ ADD CONTEXT
-  serviceType   String?
-  category      String?
-  operator      String?
-  paymentMethod String?
-  network       String?
+  paymentMethod String? @map("payment_method") // card / upi  
+  network       String? // visa / rupay
 
-  type  PricingValueType
-  value BigInt
+  category    String? // DTH, MOBILE, ELECTRICITY
+  serviceType String? // BBPS / PAYMENT / PAYOUT / KYC
+  operator    String? // JVVNL / AIRTEL
 
-  createdAt DateTime @default(now())
+  mode             PricingMode      @default(NONE)
+  pricingValueType PricingValueType @default(NONE) @map("pricing_value_type")
 
+  value   BigInt
   mapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
 
-  @@index([serviceType, category, operator])
-  @@index([paymentMethod, network])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([serviceProviderMappingId, paymentMethod, network])
+  @@map("payment_method_charge_provider")
 }
 
 model UserPermission {
@@ -780,6 +793,7 @@ enum CommissionStartLevel {
 }
 
 enum PricingValueType {
+  NONE
   FLAT
   PERCENTAGE
 }
@@ -791,6 +805,7 @@ enum UserStatus {
 }
 
 enum PricingMode {
+  NONE
   COMMISSION
   SURCHARGE
 }
@@ -801,6 +816,7 @@ enum AccountType {
 }
 
 enum CommissionType {
+  NONE
   FLAT
   PERCENTAGE
 }
