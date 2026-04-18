@@ -9,7 +9,7 @@ import { paisaToRupee, rupeesToPaise } from "../../utils/lib";
 import { createPaymentMethodCharge } from "../../redux/slices/serviceSlice";
 
 import { usePermissions } from "../../hooks/usePermission";
-import { getBbpsCategories } from "../../redux/slices/bbpsSlice";
+import { getBbpsCategories, selectBiller } from "../../redux/slices/bbpsSlice";
 import { SERVICES } from "../../utils/constants";
 
 const paymentMethods = [
@@ -38,60 +38,75 @@ export default function AddPaymentMethodChargeForm({
 }) {
   const dispatch = useDispatch();
 
-  //  SERVICE DETECTION
   const serviceCode = selectedChargeMapping?.service?.code;
-
   const isFund = serviceCode === "FUND_REQUEST";
   const isBbps = serviceCode === "BBPS";
 
-  //  BBPS CATEGORY FETCH
   const { canProcess, defaultProvider } = usePermissions(SERVICES.BBPS);
   const serviceProviderMappingId = defaultProvider?.serviceProviderMappingId;
 
-  const { categories } = useSelector((s) => s.bbps);
+  const { categories, billDetails } = useSelector((s) => s.bbps);
 
+  const [form, setForm] = useState({
+    paymentMethod: "",
+    network: "",
+    category: "",
+    operator: "",
+    mode: "NONE",
+    type: "NONE",
+    value: "",
+  });
+
+  const [error, setError] = useState("");
+
+  const formatCategory = (s) =>
+    s?.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  // 🔹 Load categories
   useEffect(() => {
     if (isBbps && canProcess && serviceProviderMappingId) {
       dispatch(getBbpsCategories({ serviceProviderMappingId }));
     }
   }, [isBbps, canProcess, serviceProviderMappingId]);
 
-  const [form, setForm] = useState({
-    paymentMethod: "",
-    network: "",
-    category: "",
-    type: "FLAT",
-    value: "",
-  });
+  useEffect(() => {
+    if (isBbps && form.category) {
+      dispatch(
+        selectBiller({
+          biller: formatCategory(form.category), // category → billers
+          serviceProviderMappingId,
+        }),
+      );
+    }
+  }, [form.category]);
 
-  const [error, setError] = useState("");
-
-  //  PREFILL
+  // 🔹 Prefill
   useEffect(() => {
     if (editData) {
       setForm({
         paymentMethod: editData.paymentMethod || "",
         network: editData.network || "",
         category: editData.category || "",
+        operator: editData.operator || "",
         type: editData.type,
+        mode: editData.mode || "NONE",
         value: paisaToRupee(editData.value),
       });
     }
   }, [editData]);
 
-  //  SUBMIT
+  // 🔹 Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     if (!mappingId) return setError("Mapping required");
 
-    // BBPS validation
-    if (isBbps && !form.category) {
-      return setError("Service required for BBPS");
+    if (isBbps) {
+      if (!form.category) return setError("Category required");
+      if (!form.operator) return setError("Operator required");
     }
 
-    // FUND validation
     if (isFund && !form.paymentMethod) {
       return setError("Payment method required");
     }
@@ -109,6 +124,9 @@ export default function AddPaymentMethodChargeForm({
       paymentMethod: isFund ? form.paymentMethod : null,
       network: form.paymentMethod === "CARD" ? form.network : null,
       category: isBbps ? form.category : null,
+      operator: isBbps ? form.operator : null,
+      serviceType: serviceCode,
+      mode: form.mode,
       type: form.type,
       value: rupeesToPaise(Number(form.value)),
     };
@@ -126,7 +144,6 @@ export default function AddPaymentMethodChargeForm({
 
   const handleDelete = async () => {
     if (!editData?.id) return;
-
     if (!window.confirm("Delete charge?")) return;
 
     try {
@@ -157,7 +174,7 @@ export default function AddPaymentMethodChargeForm({
               <div className="bg-red-100 text-red-600 p-2 rounded">{error}</div>
             )}
 
-            {/*  FUND REQUEST */}
+            {/* FUND */}
             {isFund && (
               <>
                 <select
@@ -169,7 +186,7 @@ export default function AddPaymentMethodChargeForm({
                       network: "",
                     })
                   }
-                  className="w-full border p-2 rounded"
+                  className="w-full border border-gray-300 p-2 rounded"
                 >
                   <option value="">Select Payment Method</option>
                   {paymentMethods.map((m) => (
@@ -185,7 +202,7 @@ export default function AddPaymentMethodChargeForm({
                     onChange={(e) =>
                       setForm({ ...form, network: e.target.value })
                     }
-                    className="w-full border p-2 rounded"
+                    className="w-full border border-gray-300 p-2 rounded"
                   >
                     <option value="">Select Network</option>
                     {networks.map((n) => (
@@ -198,29 +215,68 @@ export default function AddPaymentMethodChargeForm({
               </>
             )}
 
-            {/*  BBPS */}
+            {/* BBPS */}
             {isBbps && (
-              <select
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full border p-2 rounded"
-              >
-                <option value="">Select Service</option>
-                {categories?.data?.flatMap((c) =>
-                  c.services.map((s) => (
-                    <option key={s.code} value={s.code}>
-                      {s.name}
-                    </option>
-                  )),
+              <>
+                <select
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      category: e.target.value,
+                      operator: "",
+                    })
+                  }
+                  className="w-full border border-gray-300 p-2 rounded"
+                >
+                  <option value="">Select Category</option>
+
+                  {categories?.data?.flatMap((c) =>
+                    c.services.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.name}
+                      </option>
+                    )),
+                  )}
+                </select>
+
+                {form.category && (
+                  <select
+                    value={form.operator}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      setForm({ ...form, operator: value });
+                    }}
+                    className="w-full border border-gray-300 p-2 rounded"
+                  >
+                    <option value="">Select Biller</option>
+                    {billDetails?.map((b) => (
+                      <option key={b.billerId} value={b.billerId}>
+                        {b.billerName}
+                      </option>
+                    ))}
+                  </select>
                 )}
-              </select>
+              </>
             )}
+
+            {/* MODE */}
+            <select
+              value={form.mode}
+              onChange={(e) => setForm({ ...form, mode: e.target.value })}
+              className="w-full border border-gray-300 p-2 rounded"
+            >
+              <option value="NONE">NONE</option>
+              <option value="SURCHARGE">SURCHARGE</option>
+              <option value="COMMISSION">COMMISSION</option>
+            </select>
 
             {/* TYPE */}
             <select
               value={form.type}
               onChange={(e) => setForm({ ...form, type: e.target.value })}
-              className="w-full border p-2 rounded"
+              className="w-full border border-gray-300 p-2 rounded"
             >
               {types.map((t) => (
                 <option key={t.value} value={t.value}>

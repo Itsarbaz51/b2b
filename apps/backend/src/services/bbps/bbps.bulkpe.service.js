@@ -7,7 +7,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import Helper from "../../utils/helper.js";
 import { CryptoService } from "../../utils/cryptoService.js";
 import { isExpired } from "../../utils/time.js";
-import CommissionSettlementEngine from "../../engines/commission-settlement.engine.js";
+// import CommissionSettlementEngine from "../../engines/commission-settlement.engine.js";
 
 // ---------------- IMAGE MAPPING ----------------
 const categoryImages = {
@@ -258,63 +258,63 @@ export default class BulkpeBbpsService {
 
       let response;
 
-      try {
-        response = await plugin.payBill({
-          fetchId: payload.fetchId,
-          amount: payload.amount.toString(),
-          reference: txnId,
-        });
+      // try {
+      //   response = await plugin.payBill({
+      //     fetchId: payload.fetchId,
+      //     amount: payload.amount.toString(),
+      //     reference: txnId,
+      //   });
 
-        await TransactionService.update(tx, {
-          transactionId: transaction.id,
-          status: response.status === "SUCCESS" ? "SUCCESS" : "PENDING",
-          providerReference: response.transactionId,
-          providerResponse: response,
-        });
+      //   await TransactionService.update(tx, {
+      //     transactionId: transaction.id,
+      //     status: response.status === "SUCCESS" ? "SUCCESS" : "PENDING",
+      //     providerReference: response.transactionId,
+      //     providerResponse: response,
+      //   });
 
-        if (response.status === "SUCCESS") {
-          await CommissionSettlementEngine.success({
-            tx,
-            actor,
-            transaction,
-            wallet,
-            pricing,
-            serviceProviderMapping,
-            service,
-            provider,
-            category: bbpsFetchBill?.rawResponse?.data?.category,
-          });
-        }
+      //   if (response.status === "SUCCESS") {
+      //     await CommissionSettlementEngine.success({
+      //       tx,
+      //       actor,
+      //       transaction,
+      //       wallet,
+      //       pricing,
+      //       serviceProviderMapping,
+      //       service,
+      //       provider,
+      //       category: bbpsFetchBill?.rawResponse?.data?.category,
+      //     });
+      //   }
 
-        if (response.status === "FAILED") {
-          await CommissionSettlementEngine.failed({
-            tx,
-            wallet,
-            pricing,
-          });
-        }
+      //   if (response.status === "FAILED") {
+      //     await CommissionSettlementEngine.failed({
+      //       tx,
+      //       wallet,
+      //       pricing,
+      //     });
+      //   }
 
-        return {
-          transactionId: transaction.id,
-          providerTxnId: response.transactionId,
-          status: response.status,
-        };
-      } catch (err) {
-        // ❌ API ERROR → RELEASE HOLD
-        await CommissionSettlementEngine.failed({
-          tx,
-          wallet,
-          pricing,
-        });
+      //   return {
+      //     transactionId: transaction.id,
+      //     providerTxnId: response.transactionId,
+      //     status: response.status,
+      //   };
+      // } catch (err) {
+      //   // ❌ API ERROR → RELEASE HOLD
+      //   await CommissionSettlementEngine.failed({
+      //     tx,
+      //     wallet,
+      //     pricing,
+      //   });
 
-        await TransactionService.update(tx, {
-          transactionId: transaction.id,
-          status: "FAILED",
-          providerResponse: err.message,
-        });
+      //   await TransactionService.update(tx, {
+      //     transactionId: transaction.id,
+      //     status: "FAILED",
+      //     providerResponse: err.message,
+      //   });
 
-        throw err;
-      }
+      //   throw err;
+      // }
     });
   }
 

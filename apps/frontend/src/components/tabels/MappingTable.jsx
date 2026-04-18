@@ -155,11 +155,7 @@ export default function MappingTable() {
 
                       <td className="px-6 py-4">{item.mode}</td>
 
-                      <td className="px-6 py-4">
-                        {item.paymentMethodCharges?.length > 0
-                          ? item.paymentMethodCharges[0]?.type
-                          : item.pricingValueType}
-                      </td>
+                      <td className="px-6 py-4">{item.pricingValueType}</td>
 
                       <td className="px-6 py-4">{item.commissionStartLevel}</td>
                       <td className="px-6 py-5">
@@ -225,15 +221,15 @@ export default function MappingTable() {
                                 >
                                   <span>
                                     {item.service?.code === "BBPS"
-                                      ? charge.category || "All"
+                                      ? `${charge.category || "All"} - ${charge.operator || "All"}`
                                       : `${charge.paymentMethod}${charge.network ? ` (${charge.network})` : ""}`}
                                   </span>
 
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold text-purple-600">
-                                      {charge.type === "FLAT"
+                                      {charge.pricingValueType === "FLAT"
                                         ? `₹${paisaToRupee(charge.value)}`
-                                        : `${Number(charge.value) / 100}%`}
+                                        : `${paisaToRupee(charge.value)}%`}
                                     </span>
 
                                     <button
@@ -249,22 +245,20 @@ export default function MappingTable() {
                                   </div>
                                 </div>
                               ))}
-                              {item.paymentMethodCharges.length >
-                                MAX_VISIBLE && (
-                                <button
-                                  onClick={() =>
-                                    setViewModal({
-                                      open: true,
-                                      type: "PAYMENT",
-                                      mapping: item,
-                                    })
-                                  }
-                                  className="text-purple-600 text-xs font-semibold hover:underline"
-                                >
-                                  View All (
-                                  {item.paymentMethodCharges.length})
-                                </button>
-                              )}
+                            {item.paymentMethodCharges.length > MAX_VISIBLE && (
+                              <button
+                                onClick={() =>
+                                  setViewModal({
+                                    open: true,
+                                    type: "PAYMENT",
+                                    mapping: item,
+                                  })
+                                }
+                                className="text-purple-600 text-xs font-semibold hover:underline"
+                              >
+                                View All ({item.paymentMethodCharges.length})
+                              </button>
+                            )}
                           </div>
                         ) : (
                           /* ================= DEFAULT ================= */
@@ -423,9 +417,10 @@ export default function MappingTable() {
           </div>
         </div>
       )}
-      {viewModal.open && (
+      {viewModal.open && viewModal.mapping && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-full max-w-lg p-6">
+            {/* HEADER */}
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">
                 {viewModal.type === "SLAB"
@@ -442,46 +437,76 @@ export default function MappingTable() {
               </button>
             </div>
 
+            {/* LIST */}
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {/* 🔵 SLABS */}
-              {viewModal.type === "SLAB"
-                ? viewModal.mapping.providerSlabs.map((slab) => (
-                    <div
-                      key={slab.id}
-                      className="bg-gray-100 p-2 rounded flex justify-between"
-                    >
-                      <span>
-                        ₹{paisaToRupee(slab.minAmount)} - ₹
-                        {paisaToRupee(slab.maxAmount)}
-                      </span>
+              {viewModal.type === "SLAB" &&
+                viewModal.mapping.providerSlabs?.map((slab) => (
+                  <div
+                    key={slab.id}
+                    className="bg-gray-100 p-2 rounded flex justify-between items-center"
+                  >
+                    <span>
+                      ₹{paisaToRupee(slab.minAmount)} - ₹
+                      {paisaToRupee(slab.maxAmount)}
+                    </span>
 
+                    <div className="flex items-center gap-2">
                       <span className="font-semibold">
                         {viewModal.mapping.pricingValueType === "FLAT"
                           ? `₹${paisaToRupee(slab.providerCost)}`
                           : `${paisaToRupee(slab.providerCost)}%`}
                       </span>
-                    </div>
-                  ))
-                : viewModal.mapping.paymentMethodCharges.map((charge) => (
-                    <div
-                      key={charge.id}
-                      className="bg-purple-50 p-2 rounded flex justify-between"
-                    >
-                      <span>
-                        {viewModal.mapping.service?.code === "BBPS"
-                          ? charge.category || "All"
-                          : `${charge.paymentMethod}${
-                              charge.network ? ` (${charge.network})` : ""
-                            }`}
-                      </span>
 
+                      {/* EDIT */}
+                      <button
+                        onClick={() => {
+                          setSelectedMapping(viewModal.mapping);
+                          setEditData(slab);
+                          setShowSlabModal(true);
+                        }}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <Edit size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+              {/* 🟣 PAYMENT */}
+              {viewModal.type === "PAYMENT" &&
+                viewModal.mapping.paymentMethodCharges?.map((charge) => (
+                  <div
+                    key={charge.id}
+                    className="bg-purple-50 p-2 rounded flex justify-between items-center"
+                  >
+                    <span>
+                      {viewModal.mapping.service?.code === "BBPS"
+                        ? `${charge.category || "All"} - ${charge.operator || "All"}`
+                        : `${charge.paymentMethod}${charge.network ? ` (${charge.network})` : ""}`}
+                    </span>
+
+                    <div className="flex items-center gap-2">
                       <span className="font-semibold">
-                        {charge.type === "FLAT"
+                        {charge.pricingValueType === "FLAT"
                           ? `₹${paisaToRupee(charge.value)}`
                           : `${paisaToRupee(charge.value)}%`}
                       </span>
+
+                      {/* EDIT */}
+                      <button
+                        onClick={() => {
+                          setSelectedChargeMapping(viewModal.mapping);
+                          setEditChargeData(charge);
+                          setShowPaymentChargeModal(true);
+                        }}
+                        className="text-purple-500 hover:text-purple-700"
+                      >
+                        <Edit size={14} />
+                      </button>
                     </div>
-                  ))}
+                  </div>
+                ))}
             </div>
           </div>
         </div>

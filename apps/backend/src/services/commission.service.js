@@ -735,6 +735,9 @@ export class CommissionPaymentMethodService {
       paymentMethod,
       network,
       category,
+      operator,
+      serviceType,
+      mode,
       type,
       value,
       _delete,
@@ -742,21 +745,14 @@ export class CommissionPaymentMethodService {
 
     // ---------------- DELETE ----------------
     if (_delete === true) {
-      if (!id)
-        throw ApiError.badRequest("Payment method id required for delete");
-
-      const record = await Prisma.commissionPaymentMethod.findUnique({
-        where: { id },
-      });
-
-      if (!record) throw ApiError.notFound("Payment method not found");
+      if (!id) throw ApiError.badRequest("ID required for delete");
 
       return Prisma.commissionPaymentMethod.delete({
         where: { id },
       });
     }
 
-    // ---------------- BASIC VALIDATION ----------------
+    // ---------------- VALIDATION ----------------
     if (!commissionSettingId)
       throw ApiError.badRequest("commissionSettingId required");
 
@@ -769,16 +765,13 @@ export class CommissionPaymentMethodService {
 
     if (parsedValue < 0n) throw ApiError.badRequest("value must be >= 0");
 
-    // ---------------- FETCH COMMISSION ----------------
+    // ---------------- FETCH SERVICE ----------------
     const commission = await Prisma.commissionSetting.findUnique({
       where: { id: commissionSettingId },
       select: {
-        id: true,
         serviceProviderMapping: {
           select: {
-            service: {
-              select: { code: true },
-            },
+            service: { select: { code: true } },
           },
         },
       },
@@ -793,70 +786,75 @@ export class CommissionPaymentMethodService {
 
     // ---------------- BUSINESS RULES ----------------
 
-    // 🔵 BBPS → category required
-    if (isBbps && !category) {
-      throw ApiError.badRequest("Category required for BBPS");
+    // BBPS
+    if (isBbps) {
+      if (!category) throw ApiError.badRequest("Category required for BBPS");
+
+      if (!operator) throw ApiError.badRequest("Operator required for BBPS");
+
+      if (!serviceType) throw ApiError.badRequest("ServiceType required");
     }
 
-    // 🟢 FUND → payment method required
-    if (isFund && !paymentMethod) {
-      throw ApiError.badRequest("Payment method required");
-    }
+    // FUND
+    if (isFund) {
+      if (!paymentMethod) throw ApiError.badRequest("Payment method required");
 
-    // CARD validation
-    if (paymentMethod === "CARD" && !network) {
-      throw ApiError.badRequest("Network required for CARD");
+      if (!serviceType) throw ApiError.badRequest("ServiceType required");
+
+      if (paymentMethod === "CARD" && !network)
+        throw ApiError.badRequest("Network required for CARD");
     }
 
     // ---------------- DUPLICATE CHECK ----------------
-    const existing = await Prisma.commissionPaymentMethod.findFirst({
+    const exists = await Prisma.commissionPaymentMethod.findFirst({
       where: {
         commissionSettingId,
 
         paymentMethod: isFund ? paymentMethod : null,
-        network: paymentMethod === "CARD" ? network : null,
+        network: isFund && paymentMethod === "CARD" ? network : null,
+
         category: isBbps ? category : null,
+        operator: isBbps ? operator : null,
+
+        serviceType,
 
         NOT: id ? { id } : undefined,
       },
     });
 
-    if (existing) {
+    if (exists) {
       throw ApiError.conflict(
-        "Payment method already exists for this configuration"
+        "Commission already exists for this configuration"
       );
     }
 
+    // ---------------- COMMON DATA ----------------
+    const data = {
+      commissionSettingId,
+
+      paymentMethod: isFund ? paymentMethod : null,
+      network: isFund && paymentMethod === "CARD" ? network : null,
+
+      category: isBbps ? category : null,
+      operator: isBbps ? operator : null,
+
+      serviceType,
+      mode,
+      type: type.toUpperCase(),
+      value: parsedValue,
+    };
+
     // ---------------- UPDATE ----------------
     if (id) {
-      const record = await Prisma.commissionPaymentMethod.findUnique({
-        where: { id },
-      });
-
-      if (!record) throw ApiError.notFound("Payment method not found");
-
       return Prisma.commissionPaymentMethod.update({
         where: { id },
-        data: {
-          paymentMethod: isFund ? paymentMethod : null,
-          network: paymentMethod === "CARD" ? network : null,
-          category: isBbps ? category : null,
-          type: type.toUpperCase(),
-          value: parsedValue,
-        },
+        data,
       });
     }
 
     // ---------------- CREATE ----------------
     return Prisma.commissionPaymentMethod.create({
-      data: {
-        commissionSettingId,
-        paymentMethod: isFund ? paymentMethod : null,
-        network: paymentMethod === "CARD" ? network : null,
-        category: isBbps ? category : null,
-        type: type.toUpperCase(),
-        value: parsedValue,
-      },
+      data,
     });
   }
 }

@@ -233,6 +233,12 @@ const CommissionSettingTable = ({
                                 ? `₹${paisaToRupee(slab.value)}`
                                 : `${paisaToRupee(slab.value)}%`}
                             </span>
+                            <button
+                              onClick={() => onEditSlab?.(commission, slab)}
+                              className="text-blue-500 hover:text-blue-700"
+                            >
+                              <Edit size={14} />
+                            </button>
                           </div>
                         ))}
 
@@ -264,15 +270,26 @@ const CommissionSettingTable = ({
                             <span>
                               {commission.serviceProviderMapping?.service
                                 ?.code === "BBPS"
-                                ? pm.category || "All"
+                                ? `${pm.category}${pm.operator ? ` - ${pm.operator}` : ""}`
                                 : `${pm.paymentMethod}${pm.network ? ` (${pm.network})` : ""}`}
                             </span>
 
-                            <span className="font-semibold text-purple-600">
-                              {pm.type === "FLAT"
-                                ? `₹${paisaToRupee(pm.value)}`
-                                : `${paisaToRupee(pm.value)}%`}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-purple-600">
+                                {pm.type === "FLAT"
+                                  ? `₹${paisaToRupee(pm.value)}`
+                                  : `${Number(pm.value) / 100}%`}
+                              </span>
+
+                              <button
+                                onClick={() =>
+                                  onEditPaymentMethod?.(commission, pm)
+                                }
+                                className="text-blue-500 hover:text-blue-700"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            </div>
                           </div>
                         ))}
 
@@ -401,6 +418,12 @@ const CommissionSettingTable = ({
                           ? `₹${paisaToRupee(slab.value)}`
                           : `${paisaToRupee(slab.value)}%`}
                       </span>
+                      <button
+                        onClick={() => onEditSlab?.(viewModal.commission, slab)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <Edit size={14} />
+                      </button>
                     </div>
                   ))
                 : viewModal.commission.commissionPaymentMethods.map((pm) => (
@@ -411,10 +434,8 @@ const CommissionSettingTable = ({
                       <span>
                         {viewModal.commission.serviceProviderMapping?.service
                           ?.code === "BBPS"
-                          ? pm.category || "All"
-                          : `${pm.paymentMethod}${
-                              pm.network ? ` (${pm.network})` : ""
-                            }`}
+                          ? `${pm.category}${pm.operator ? ` - ${pm.operator}` : ""}`
+                          : `${pm.paymentMethod}${pm.network ? ` (${pm.network})` : ""}`}
                       </span>
 
                       <span className="font-semibold">
@@ -422,6 +443,14 @@ const CommissionSettingTable = ({
                           ? `₹${paisaToRupee(pm.value)}`
                           : `${paisaToRupee(pm.value)}%`}
                       </span>
+                      <button
+                        onClick={() =>
+                          onEditPaymentMethod?.(viewModal.commission, pm)
+                        }
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <Edit size={14} />
+                      </button>
                     </div>
                   ))}
             </div>

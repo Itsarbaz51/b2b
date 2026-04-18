@@ -541,6 +541,7 @@ model ServiceProviderMapping {
   serviceId  String @map("service_id")
   providerId String @map("provider_id")
 
+  flowType         LedgerEntryType  @default(DEBIT)
   // COMMISSION | SURCHARGE
   mode             PricingMode      @default(NONE)
   pricingValueType PricingValueType @default(NONE) @map("pricing_value_type")

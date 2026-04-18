@@ -8,7 +8,7 @@ import ButtonField from "../ui/ButtonField";
 
 import { createCommissionPaymentMethod } from "../../redux/slices/commissionSlice";
 import { usePermissions } from "../../hooks/usePermission";
-import { getBbpsCategories } from "../../redux/slices/bbpsSlice";
+import { getBbpsCategories, selectBiller } from "../../redux/slices/bbpsSlice";
 import { SERVICES } from "../../utils/constants";
 
 const paymentMethods = [
@@ -30,6 +30,8 @@ export default function AddCommissionPaymentMethod({
   onClose,
   onSuccess,
 }) {
+  const dispatch = useDispatch();
+
   const serviceCode =
     selectedCommissionForPayment?.serviceProviderMapping?.service?.code;
 
@@ -39,37 +41,48 @@ export default function AddCommissionPaymentMethod({
   const { canProcess, defaultProvider } = usePermissions(SERVICES.BBPS);
   const serviceProviderMappingId = defaultProvider?.serviceProviderMappingId;
 
-  const { categories, isLoading } = useSelector((s) => s.bbps);
-
-  const fetchRequests = () => {
-    if (!serviceProviderMappingId || !canProcess) return;
-
-    dispatch(getBbpsCategories({ serviceProviderMappingId }));
-  };
-
-  useEffect(() => {
-    if (canProcess) fetchRequests();
-  }, [serviceProviderMappingId, canProcess]);
-
-  const dispatch = useDispatch();
+  const { categories, billDetails } = useSelector((s) => s.bbps);
 
   const [form, setForm] = useState({
     paymentMethod: "",
     network: "",
     category: "",
+    operator: "",
+    mode: "NONE",
     type: "FLAT",
     value: "",
   });
 
   const [error, setError] = useState("");
 
-  // 🔥 Prefill (edit case)
+  // ✅ Load categories
+  useEffect(() => {
+    if (isBbps && canProcess && serviceProviderMappingId) {
+      dispatch(getBbpsCategories({ serviceProviderMappingId }));
+    }
+  }, [isBbps, canProcess, serviceProviderMappingId, dispatch]);
+
+  // ✅ Category change → fetch billers
+  useEffect(() => {
+    if (isBbps && form.category) {
+      dispatch(
+        selectBiller({
+          biller: form.category,
+          serviceProviderMappingId,
+        }),
+      );
+    }
+  }, [form.category, isBbps, serviceProviderMappingId, dispatch]);
+
+  // ✅ Prefill
   useEffect(() => {
     if (editData) {
       setForm({
         paymentMethod: editData.paymentMethod || "",
         category: editData.category || "",
         network: editData.network || "",
+        operator: editData.operator || "",
+        mode: editData.mode || "NONE",
         type: editData.type || "FLAT",
         value: Number(editData.value) / 100,
       });
@@ -77,23 +90,27 @@ export default function AddCommissionPaymentMethod({
       setForm({
         paymentMethod: "",
         network: "",
+        category: "",
+        operator: "",
+        mode: "NONE",
         type: "FLAT",
         value: "",
       });
     }
   }, [editData]);
 
+  // ✅ SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     if (!commissionSettingId) {
-      setError("Commission setting not selected");
-      return;
+      return setError("Commission setting not selected");
     }
 
-    if (isBbps && !form.category) {
-      return setError("Service required for BBPS");
+    if (isBbps) {
+      if (!form.category) return setError("Category required");
+      if (!form.operator) return setError("Operator required");
     }
 
     if (isFund && !form.paymentMethod) {
@@ -103,27 +120,27 @@ export default function AddCommissionPaymentMethod({
     if (form.paymentMethod === "CARD" && !form.network) {
       return setError("Network required for CARD");
     }
+
     const payload = {
       commissionSettingId,
-      paymentMethod: form.paymentMethod,
-      network: form.paymentMethod === "CARD" ? form.network : undefined,
+      paymentMethod: isFund ? form.paymentMethod : null,
+      network: form.paymentMethod === "CARD" ? form.network : null,
       category: isBbps ? form.category : null,
+      operator: isBbps ? form.operator : null,
+      serviceType: serviceCode,
+      mode: form.mode, // ✅ FIXED
       type: form.type,
       value: rupeesToPaise(Number(form.value)),
     };
 
-    // update case
-    if (editData?.id) {
-      payload.id = editData.id;
-    }
+    if (editData?.id) payload.id = editData.id;
 
     try {
       await dispatch(createCommissionPaymentMethod(payload));
-
       onSuccess?.();
       onClose?.();
     } catch (err) {
-      setError(err.message || "Failed to save payment method");
+      setError(err.message || "Failed");
     }
   };
 
@@ -137,7 +154,6 @@ export default function AddCommissionPaymentMethod({
           _delete: true,
         }),
       );
-
       onSuccess?.();
       onClose?.();
     } catch (err) {
@@ -147,130 +163,151 @@ export default function AddCommissionPaymentMethod({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl">
         <HeaderSection
           title={editData ? "Update Payment Method" : "Add Payment Method"}
-          tagLine="Configure payment charges"
           isClose={onClose}
         />
 
         <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg">
-                {error}
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && <div className="text-red-500">{error}</div>}
+
+            {/* FUND */}
+            {isFund && (
+              <>
+                <label className="text-sm font-semibold">Payment method</label>
+                <select
+                  value={form.paymentMethod}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      paymentMethod: e.target.value,
+                      network: "",
+                    })
+                  }
+                  className="w-full border border-gray-300  p-2 rounded"
+                >
+                  <option value="">Select Payment Method</option>
+                  {paymentMethods.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Network (CARD only) */}
+                {form.paymentMethod === "CARD" && (
+                  <div>
+                    <label className="text-sm font-semibold">Network</label>
+                    <select
+                      value={form.network}
+                      onChange={(e) =>
+                        setForm({ ...form, network: e.target.value })
+                      }
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="">Select Network</option>
+                      {networks.map((n) => (
+                        <option key={n.value} value={n.value}>
+                          {n.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
             )}
 
-            <div className="grid md:grid-cols-2 gap-4">
-              {/* Payment Method */}
-              {isFund && (
-                <div>
-                  <label className="text-sm font-semibold">
-                    Payment Method
-                  </label>
-                  <select
-                    value={form.paymentMethod}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        paymentMethod: e.target.value,
-                        network: "",
-                      })
-                    }
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
-                  >
-                    <option value="">Select</option>
-                    {paymentMethods.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {isBbps && (
-                <div>
-                  <label className="text-sm font-semibold">Service</label>
-                  <select
-                    value={form.category}
-                    onChange={(e) =>
-                      setForm({ ...form, category: e.target.value })
-                    }
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
-                  >
-                    <option value="">Select Service</option>
-                    {categories?.data?.flatMap((c) =>
-                      c.services.map((s) => (
-                        <option key={s.code} value={s.code}>
-                          {s.name}
-                        </option>
-                      )),
-                    )}
-                  </select>
-                </div>
-              )}
-
-              {/* Network (CARD only) */}
-              {isFund && form.paymentMethod === "CARD" && (
-                <div>
-                  <label className="text-sm font-semibold">Network</label>
-                  <select
-                    value={form.network}
-                    onChange={(e) =>
-                      setForm({ ...form, network: e.target.value })
-                    }
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
-                  >
-                    <option value="">Select Network</option>
-                    {networks.map((n) => (
-                      <option key={n.value} value={n.value}>
-                        {n.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Type */}
-              <div>
-                <label className="text-sm font-semibold">Type</label>
+            {/* BBPS */}
+            {isBbps && (
+              <>
+                <label className="text-sm font-semibold">Category</label>
                 <select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      category: e.target.value,
+                      operator: "",
+                    })
+                  }
+                  className="w-full border border-gray-300 p-2 rounded"
                 >
-                  <option value="FLAT">Flat</option>
-                  <option value="PERCENTAGE">Percentage</option>
+                  <option value="">Select Category</option>
+                  {categories?.data?.flatMap((c) =>
+                    c.services.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.name}
+                      </option>
+                    )),
+                  )}
                 </select>
-              </div>
 
-              {/* Value */}
-              <InputField
-                label={form.type === "FLAT" ? "Value (₹)" : "Value (%)"}
-                type="number"
-                step="0.01"
-                value={form.value}
-                onChange={(e) => setForm({ ...form, value: e.target.value })}
-              />
-            </div>
+                {form.category && (
+                  <>
+                    <label className="text-sm font-semibold">Operator</label>
+                    <select
+                      value={form.operator}
+                      onChange={(e) =>
+                        setForm({ ...form, operator: e.target.value })
+                      }
+                      className="w-full border border-gray-300 p-2 rounded"
+                    >
+                      <option value="">Select Biller</option>
+                      {billDetails?.map((b) => (
+                        <option key={b.billerId} value={b.billerId}>
+                          {b.billerName}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* MODE */}
+            <label className="text-sm font-semibold">Mode</label>
+            <select
+              value={form.mode}
+              onChange={(e) => setForm({ ...form, mode: e.target.value })}
+              className="w-full border border-gray-300 p-2 rounded"
+            >
+              <option value="NONE">NONE</option>
+              <option value="SURCHARGE">SURCHARGE</option>
+              <option value="COMMISSION">COMMISSION</option>
+            </select>
+
+            {/* TYPE */}
+            <label className="text-sm font-semibold">Type</label>
+            <select
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+              className="w-full border border-gray-300 p-2 rounded"
+            >
+              <option value="FLAT">FLAT</option>
+              <option value="PERCENTAGE">PERCENTAGE</option>
+            </select>
+
+            <InputField
+              label={form.type === "FLAT" ? "Amount (₹)" : "Percentage (%)"}
+              type="number"
+              value={form.value}
+              onChange={(e) => setForm({ ...form, value: e.target.value })}
+            />
 
             <div className="flex justify-between">
               {editData && (
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                  className="bg-red-500 text-white px-4 py-2 rounded"
                 >
                   Delete
                 </button>
               )}
 
-              <ButtonField
-                name={editData ? "Update Payment Method" : "Add Payment Method"}
-                type="submit"
-              />
+              <ButtonField name="Save" type="submit" />
             </div>
           </form>
         </div>
