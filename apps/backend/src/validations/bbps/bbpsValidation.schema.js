@@ -28,6 +28,7 @@ const PayBill = z.object({
   serviceProviderMappingId: z.string().uuid(),
   fetchId: z.string().min(3, "Invalid fetchId"),
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
+  idempotencyKey: z.string().uuid(),
 });
 
 const CheckStatus = z.object({

@@ -129,4 +129,87 @@ export default class PricingEngine {
       totalDebit,
     };
   }
+
+  static async calculateCommission(
+    tx,
+    { userId, serviceProviderMappingId, amount = 0, category }
+  ) {
+    const txnAmount = BigInt(amount);
+
+    const mapping = await tx.serviceProviderMapping.findUnique({
+      where: { id: serviceProviderMappingId },
+    });
+    if (!mapping) throw ApiError.notFound("Service mapping not found");
+
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { id: true, roleId: true },
+    });
+    if (!user) throw ApiError.notFound("User not found");
+
+    const rule =
+      (await tx.commissionSetting.findFirst({
+        where: {
+          serviceProviderMappingId,
+          mode: "COMMISSION",
+          isActive: true,
+          targetUserId: user.id,
+        },
+      })) ||
+      (await tx.commissionSetting.findFirst({
+        where: {
+          serviceProviderMappingId,
+          mode: "COMMISSION",
+          isActive: true,
+          roleId: user.roleId,
+        },
+      }));
+
+    let type = rule.type;
+    let value = BigInt(rule.value);
+
+    if (rule.supportPaymentMethod) {
+      const payment = await tx.commissionPaymentMethod.findFirst({
+        where: {
+          commissionSettingId: rule.id,
+          category,
+        },
+      });
+
+      if (payment) {
+        value = BigInt(payment.value);
+        type = payment.type || rule.type;
+      }
+    } else if (rule.supportsSlab) {
+      const slab = await tx.commissionSlab.findFirst({
+        where: {
+          commissionSettingId: rule.id,
+          minAmount: { lte: txnAmount },
+          maxAmount: { gte: txnAmount },
+        },
+      });
+
+      if (slab) {
+        value = BigInt(slab.value);
+        type = slab.type || rule.type;
+      }
+    }
+
+    //  FINAL
+    let commission =
+      type === "PERCENTAGE" ? (txnAmount * value) / 10000n : value;
+
+    let providerTDS = 0n;
+    if (mapping?.applyTDS && mapping.tdsPercent) {
+      const percent = BigInt(mapping.tdsPercent);
+      providerTDS = (commission * percent) / 100n;
+    }
+
+    return {
+      txnAmount,
+      commission,
+      providerTDS,
+      ruleId: rule?.id || null,
+    };
+  }
 }

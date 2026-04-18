@@ -5,7 +5,7 @@ import ZodErrorCatch from "../../layouts/ZodErrorCatch";
 
 const initialState = {
   categories: [],
-  billDetails: null,
+  billDetails: [],
   fetchedBill: null,
   isLoading: false,
   error: null,
@@ -57,10 +57,14 @@ const bbpsSlice = createSlice({
     resetBbps: (state) => {
       state.categories = [];
       state.billDetails = null;
-        state.fetchedBill = null;
+      state.fetchedBill = null;
       state.isLoading = false;
       state.error = null;
       state.success = null;
+    },
+    resetBiller: (state) => {
+      state.billDetails = [];
+      state.fetchedBill = null;
     },
   },
 });
@@ -75,6 +79,7 @@ export const {
   clearBbpsError,
   clearBbpsSuccess,
   resetBbps,
+  resetBiller,
 } = bbpsSlice.actions;
 
 export default bbpsSlice.reducer;

@@ -7,6 +7,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import Helper from "../../utils/helper.js";
 import { CryptoService } from "../../utils/cryptoService.js";
 import { isExpired } from "../../utils/time.js";
+import CommissionSettlementEngine from "../../engines/commission-settlement.engine.js";
 
 // ---------------- IMAGE MAPPING ----------------
 const categoryImages = {
@@ -210,75 +211,115 @@ export default class BulkpeBbpsService {
   }
 
   // ---------------- PAY BILL ----------------
-  static async payBill(payload, actor, serviceProviderMapping) {
+  static async payBill(
+    payload,
+    actor,
+    serviceProviderMapping,
+    service,
+    provider
+  ) {
     const plugin = this.getPlugin(serviceProviderMapping);
-
     const billAmount = BigInt(payload.amount);
 
+    const bbpsFetchBill = Prisma.bbpsFetchBill.findFirst({
+      where: {
+        fetchId: payload.fetchId,
+      },
+    });
+
     return Prisma.$transaction(async (tx) => {
-      const wallet = await WalletEngine.getWallet({
-        tx,
-        userId: actor.id,
-        walletType: "PRIMARY",
-      });
-
-      if (wallet.balance < billAmount) {
-        throw ApiError.badRequest("Insufficient balance");
-      }
-
       const txnId = Helper.generateTxnId("BBPS");
 
-      const { transaction } = await TransactionService.create(tx, {
-        txnId,
-        userId: actor.id,
-        walletId: wallet.id,
-        serviceProviderMappingId: serviceProviderMapping.id,
-        amount: billAmount,
-        requestPayload: payload,
-      });
+      const { transaction, wallet, pricing, isDuplicate } =
+        await CommissionSettlementEngine.execute({
+          tx,
+          actor,
+          payload: {
+            ...payload,
+            txnId,
+            amount: billAmount,
+          },
+          serviceProviderMapping,
+        });
 
-      // 💸 DEBIT
-      await WalletEngine.debit(tx, wallet, billAmount);
+      if (isDuplicate) {
+        return {
+          transactionId: transaction.id,
+          status: transaction.status,
+        };
+      }
 
-      await LedgerEngine.create(tx, {
-        walletId: wallet.id,
-        transactionId: transaction.id,
-        entryType: "DEBIT",
-        referenceType: "BBPS",
-        serviceProviderMappingId: serviceProviderMapping.id,
-        amount: billAmount,
-        narration: "BBPS bill payment",
-        createdBy: actor.id,
-      });
+      if (["SUCCESS", "FAILED"].includes(transaction.status)) {
+        return {
+          transactionId: transaction.id,
+          status: transaction.status,
+        };
+      }
 
-      //  API CALL
-      const response = await plugin.payBill({
-        fetchId: payload.fetchId,
-        amount: payload.amount.toString(),
-        reference: txnId,
-      });
+      let response;
 
-      await TransactionService.update(tx, {
-        transactionId: transaction.id,
-        status: response.status === "SUCCESS" ? "SUCCESS" : "PENDING",
-        providerReference: response.transactionId,
-        providerResponse: response,
-      });
+      try {
+        response = await plugin.payBill({
+          fetchId: payload.fetchId,
+          amount: payload.amount.toString(),
+          reference: txnId,
+        });
 
-      return {
-        transactionId: transaction.id,
-        providerTxnId: response.transactionId,
-        amount: response.amount,
-        charge: response.charge,
-        gst: response.gst,
-        totalCharge: response.totalCharge,
-        status: response.status,
-      };
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: response.status === "SUCCESS" ? "SUCCESS" : "PENDING",
+          providerReference: response.transactionId,
+          providerResponse: response,
+        });
+
+        if (response.status === "SUCCESS") {
+          await CommissionSettlementEngine.success({
+            tx,
+            actor,
+            transaction,
+            wallet,
+            pricing,
+            serviceProviderMapping,
+            service,
+            provider,
+            category: bbpsFetchBill?.rawResponse?.data?.category,
+          });
+        }
+
+        if (response.status === "FAILED") {
+          await CommissionSettlementEngine.failed({
+            tx,
+            wallet,
+            pricing,
+          });
+        }
+
+        return {
+          transactionId: transaction.id,
+          providerTxnId: response.transactionId,
+          status: response.status,
+        };
+      } catch (err) {
+        // ❌ API ERROR → RELEASE HOLD
+        await CommissionSettlementEngine.failed({
+          tx,
+          wallet,
+          pricing,
+        });
+
+        await TransactionService.update(tx, {
+          transactionId: transaction.id,
+          status: "FAILED",
+          providerResponse: err.message,
+        });
+
+        throw err;
+      }
     });
   }
 
   // ---------------- CHECK STATUS ----------------
-  static async checkStatus(payload, serviceProviderMapping) {
+  static async checkStatus(payload, serviceProviderMapping, service, provider) {
     const plugin = this.getPlugin(serviceProviderMapping);
 
     return Prisma.$transaction(async (tx) => {
@@ -290,10 +331,11 @@ export default class BulkpeBbpsService {
         throw ApiError.notFound("Transaction not found");
       }
 
-      if (["SUCCESS", "FAILED"].includes(transaction.status)) {
+      // ✅ Already success → skip
+      if (transaction.status === "SUCCESS") {
         return {
-          status: transaction.status,
-          message: "Already processed",
+          status: "SUCCESS",
+          message: "Already success",
         };
       }
 
@@ -314,6 +356,35 @@ export default class BulkpeBbpsService {
           completedAt: finalStatus !== "PENDING" ? new Date() : null,
         },
       });
+
+      const wallet = await WalletEngine.getWallet({
+        tx,
+        userId: transaction.userId,
+        walletType: "PRIMARY",
+      });
+
+      // ✅ SUCCESS → CAPTURE + COMMISSION
+      if (finalStatus === "SUCCESS") {
+        await CommissionSettlementEngine.success({
+          tx,
+          actor: { id: transaction.userId },
+          transaction,
+          wallet,
+          pricing: transaction.pricing,
+          serviceProviderMapping,
+          service,
+          provider,
+        });
+      }
+
+      // ❌ FAILED → RELEASE
+      if (finalStatus === "FAILED") {
+        await CommissionSettlementEngine.failed({
+          tx,
+          wallet,
+          pricing: transaction.pricing,
+        });
+      }
 
       return {
         transactionId: transaction.id,

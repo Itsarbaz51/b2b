@@ -29,7 +29,6 @@ class BbpsController {
     const payload = {
       billerId: req.body.billerId,
       custParam: req.body.custParam,
-      reference: req.body.reference,
       serviceProviderMappingId: req.body.serviceProviderMappingId,
     };
 
@@ -47,8 +46,8 @@ class BbpsController {
     const payload = {
       fetchId: req.body.fetchId,
       amount: req.body.amount,
-      reference: req.body.reference,
       serviceProviderMappingId: req.body.serviceProviderMappingId,
+      idempotencyKey: req.body.idempotencyKey,
     };
 
     const result = await BbpsService.payBill(payload, req.user);

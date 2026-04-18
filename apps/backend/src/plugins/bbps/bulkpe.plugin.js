@@ -60,29 +60,27 @@ class BbpsPlugin extends BbpsInterface {
   }
 
   async payBill({ fetchId, amount, reference }) {
-    try {
-      const { data } = await this.client.post("/BillPayTxn", {
-        fetchId,
-        amount,
-        reference,
-      });
+    console.log({ fetchId, amount, reference });
 
-      if (!data.status) {
-        throw ApiError.badRequest(data.message);
-      }
+    const { data } = await this.client.post("/BillPayTxn", {
+      fetchId,
+      amount,
+      reference,
+    });
 
-      return {
-        transactionId: data.data.transactionId,
-        amount: data.data.amount,
-        charge: data.data.charge,
-        gst: data.data.gst,
-        totalCharge: data.data.totalCharge,
-        status: data.data.status,
-        raw: data.data,
-      };
-    } catch (err) {
-      throw ApiError.internal("Bill payment failed", err?.message);
+    if (!data.status) {
+      throw ApiError.badRequest(data.message);
     }
+
+    return {
+      transactionId: data.data.transactionId,
+      amount: data.data.amount,
+      charge: data.data.charge,
+      gst: data.data.gst,
+      totalCharge: data.data.totalCharge,
+      status: data.data.status,
+      raw: data.data,
+    };
   }
 
   async checkStatus({ transactionId }) {

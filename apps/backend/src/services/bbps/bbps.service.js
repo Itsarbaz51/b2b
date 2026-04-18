@@ -16,14 +16,17 @@ export default class BbpsService {
   }
 
   static async resolveProvider(mappingId) {
-    const { provider: providerData, serviceProviderMapping } =
-      await ProviderResolver.resolveByMappingId(mappingId);
+    const {
+      service,
+      provider: providerData,
+      serviceProviderMapping,
+    } = await ProviderResolver.resolveByMappingId(mappingId);
 
     if (!providerData) {
       throw ApiError.badRequest("Provider not found");
     }
 
-    return { providerData, serviceProviderMapping };
+    return { service, providerData, serviceProviderMapping };
   }
 
   // CORE ROUTER (IMPORTANT)
@@ -89,13 +92,18 @@ export default class BbpsService {
     await this.checkPermission(actor.id, serviceProviderMappingId);
     await this.checkRule(actor.id, serviceProviderMappingId);
 
-    const { providerData, serviceProviderMapping } = await this.resolveProvider(
-      serviceProviderMappingId
-    );
+    const { service, providerData, serviceProviderMapping } =
+      await this.resolveProvider(serviceProviderMappingId);
 
     const Service = this.getService(providerData.code);
 
-    return Service.payBill(payload, actor, serviceProviderMapping);
+    return Service.payBill(
+      payload,
+      actor,
+      serviceProviderMapping,
+      service,
+      providerData
+    );
   }
 
   // ---------------- STATUS ----------------
@@ -106,12 +114,16 @@ export default class BbpsService {
       await this.checkPermission(actor.id, serviceProviderMappingId);
     }
 
-    const { providerData, serviceProviderMapping } = await this.resolveProvider(
-      serviceProviderMappingId
-    );
+    const { service, providerData, serviceProviderMapping } =
+      await this.resolveProvider(serviceProviderMappingId);
 
     const Service = this.getService(providerData.code);
 
-    return Service.checkStatus(payload, serviceProviderMapping);
+    return Service.checkStatus(
+      payload,
+      serviceProviderMapping,
+      service,
+      providerData
+    );
   }
 }

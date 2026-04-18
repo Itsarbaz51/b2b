@@ -396,38 +396,48 @@ model CommissionSetting {
   id    String          @id @default(uuid())
   scope CommissionScope @default(ROLE)
 
-  roleId                   String? @map("role_id")
-  targetUserId             String? @map("target_user_id")
-  serviceProviderMappingId String
+  roleId       String? @map("role_id")
+  targetUserId String? @map("target_user_id")
+
+  // ❌ REMOVE HARD DEPENDENCY
+  serviceProviderMappingId String? // make optional
+
+  // ✅ NEW CONTEXT FIELDS
+  serviceType   String? // BBPS, RECHARGE, PAYMENT
+  category      String? // ELECTRICITY, DTH
+  operator      String? // JVVNL, AIRTEL
+  paymentMethod String? // UPI, CARD
+  network       String? // VISA, RUPAY
 
   mode  PricingMode
   type  CommissionType
   value BigInt
 
-  applyTDS   Boolean @default(false) @map("apply_tds")
-  tdsPercent BigInt? @map("tds_percent")
+  applyTDS   Boolean @default(false)
+  tdsPercent BigInt?
 
-  applyGST   Boolean @default(false) @map("apply_gst")
-  gstPercent BigInt? @map("gst_percent")
+  applyGST   Boolean @default(false)
+  gstPercent BigInt?
 
-  createdBy String  @map("created_by")
-  isActive  Boolean @default(true) @map("is_active")
+  createdBy String
+  isActive  Boolean @default(true)
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("update_at")
+  supportsSlab         Boolean @default(false)
+  supportPaymentMethod Boolean @default(false)
 
-  role                 Role?   @relation(fields: [roleId], references: [id])
-  targetUser           User?   @relation(fields: [targetUserId], references: [id])
-  supportsSlab         Boolean @default(false) @map("support_slab")
-  supportPaymentMethod Boolean @default(false) @map("support_payment_method")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  serviceProviderMapping   ServiceProviderMapping    @relation(fields: [serviceProviderMappingId], references: [id])
-  commissionSlabs          CommissionSlab[]
-  commissionPaymentMethods CommissionPaymentMethod[]
+  role       Role? @relation(fields: [roleId], references: [id])
+  targetUser User? @relation(fields: [targetUserId], references: [id])
 
-  @@unique([serviceProviderMappingId, roleId])
-  @@unique([serviceProviderMappingId, targetUserId])
-  @@map("commission_settings")
+  commissionSlabs CommissionSlab[]
+
+  // ❌ REMOVE OLD UNIQUE
+  serviceProviderMapping ServiceProviderMapping? @relation(fields: [serviceProviderMappingId], references: [id])
+
+  @@index([serviceType, category, operator])
+  @@index([paymentMethod, network])
 }
 
 model CommissionSlab {
@@ -444,28 +454,6 @@ model CommissionSlab {
   @@unique([commissionSettingId, minAmount, maxAmount])
   @@index([minAmount, maxAmount])
   @@map("commission_slabs")
-}
-
-model CommissionPaymentMethod {
-  id String @id @default(uuid())
-
-  commissionSettingId String @map("commission_setting_id")
-
-  paymentMethod String? @map("payment_method")
-  network       String? // optional
-
-  category String? // DTH, MOBILE, ELECTRICITY
-
-  type  CommissionType
-  value BigInt
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  commissionSetting CommissionSetting @relation(fields: [commissionSettingId], references: [id])
-
-  @@unique([commissionSettingId, paymentMethod, network])
-  @@index([paymentMethod, network])
-  @@map("commission_payment_methods")
 }
 
 model CommissionEarning {
@@ -600,21 +588,24 @@ model ProviderSlab {
 model PaymentMethodChargeProvider {
   id String @id @default(uuid())
 
-  serviceProviderMappingId String @map("service_provider_mapping_id")
+  serviceProviderMappingId String
 
-  paymentMethod String? @map("payment_method") // card / upi  
-  network       String? // visa / rupay
+  // ✅ ADD CONTEXT
+  serviceType   String?
+  category      String?
+  operator      String?
+  paymentMethod String?
+  network       String?
 
-  category String? // DTH, MOBILE, ELECTRICITY
+  type  PricingValueType
+  value BigInt
 
-  type    PricingValueType
-  value   BigInt
+  createdAt DateTime @default(now())
+
   mapping ServiceProviderMapping @relation(fields: [serviceProviderMappingId], references: [id])
 
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([serviceProviderMappingId, paymentMethod, network])
-  @@map("payment_method_charge_provider")
+  @@index([serviceType, category, operator])
+  @@index([paymentMethod, network])
 }
 
 model UserPermission {

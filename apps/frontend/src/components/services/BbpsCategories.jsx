@@ -108,7 +108,10 @@ const BbpsCategories = ({ data = [], serviceProviderMappingId }) => {
               {/* HEADER */}
               <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                 <button
-                  onClick={() => setSelectedService(null)}
+                  onClick={() => {
+                    setSelectedService(null);
+                    dispatch(resetBiller());
+                  }}
                   className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                 >
                   <ArrowLeft size={18} />
